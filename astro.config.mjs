@@ -18,7 +18,7 @@ export default defineConfig({
       },
     },
   },
-  adapter: cloudflare(),
+  adapter: cloudflare({ imageService: "passthrough" }),
   env: {
     schema: {
       SUPABASE_URL: envField.string({ context: "server", access: "secret", optional: true }),
