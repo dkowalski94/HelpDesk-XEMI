@@ -1,83 +1,6 @@
-<!-- BEGIN @przeprogramowani/10x-cli -->
+# CLAUDE.md
 
-## 10xDevs AI Toolkit — Moduł 1, Lekcja 2
-
-Wybierz starter i stos dla PRD, który napisałeś w Lekcji 1, z **łańcuchem stosu**:
-
-```
-(/10x-init  →  /10x-shape  →  /10x-prd)  →  /10x-tech-stack-selector  →  (bootstrapper)
-```
-
-Łańcuch PRD pochodzi z Lekcji 1 (został ponownie uwzględniony w tej lekcji, aby można było poprawić PRD w trakcie pracy). `/10x-tech-stack-selector` jest głównym tematem lekcji; `/10x-bootstrapper` to następne ogniwo, omawiane w Lekcji 3.
-
-### Router zadań — Od czego zacząć
-
-| Umiejętność | Użyj jej, gdy |
-| --- | --- |
-| **Wybór stosu (temat lekcji)** | |
-| `/10x-tech-stack-selector` | Masz PRD w `context/foundation/prd.md` i musisz wybrać starter. Rozpoczyna od wyraźnego wyboru (przyjmij zalecaną domyślną opcję dla swojej komórki `(product_type, language_family)` albo zaprojektuj własną), przechodzi przez zestaw pytań uzupełniających, gdy projektujesz własną opcję, stosuje cztery przyjazne agentom bramki jakości, analizuje rejestr starterów uwzględniający język i zapisuje `context/foundation/tech-stack.md`. Opcjonalny argument `[path-to-prd]` pozwala wskazać niestandardową lokalizację PRD (np. `/10x-tech-stack-selector @context/foundation/prd-v2.md`); bez niego umiejętność domyślnie używa `context/foundation/prd.md`. Użyj PO `/10x-prd`, PRZED `/10x-bootstrapper`. |
-| **W razie potrzeby uruchom ponownie etap wcześniejszy** | |
-| `/10x-init` / `/10x-shape` / `/10x-prd` | Dołączone, aby można było poprawić PRD w trakcie pracy. Jeśli `/10x-tech-stack-selector` ujawni lukę (np. Wymaganie Funkcjonalne wymuszające funkcję, której nie zawiera rekomendowany starter), uruchom ponownie `/10x-prd`, aby zmienić PRD przed wyborem stosu. |
-
-### Jak łańcuch przekazuje dalej
-
-- `/10x-tech-stack-selector` odczytuje frontmatter `context/foundation/prd.md` (`product_type`, `target_scale`, `timeline_budget`) jako priory. Jeśli PRD nie istnieje, odmawia, podając jednolinijkowe przekierowanie do `/10x-shape` — bez wbudowanego awaryjnego mini-PRD.
-- Umiejętność zapisuje `context/foundation/tech-stack.md` z frontmatter zawierającym 4 klucze (`starter_id`, `package_manager`, `project_name`, `hints`) oraz jedn akapit w treści `## Why this stack`. Przekazanie jest celowo minimalne — bootstrapper nie analizuje uzasadnienia, a jedynie pola.
-- `/10x-bootstrapper` (Lekcja 3) odczytuje `tech-stack.md` i rejestr, aby utworzyć szkielet projektu.
-
-### Co rejestruje tech-stack-selector (a czego NIE rejestruje)
-
-- **Rejestrowane**: wybór startera (w formacie rejestru), rodzina języków, menedżer pakietów (otwarty ciąg znaków dla danego ekosystemu — `pnpm`, `uv`, `bundle`, `cargo` itd.), wielkość zespołu, cel wdrożenia (wybierany z `deployment_defaults` wybranego startera), dostawca CI/CD + przepływ, pewność bootstrappera (`verified | first-class | best-effort`), obrana ścieżka (standard | custom), odpowiedzi z autoweryfikacji (ścieżka niestandardowa), nadpisanie jakości (ustawiane, gdy użytkownik kontynuuje ze starterem, który nie przeszedł ≥1 przyjaznej agentom bramki), flagi funkcji (auth/payments/realtime/AI/background-jobs).
-- **NIE rejestrowane (celowo)**: strategiczny plan testów, strategiczny plan wdrożenia, strategiczne decyzje implementacyjne. Są one dalszym etapem po wyborze stosu — kwestią przyszłej technicznej roadmapy, jeszcze nieplanowaną. Tech-stack-selector odpowiada za wybory testowania/wdrażania/CI w kształcie frameworka, ponieważ są one nierozerwalne z wyborem stosu; odroczona zostaje *warstwa strategiczna* („stosujemy TDD na powierzchni X”, „środowisko podglądowe dla każdego PR”).
-
-### Wybór początkowy (kluczowy)
-
-Pierwsze pytanie jest wyraźnym wyborem — nigdy niejawnym. Umiejętność od razu wskazuje zalecany starter dla Twojej komórki `(product_type, language_family)` i prosi o wyraźne potwierdzenie:
-
-- **Ścieżka standardowa** — zaakceptuj zalecaną opcję domyślną. Umiejętność pomija audyt funkcji, profil zespołu, preferencje technologiczne i pytania o wariant frameworka; zadaje jedynie pytania dotyczące wdrożenia, CI/CD i nazwy projektu. Przekazanie rejestruje `path_taken: standard` w `hints`.
-- **Ścieżka niestandardowa** — zaprojektuj własną opcję. Umiejętność przechodzi przez pełny zestaw pytań uzupełniających (audyt funkcji, profil zespołu, preferencje technologiczne, wdrożenie, CI/CD, wariant frameworka), zagłębia się w pytanie o runner testów tylko wtedy, gdy wybrany starter pozostawia to niejednoznaczne, i kończy 5-punktową autoweryfikacją gotowości (z lekcji przygotowawczej 4.1) przed zatwierdzeniem. Przekazanie rejestruje `path_taken: custom` i wypełnia `self_check_answers`.
-
-Mapa zalecanych domyślnych opcji dla każdej komórki obsługuje wiele języków: web/JS i saas/JS oba → 10x-astro-starter (starter oznaczony marką 10x ma pierwszeństwo, gdy konkuruje w komórce JS); api/JS → hono; api/Python → fastapi; web/Python → django; web/Ruby → rails; api/Go → go; api/Rust → axum; mobile/Dart → flutter; desktop/Rust → tauri; itd. Komórki bez zweryfikowanej opcji domyślnej mają wartość `<none>` i wymuszają ścieżkę niestandardową.
-
-### Bramki jakości (kryteria przyjazne agentom)
-
-Każda karta startera zawiera cztery wartości logiczne, według których LLM filtruje:
-
-1. **Typowany** — jawne typy/schematy, na podstawie których agent może wnioskować bez uruchamiania programu.
-2. **Oparty na konwencjach** — silne założenia dotyczące układu, routingu i konfiguracji.
-3. **Popularny w danych treningowych** — oceniany *dla każdej rodziny języków*, a nie globalnie (Django jest popularne w danych treningowych Pythona; Spring w Javie; itd.).
-4. **Dobrze udokumentowany** — aktualna, przypięta do wersji dokumentacja, do której można linkować.
-
-Kandydaci, którzy nie przejdą którejkolwiek bramki, są wykluczani ze zbioru rekomendacji bez dodatkowego zapytania. Jeśli wyraźnie wskażesz jako preferencję starter, który nie przeszedł bramki, umiejętność zakwestionuje ten wybór — przedstawiając najsilniejszą alternatywę o wyższych kryteriach ORAZ ścieżkę kompensacyjną (instrukcje CLAUDE.md uzupełniające braki) — i poprosi o potwierdzenie lub zmianę kierunku. Potwierdzenie wyboru o znanych trudnościach rejestruje nadpisanie w przekazaniu, aby bootstrapper mógł się dostosować.
-
-### Pewność bootstrappera
-
-Każda rekomendacja przedstawia `bootstrapper_confidence` dosłownie — nigdy nie jest ono po cichu pomijane:
-
-- **`verified`** — bootstrapper został uruchomiony end-to-end na tym stosie; tworzenie szkieletu będzie płynne.
-- **`first-class`** — zarejestrowany z prawidłowym CLI, powinien działać, ale nie został przetestowany w boju; oczekuj w większości płynnego tworzenia szkieletu z okazjonalnymi krokami ręcznymi.
-- **`best-effort`** — ograniczone wsparcie; prawdopodobne kroki ręczne; oczekuj trudności (a generowanie CLAUDE.md przez bootstrapper kompensuje je dodatkowym kontekstem specyficznym dla ekosystemu).
-
-To uprzedzenie przed uruchomieniem `/10x-bootstrapper`, abyś wiedział, czego się spodziewać.
-
-### Ścieżki foundation używane przez tę lekcję
-
-- `context/foundation/prd.md` — wejście (z Lekcji 1)
-- `context/foundation/tech-stack.md` — wyjście (przekazanie łańcucha)
-- `context/foundation/lessons.md` — powtarzające się reguły i pułapki
-- `docs/reference/contract-surfaces.md` — rejestr kluczowych nazw
-
-### Uniwersalny język
-
-Dostarczona umiejętność nie zawiera odniesień do 10xDevs / kohort / certyfikacji. Rejestr zalecanych opcji domyślnych obsługuje wiele języków (JS, Python, Ruby, Java, Go, Rust, PHP, .NET, Dart), a kohortowy `10x-astro-starter` jest jedną kartą w komórce JS+web — nie „tą” zalecaną ścieżką dla wszystkich.
-
-Umiejętności nie mogą zapisywać w `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozstrzygnięta ścieżka docelowa zaczyna się od `context/archive/`, przerwij z komunikatem: "Ta zmiana jest zarchiwizowana. Zamiast tego otwórz nową zmianę za pomocą `/10x-new`."
-
-<!-- END @przeprogramowani/10x-cli -->
-
-# Rules for AI
-
-This file provides guidance to AI Agent when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Commands
 
@@ -88,6 +11,7 @@ This file provides guidance to AI Agent when working with code in this repositor
 - `npm run lint:fix` — auto-fix lint issues
 - `npm run format` — Prettier (includes prettier-plugin-astro + prettier-plugin-tailwindcss)
 - `npm run smoke` — dependency-free auth-flow smoke test (`scripts/smoke.mjs`) against a running server, `BASE_URL` env (default `http://localhost:4321`). Run after dependency upgrades; CI runs it against the production preview with a local Supabase.
+- `npx astro check` — type-checks `.astro` files (run in CI after `npx astro sync`, not wired to an npm script).
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
 
@@ -106,6 +30,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`
 - Auth pages: `src/pages/auth/{signin,signup,confirm-email}.astro`
 - Protected page example: `src/pages/dashboard.astro`
+- `SUPABASE_URL`/`SUPABASE_KEY` are declared `optional: true` in the `astro:env` schema. `createClient()` (`src/lib/supabase.ts`) returns `null` when either is missing, and the middleware treats that as a logged-out user rather than throwing — the app boots and renders without Supabase configured. `src/lib/config-status.ts` drives the "Supabase not configured" banner shown in that state.
 
 ### Key conventions
 
@@ -115,9 +40,10 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - **shadcn/ui**: components live in `src/components/ui/`, "new-york" style variant. Install new ones with `npx shadcn@latest add [name]`.
 - **API routes**: use uppercase `GET`, `POST` exports; validate input with zod.
 - **Supabase migrations**: `supabase/migrations/` using naming format `YYYYMMDDHHmmss_short_description.sql`. Always enable RLS on new tables with granular per-operation, per-role policies.
-- **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/components/hooks/`.
+- **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/hooks/` (matches the `hooks` alias in `components.json`).
 - **Services/helpers** go in `src/lib/` (or `src/lib/services/` for extracted business logic).
 - **Shared types** (entities, DTOs) go in `src/types.ts`.
+- **shadcn/ui component set**: currently only `Button` (`src/components/ui/button.tsx`) is installed; `LibBadge.astro` is a project-specific badge, not a shadcn component.
 
 ### Environment
 
@@ -129,4 +55,106 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs lint + build on every push and PR to master. Requires `SUPABASE_URL` and `SUPABASE_KEY` repository secrets for the build step.
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs two jobs on every push and PR to `master`:
+
+- **ci** — `astro sync`, `npm run lint`, `astro check`, `npm run build`. Requires `SUPABASE_URL` and `SUPABASE_KEY` repository secrets for the build step.
+- **smoke** — starts a local Supabase via the Supabase CLI, builds, serves the production preview, and runs `npm run smoke` against it. No repository secrets required.
+
+<!-- BEGIN @przeprogramowani/10x-cli -->
+
+## Zestaw narzędzi AI 10xDevs — Moduł 1, Lekcja 4
+
+Wdróż agenta do projektu, który utworzyłeś w Lekcji 3, za pomocą **łańcucha kontekstu agenta**:
+
+```
+(/10x-init  →  /10x-shape  →  /10x-prd  →  /10x-tech-stack-selector  →  /10x-bootstrapper)  →  /10x-agents-md  →  /10x-rule-review  →  /10x-lesson
+```
+
+Łańcuch PRD → tech-stack → bootstrap pochodzi z Lekcji 1–3 (został ponownie uwzględniony, aby można było naprawić projekt w trakcie pracy). `/10x-agents-md`, `/10x-rule-review` i `/10x-lesson` to główne tematy lekcji. Łańcuch zostaje rozszerzony w Lekcji 5 o krok infra/deploy.
+
+### Router zadań — od czego zacząć
+
+| Umiejętność | Użyj jej, gdy |
+| --- | --- |
+| **Kontekst agenta (temat lekcji)** | |
+| `/10x-agents-md` | Repozytorium jest utworzone, ale agent nie ma wdrożenia specyficznego dla projektu. Analizuje repozytorium (manifest pakietu, README, skrypty, konfigurację lint/test, układ, historię commitów) i zapisuje zwięzłe, uporządkowane „Wytyczne repozytorium” w `AGENTS.md` (lub, gdy jest wywoływane z podkatalogu, `AGENTS.md` na poziomie katalogu, przeformułowane wokół lokalnych konwencji i dominującej jednostki). Użyj jako alternatywy dla wbudowanego `/init` hosta lub jako rozwiązania awaryjnego dla narzędzi, które go nie mają. Treść na poziomie repozytorium ma docelowo ~200 wierszy; przewodniki na poziomie katalogu mają docelowo 120–250 słów. |
+| `/10x-rule-review <path>` | Masz plik zasad dla AI (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc`, `.github/copilot-instructions.md`, `.windsurfrules`, zagnieżdżone pliki dla poszczególnych obszarów) i chcesz otrzymać kartę wyników w 5 osiach: długość, osadzone fragmenty kodu/konfiguracji, precyzja języka, redundancja względem wiedzy publicznej oraz kolejność zasad. Niezależne od narzędzia — ocenia stan artefaktu, a nie projektu. Domyślne wyjście jest tylko do odczytu; tylko Kontrola 5 (zmiana kolejności) może edytować, i wyłącznie po wyraźnej akceptacji. |
+| `/10x-lesson [seed]` | Zauważyłeś powtarzającą się zasadę, którą warto ujawnić na potrzeby przyszłych uruchomień `/10x-frame`, `/10x-research`, `/10x-plan`, `/10x-plan-review`, `/10x-implement` i `/10x-impl-review`. Dodaje pojedynczy wpis (Kontekst / Problem / Zasada / Dotyczy) do `context/foundation/lessons.md`. Przy pierwszym użyciu samodzielnie inicjalizuje plik z kanonicznym nagłówkiem `# Lessons Learned`. Tylko dopisywanie — nigdy nie zmienia kolejności ani nie przepisuje wcześniejszych wpisów. |
+| **W razie potrzeby uruchom ponownie wcześniejszy etap** | |
+| `/10x-init` / `/10x-shape` / `/10x-prd` / `/10x-tech-stack-selector` / `/10x-bootstrapper` / `/10x-stack-assess` / `/10x-health-check` | Dołączone, aby można było poprawić PRD, zmienić stos technologiczny lub ponownie utworzyć szkielet w trakcie pracy. Jeśli `/10x-rule-review` zgłosi `FAIL`, którego nie da się rozwiązać przez skrócenie, często wskazuje to na niejednoznaczne decyzje dotyczące PRD lub stosu — uruchom ponownie wcześniejszą umiejętność zamiast wypełniać `AGENTS.md` poprawkami. |
+
+### Jak łańcuch przekazuje pracę dalej
+
+- `/10x-agents-md` zapisuje (lub punktowo aktualizuje) `AGENTS.md` w określonym zakresie. Zakres na poziomie repozytorium = plik znajduje się w korzeniu repozytorium i opisuje cały projekt; zakres na poziomie katalogu = plik znajduje się obok kodu, którym zarządza, i jest przeformułowany wokół lokalnej jednostki, całkowicie pomijając perspektywę całego repozytorium. Umiejętność nigdy nie nadpisuje po cichu — gdy cel istnieje, przełącza się na przepływ aktualizacji.
+- `/10x-rule-review` odczytuje dowolny wskazany plik markdown z zasadami dla AI i wyświetla kartę wyników z 5 kontrolami (`OK` / `WARN` / `FAIL`) wraz z konkretnymi poprawkami. Nie zależy od wcześniejszego uruchomienia `/10x-agents-md`; w ten sam sposób możesz sprawdzić `.cursor/rules/`, instrukcje Copilot lub ręcznie napisany `CLAUDE.md`.
+- `/10x-lesson` przy pierwszym użyciu samodzielnie inicjalizuje `context/foundation/lessons.md`, a następnie przy każdym wywołaniu dopisuje jeden wpis Kontekst/Problem/Zasada/Dotyczy. Plik jest wykorzystywany jako wcześniejszy kontekst przez umiejętności fazy planowania i przeglądu wprowadzone później w procesie — `/10x-frame`, `/10x-research`, `/10x-plan`, `/10x-plan-review`, `/10x-implement`, `/10x-impl-review`.
+
+### Co wychwytują umiejętności lekcji (a czego NIE robią)
+
+- **`/10x-agents-md` wychwytuje**: strukturę projektu, polecenia build/test/lint faktycznie obecne w skryptach, konwencje commitów wywnioskowane z historii, pułapki specyficzne dla repozytorium, które agent mógłby przeoczyć, odwołania do kanonicznych plików przez ścieżki `@` zamiast wklejania ich treści. Zakres na poziomie katalogu dodatkowo wychwytuje: lokalne wzorce nazewnictwa/układu wywnioskowane z sąsiednich elementów, dozwolone/zabronione importy, wzorzec testów używany przez sąsiednie moduły oraz pułapki widoczne w bezpośrednim otoczeniu.
+- **`/10x-agents-md` NIE** wkleja zawartości `tsconfig.json` / `eslint.config` / dokumentacji frameworka, którą agent już zna; **NIE** generuje ogólnych intencji typu „pisz czysty kod”; **NIE** zastępuje wbudowanego `/init` hosta, gdy taki istnieje — jest pozycjonowany jako alternatywa lub rozwiązanie awaryjne, a nie domyślna opcja.
+- **`/10x-rule-review` wychwytuje**: werdykt długości (OK ≤ 200 niepustych wierszy, WARN 201–500, FAIL 501+), bloki kodu/konfiguracji, które powinny być odwołaniami `@`, niejasny język intencji, redundancję względem dokumentacji frameworka, którą agent zna już z treningu, oraz propozycję zmiany kolejności w Kontroli 5, która przenosi krytyczne zasady na górę.
+- **`/10x-rule-review` NIE** edytuje pliku domyślnie; **NIE** ocenia zawartości projektu (architektury, wyborów stosu) — ocenia stan artefaktu zasad; **NIE** generuje „poprawionej wersji” pliku (Kontrola 5 może przenosić sekcje po wyraźnej akceptacji, ale nigdy nie przepisuje brzmienia zasad).
+- **`/10x-lesson` wychwytuje**: jeden wpis na wywołanie z krótkim tytułem H2 w trybie rozkazującym (tytuł JEST zasadą), Kontekst (podsystem / faza / wzorzec plików, wystarczająco konkretny do dopasowywania wzorców), Problem (co konkretnie psuje się bez zasady, najlepiej wraz z wcześniejszym incydentem), Zasada (1–2 zdania w trybie rozkazującym, które można dosłownie wkleić do przyszłego ustalenia przeglądu), Dotyczy (podzbiór `frame`, `research`, `plan`, `plan-review`, `implement`, `impl-review` lub `all`).
+- **`/10x-lesson` NIE** edytuje ani nie usuwa istniejących lekcji — plik z założenia pozwala wyłącznie na dopisywanie (bezrefleksyjne przepisywanie powtarzających się zasad jest trybem awarii, któremu ta konwencja zapobiega); **NIE** grupuje wielu zasad w jednym wywołaniu; **NIE** wypełnia pól proaktywnie (użytkownik pisze treść — to cena wychwytywania zasad poza ustrukturyzowanym przeglądem).
+
+### Test włączenia (filtr dla AGENTS.md / CLAUDE.md)
+
+Przed dodaniem zasady do dowolnego pliku zasad dla AI zapytaj: *czy agent mógłby wiedzieć to bez tego pliku? Czy publiczne dane treningowe — książki, blogi, repozytoria w tym stosie — mogły go do tego przygotować?* Jeśli tak, pomiń ją. Jeśli nie, zachowaj ją. Plik służy do wdrożenia agenta, który już zna TypeScript / Python / twój framework, ale NIE zna twoich lokalnych konwencji.
+
+Należy:
+- nieoczywiste konwencje projektu (kształt odpowiedzi błędów, nazewnictwo plików, dozwolone ścieżki importu)
+- pułapki specyficzne dla projektu i „żenujące” obejścia związane z historią lub błędami zależności
+- odwołania do kanonicznych plików przez ścieżki `@` (np. `@src/features/users/user.service.ts` jako odwołanie do wzorca, a nie wklejony kod)
+
+NIE należy:
+- dokumentacja popularnych frameworków
+- zawartość README, którą agent i tak przeczyta (połącz przez `@README.md`)
+- popularne ogólne porady („używaj trybu TypeScript strict”), które są już wymuszane przez konfigurację
+- deklaracje intencji („pisz czysty kod”, „stosuj dobre praktyki”) — przekształć w sprawdzalne zachowanie lub pomiń
+
+### U-kształtna uwaga i szczegółowe zasady
+
+LLM-y najsilniej skupiają uwagę na początku i końcu kontekstu (Lost-in-the-Middle / U-shaped attention). Długi monolityczny `CLAUDE.md` umieszcza zasady ze środka w najsłabszej strefie uwagi. Dwie praktyczne konsekwencje:
+
+1. **Najważniejsze zasady trafiają na górę** każdego pliku zasad.
+2. **Zasady dla poszczególnych obszarów powinny znajdować się obok ich kodu** — zagnieżdżone `AGENTS.md` / `CLAUDE.md` wewnątrz `src/api/`, `.cursor/rules/*.mdc` z globami plików itd. Szczegółowe pliki są ładowane selektywnie i pojawiają się w całości blisko początku własnej sekcji, zamiast być zakopane w wierszu 400 jednego dużego pliku.
+
+Kontrola 5 (zmiana kolejności) w `/10x-rule-review` operacjonalizuje konsekwencję (1); test włączenia wraz z `/10x-agents-md` na poziomie katalogu operacjonalizuje konsekwencję (2).
+
+### Ćwiczenie kalibracyjne z pięcioma wzorcami
+
+Przed zapisaniem zasady potwierdź, że agent faktycznie łamie konwencję bez niej. Wybierz jeden wzorzec z projektu (kształt odpowiedzi błędów, nazewnictwo plików, styl importów, struktura modułu, obsługa dat). Następnie:
+
+1. Poproś agenta o zaimplementowanie zgodnie ze wzorcem 3–5 razy ze stanu czystego, bez zasady.
+2. Zanotuj, gdzie złamał konwencję; uchwyć czas wykonania, przeanalizowane pliki oraz widoczny koszt/tokeny, jeśli host je pokazuje.
+3. Dodaj zasadę składającą się z 1–3 zdań do odpowiedniego zakresu (głównego lub na poziomie obszaru).
+4. Uruchom ponownie to samo zadanie w świeżej sesji i porównaj przestrzeganie konwencji, czas, pliki i liczbę iteracji.
+
+Jeśli agent już bez zasady ma tendencję do stosowania konwencji, nie potrzebujesz tej zasady. Jeśli systematycznie wybiera niewłaściwy wzorzec, znalazłeś zasadę o dużej dźwigni, którą warto dodać. To ćwiczenie pokazuje, jak w praktyce wygląda „zasłużenie na zasadę przez powtarzającą się porażkę”.
+
+### Hierarchia i interoperacyjność narzędzi
+
+- **Claude Code** ładuje `CLAUDE.md` z katalogu użytkownika (`~/.claude/CLAUDE.md`), korzenia repozytorium oraz każdego podkatalogu, w którym pracuje agent. Głębsze pliki zastępują lub uzupełniają pliki znajdujące się wyżej.
+- **Codex** i **GitHub Copilot** ładują `AGENTS.md` od bieżącego katalogu w górę — wygrywa najbliższy plik.
+- Jeden kanoniczny plik jest lepszy niż trzy duplikaty. Typowy wzorzec: `AGENTS.md` jako źródło prawdy, `CLAUDE.md` jako cienka nakładka Claude Code z importem `@AGENTS.md`, `.github/copilot-instructions.md` tylko wtedy, gdy Copilot potrzebuje własnych dodatków. Dowiązanie symboliczne (`ln -s AGENTS.md CLAUDE.md`) jest najprostszą deduplikacją, gdy narzędzia wymagają obu nazw.
+- Automatyczna pamięć (np. `~/.claude/projects/<dir-with-slashes-as-dashes>/memory/MEMORY.md` Claude Code) jest lokalna dla maszyny i nie zastępuje `AGENTS.md`. Zasady wiążące zespół znajdują się w repozytorium; automatyczna pamięć jest osobistym cache'em, który można okresowo przeglądać.
+
+### Hooki wewnętrznej pętli (deterministyczne sprzężenie zwrotne bez promptowania)
+
+Mechaniczne, nieopcjonalne kontrole powinny znajdować się w hookach (np. `PostToolUse` Claude Code), a nie w pliku zasad. Agent kończy edycję; uruchamia się formatter lub szybki lint; wynik wraca bez konieczności przypominania mu o tym. Szablon ustawień (`settings.json.template`) jest dostarczany w pakiecie lekcji jako punkt wejścia do konfiguracji. Przepływy proceduralne (głębszy przegląd, lista kontrolna wydania, wdrożenie w sandboxie) trzymaj w umiejętnościach, a hooki rezerwuj dla deterministycznych sygnałów narzędzi.
+
+### Ścieżki fundamentu używane przez tę lekcję
+
+- `AGENTS.md` / `CLAUDE.md` (oraz warianty dla poszczególnych obszarów) — wynik `/10x-agents-md`
+- `context/foundation/lessons.md` — wynik `/10x-lesson` (rejestr tylko do dopisywania, używany przez przyszłe umiejętności planowania/przeglądu)
+- `context/foundation/prd.md`, `context/foundation/tech-stack.md` — dane wejściowe z wcześniejszych lekcji, nadal obecne
+- `docs/reference/contract-surfaces.md` — rejestr nazw mających kluczowe znaczenie (utworzony przez `/10x-init`)
+
+### Uniwersalny język
+
+Dostarczone umiejętności nie zawierają odniesień do 10xDevs / kohorty / certyfikacji. `/10x-agents-md` odkrywa informacje na podstawie repozytorium, w którym jest wywoływane; `/10x-rule-review` jest niezależne od narzędzia i traktuje każdy plik jako „artefakt zasad dla AI”; `/10x-lesson` zapisuje wpis o jednym kształcie niezależnie od dziedziny projektu. Ćwiczenie kalibracyjne z pięcioma wzorcami ma charakter ilustracyjny — zastąp wzorce wzorcami z własnego stosu.
+
+Umiejętności nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozwiązana ścieżka docelowa zaczyna się od `context/archive/`, przerwij z komunikatem: „This change is archived. Open a new change with `/10x-new` instead.”
+
+<!-- END @przeprogramowani/10x-cli -->
