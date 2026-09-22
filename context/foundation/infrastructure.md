@@ -77,6 +77,7 @@ The team deployed HelpDesk XEMI's Astro SSR app on Cloudflare Workers, trusting 
 - **Rollback**: `wrangler rollback [<VERSION_ID>]` instantly repoints all routes to a prior version — seconds, not minutes. Caveat: it does not revert Supabase schema migrations or any bound-resource state, so a rollback that follows a migration-bearing deploy needs a manual check that the prior code version is still compatible with the current database schema.
 - **Approval**: Production deploys (`wrangler deploy` to the live Worker) and any `wrangler secret put` should require a human trigger (e.g., merge-to-main via GitHub Actions with a human-reviewed PR) — an agent may run `wrangler deploy --dry-run`, `wrangler tail`, and `wrangler versions list` unattended, but should not run an unreviewed production deploy or secret rotation.
 - **Logs**: `wrangler tail [WORKER] --status=error --format=pretty` streams live logs; `wrangler tail --search <term>` filters by content. Cloudflare's `observability.enabled: true` (already set in this repo's `wrangler.jsonc`) enables the dashboard-side Logs/Analytics views for read-only historical inspection.
+- **Documentation ingestion** (FR-012): parsing ERP documentation (PDF/Word/Excel) and generating embeddings for the knowledge base runs outside the deployed Worker — as a local script or a CI job (e.g. a manually-triggered GitHub Actions workflow) — never as a live request handler, since batch-parsing files and generating many embeddings will exceed the Workers CPU-time ceiling described in the Risk Register below.
 
 ## Risk Register
 
@@ -89,6 +90,7 @@ The team deployed HelpDesk XEMI's Astro SSR app on Cloudflare Workers, trusting 
 | Stale "Workers + Pages" tutorials/docs lead to wasted migration effort or wrong config | Devil's advocate / Pre-mortem | M | M | Confirmed already avoided in this repo (`wrangler.jsonc` already targets Workers correctly) — still, correct the stale `deployment_target: cloudflare-pages` hint in `tech-stack.md` so future readers aren't misled |
 | Durable Objects can't hibernate Worker-initiated outgoing WebSocket connections | Research finding | L | M | Not needed for MVP (no realtime requirement per PRD); revisit only if a future feature needs the Worker to hold an outgoing persistent connection |
 | Compatibility-date pinning causes a silent behavior change on a future Wrangler/adapter upgrade | Unknown unknowns | L | M | Treat `compatibility_date` bumps as a deliberate, tested change — never bump it opportunistically alongside an unrelated dependency update |
+| Document ingestion (PDF/Word/Excel parsing + embedding generation for FR-012) exceeds the Workers CPU-time/memory ceiling if run inside a live request | PRD update (FR-012) | M | M | Run ingestion as a separate offline process (local script or a CI job) outside the deployed Worker's request path — never as a synchronous route handler |
 
 ## Getting Started
 

@@ -73,6 +73,10 @@ Service-team staff member — handles tickets that AI/documentation couldn't res
   > Socratic: No counter-argument strong enough to change it; stands as written.
 - FR-011: Client user can mark a suggested resolution (FR-002) as not helpful, which creates a service ticket carrying the user's comment. Priority: must-have
 
+### Knowledge base sources
+- FR-012: The knowledge base searched by FR-002 includes existing ERP (XEMI) system documentation (currently maintained as PDF/Word/Excel files describing known errors and fixes), ingested alongside resolved-ticket history (FR-006), as a second match source. Priority: must-have
+  > Socratic: Counter-argument considered: "starting the MVP with only ticket-history matching (FR-006) is simpler — the documentation source adds one-time ingestion scope (extracting text from PDF/Word/Excel, chunking, embedding) that isn't yet sized." Resolution: kept as written — the documentation is a known, already-existing source of the same kind of information FR-002 needs, and excluding it would leave the knowledge base empty of matches until enough tickets accumulate. Ingestion mechanics are a tech/implementation concern, not scoped further here; open sizing questions are tracked below.
+
 ### Access
 - FR-007: Client user can log in and see only their own company's tickets. Priority: must-have
   > Socratic: No counter-argument strong enough to change it; stands as written.
@@ -97,6 +101,8 @@ Service-team staff member — handles tickets that AI/documentation couldn't res
 
 The rule takes the raw text of the error message the user pastes as its input. Its output is not always a single, clean answer — depending on what the matched case(s) show, it can be a single cause or a chain of different related causes/dependencies. The user encounters this the moment an error is thrown in the ERP system — that trigger is what sends them to the tool with the error text in hand.
 
+The match sources are two knowledge inputs, not one: previously-resolved ticket history (FR-006) and existing ERP (XEMI) system documentation describing known errors and fixes (FR-012). Both are searched together; a match can come from either source.
+
 ## Access Control
 
 Login-based authentication (email+password / OAuth / passwordless — mechanism TBD downstream). Two roles:
@@ -104,7 +110,7 @@ Login-based authentication (email+password / OAuth / passwordless — mechanism 
 - **Client user** — belongs to one client company; can submit an error message, see the AI's suggested cause/steps, and escalate to a service ticket when unresolved. Sees only their own company's tickets.
 - **Service staff** — internal role; sees tickets from all client companies on their dashboard in a "to do" state, and records the resolution once handled.
 
-Data isolation: tickets and any client-specific data are fully isolated between client companies — a client from Company A cannot see Company B's tickets. The knowledge base of resolutions is shared across all clients so the AI can reuse a resolution found for one client when a similar error appears for another.
+Data isolation: tickets and any client-specific data are fully isolated between client companies — a client from Company A cannot see Company B's tickets. The knowledge base (resolved-ticket history plus ingested ERP documentation, per FR-012) is shared across all clients so the AI can reuse a match found for one client when a similar error appears for another.
 
 ## Non-Goals
 
@@ -117,3 +123,5 @@ Data isolation: tickets and any client-specific data are fully isolated between 
 
 1. **What is the secondary (nice-to-have) success outcome for this MVP?** — Owner: user. Not yet identified during shaping; no blocking impact, Primary and Guardrails are sufficient to evaluate MVP success without it.
 2. **What are the expected QPS and data-volume ballparks?** — Owner: user. Only the user-count scale (large, ~100-500 total users) was captured during shaping; throughput and data-volume ballparks were not discussed. By: before tech-stack selection, since these inform infrastructure sizing.
+3. **How much ERP documentation exists, and how consistent is its format?** (FR-012) — Owner: user. Volume (page/file count) and format consistency of the existing PDF/Word/Excel documentation directly affect ingestion effort and knowledge base quality. By: before designing the ingestion approach.
+4. **Does the ERP documentation change over time, and who owns re-ingesting updates?** (FR-012) — Owner: user. Not yet decided whether this is a one-time bulk import at MVP launch or an ongoing process as documentation is revised. By: before designing the ingestion approach.
