@@ -21,7 +21,7 @@ Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` 
 
 ### Rendering mode
 
-Full server-side rendering (`output: "server"` in astro.config.mjs). All pages are server-rendered by default. API routes must export `const prerender = false`.
+Full server-side rendering (`output: "server"` in astro.config.mjs). All pages and API routes are server-rendered by default; no `prerender` exports are currently used anywhere in `src/`.
 
 ### Auth flow
 
@@ -38,7 +38,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - **Astro components** for static content/layout; **React components** only when interactivity is needed.
 - **Tailwind class merging**: use the `cn()` helper from `@/lib/utils` (clsx + tailwind-merge) for conditional/merged class names. Do not concatenate class strings manually.
 - **shadcn/ui**: components live in `src/components/ui/`, "new-york" style variant. Install new ones with `npx shadcn@latest add [name]`.
-- **API routes**: use uppercase `GET`, `POST` exports; validate input with zod.
+- **API routes**: use uppercase `GET`, `POST` exports (see `src/pages/api/auth/*.ts`). Input is currently read directly from `FormData` with no schema validation layer (`zod` is not a dependency) — follow that pattern unless the user asks to introduce validation.
 - **Supabase migrations**: `supabase/migrations/` using naming format `YYYYMMDDHHmmss_short_description.sql`. Always enable RLS on new tables with granular per-operation, per-role policies.
 - **React**: no Next.js directives ("use client" etc.). Extract hooks to `src/hooks/` (matches the `hooks` alias in `components.json`).
 - **Services/helpers** go in `src/lib/` (or `src/lib/services/` for extracted business logic).
