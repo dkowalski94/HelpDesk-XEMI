@@ -10,7 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` — ESLint with type-checked rules
 - `npm run lint:fix` — auto-fix lint issues
 - `npm run format` — Prettier (includes prettier-plugin-astro + prettier-plugin-tailwindcss)
-- `npm run smoke` — dependency-free auth-flow smoke test (`scripts/smoke.mjs`) against a running server, `BASE_URL` env (default `http://localhost:4321`). Run after dependency upgrades; CI runs it against the production preview with a local Supabase.
+- `npm run smoke` — dependency-free auth-flow and tenant-isolation smoke test (`scripts/smoke.mjs`) against a running server, `BASE_URL` env (default `http://localhost:4321`). Needs the demo personas from `supabase/seed.sql` (`npx supabase db reset`). Run after dependency upgrades; CI runs it against the production preview with a local Supabase.
+- `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql` — policy-level negative checks (denied writes and escalations as each seeded persona), run in one rolled-back transaction; non-zero exit means a check failed. Without a local `psql`: `docker exec -i supabase_db_10x-astro-starter psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql`.
 - `npx astro check` — type-checks `.astro` files (run in CI after `npx astro sync`, not wired to an npm script).
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
@@ -28,7 +29,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - `src/lib/supabase.ts` — creates a Supabase SSR client using `@supabase/ssr` with cookie-based sessions. Uses `astro:env/server` for `SUPABASE_URL` and `SUPABASE_KEY` (server-only secrets declared in astro.config.mjs `env.schema`).
 - `src/middleware.ts` — runs on every request, resolves the current user, attaches to `context.locals.user`. Redirects unauthenticated users away from routes listed in `PROTECTED_ROUTES`. Also resolves the tenancy profile (`context.locals.profile`, `context.locals.profileLookupFailed`) and gates `STAFF_ROUTES` by role: pages get a redirect, paths under `/api/` get 401/403 because a `fetch` caller follows a 302 and reads the resulting HTML as success. When adding a gated path, add its `/api` twin too — prefix matching does not relate `/admin` to `/api/admin`.
 - **Two invariants the route gate depends on, neither visible from `src/middleware.ts`.** (1) Astro normalizes `context.url.pathname` — percent-decoding, duplicate-slash collapsing, dot-segment resolution — *before* middleware runs, which is why `/admin%2Fusers` and `/admin../dashboard` are gated; re-check after an Astro upgrade. (2) `wrangler.jsonc` serves `./dist` as static assets with no `run_worker_first`, so a matching asset is served **before** the Worker runs: a single `export const prerender = true` on a page under a gated prefix, or one file in `public/<gated-prefix>/`, silently removes the gate from that path with no error anywhere.
-- API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`
+- API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`; `src/pages/api/admin/assign-company.ts` (staff-only); `src/pages/api/tickets.ts` (`GET`, returns 401 itself for anonymous callers — it is not in `PROTECTED_ROUTES`; the select has no company filter, so it returns exactly what RLS permits)
 - Auth pages: `src/pages/auth/{signin,signup,confirm-email}.astro`
 - Protected page example: `src/pages/dashboard.astro`
 - `SUPABASE_URL`/`SUPABASE_KEY` are declared `optional: true` in the `astro:env` schema. `createClient()` (`src/lib/supabase.ts`) returns `null` when either is missing, and the middleware treats that as a logged-out user rather than throwing — the app boots and renders without Supabase configured. `src/lib/config-status.ts` drives the "Supabase not configured" banner shown in that state.
@@ -61,12 +62,22 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - Cloudflare local dev: secrets go in `.dev.vars` (gitignored)
 - Deploy: `npx wrangler deploy` (requires Cloudflare account + `wrangler` auth)
 
+### Database migrations
+
+Nothing in CI migrates the hosted database: the `deploy` job runs `npm run build` and `npx wrangler deploy` only. Applying a migration to production is a manual gate.
+
+- **A PR that adds or changes a file in `supabase/migrations/` must be applied to the hosted project before it is merged to `master`** — the merge deploys a Worker that expects the new schema. Run `npx supabase link --project-ref <ref>` once, then `npx supabase db push --dry-run` to see which migrations are pending, then `npx supabase db push`.
+- **`supabase/seed.sql` is local/CI only and is never applied to production.** It holds demo personas with known passwords. `db reset` and `supabase start` run it; `db push` does not — never pass `--include-seed`. Rows the schema itself needs (the internal and unassigned companies) live in the migrations, not the seed.
+- **Rolling back a deploy does not roll back a migration.** `wrangler rollback` reverts the Worker only. Before rolling back across a migration, check by hand that the older Worker's queries still work against the current schema; if they do not, fix forward with a new migration.
+- A migration already applied to the hosted project is immutable — change it with a new migration, never by editing the file.
+
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs two jobs on every push and PR to `master`:
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs two jobs on every push and PR to `master`, then a third on push to `master` only:
 
 - **ci** — `astro sync`, `npm run lint`, `astro check`, `npm run build`. Requires `SUPABASE_URL` and `SUPABASE_KEY` repository secrets for the build step.
-- **smoke** — starts a local Supabase via the Supabase CLI, builds, serves the production preview, and runs `npm run smoke` against it. No repository secrets required.
+- **smoke** — starts a local Supabase via the Supabase CLI (which applies the migrations and `supabase/seed.sql`), runs `supabase/tests/rls.sql` against it with `psql`, builds, serves the production preview, and runs `npm run smoke` against it. No repository secrets required.
+- **deploy** — after both pass: `npm run build` and `npx wrangler deploy`. It never touches the database; see *Database migrations*.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
