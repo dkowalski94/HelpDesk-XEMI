@@ -38,6 +38,10 @@ async function request(path, { method = "GET", form } = {}) {
 const steps = [
   ["home renders", () => request("/"), { status: 200 }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["admin page redirects anonymous user", () => request("/admin/users"), { status: 302, location: "/auth/signin" }],
+  // Asserts the middleware gate, not the route: the endpoint itself arrives in a
+  // later change, and this proves the gate fires before routing resolves it.
+  ["admin api rejects anonymous user", () => request("/api/admin/assign-company", { method: "POST" }), { status: 401 }],
   [
     "signup creates account",
     () => request("/api/auth/signup", { method: "POST", form: { email, password } }),

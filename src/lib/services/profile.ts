@@ -1,14 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CompanyKind, SessionProfile, UserRole } from "@/types";
-
-/** The row shape the select below asks PostgREST for, with `companies` embedded. */
-interface ProfileWithCompanyRow {
-  id: string;
-  email: string;
-  role: UserRole;
-  company_id: string;
-  companies: { name: string; kind: CompanyKind } | null;
-}
+import type { Database } from "@/database.types";
+import type { SessionProfileResult } from "@/types";
 
 /**
  * Resolves who the signed-in user is acting as: their role plus the company
@@ -20,32 +12,38 @@ interface ProfileWithCompanyRow {
  * `profiles` row and their own `companies` row, so no service-role client is
  * needed or wanted here.
  *
- * Returns `null` when the user has no profile row yet, or when the company it
- * points at is not readable: either way there is no tenancy to act on, and the
- * caller must treat the user as unresolved rather than guess one.
+ * Returns a discriminated result rather than a bare `null`: a failed lookup and
+ * an absent profile lead to different things being said to the user, and the
+ * caller cannot tell them apart once both collapse into the same value.
  */
-export async function getSessionProfile(supabase: SupabaseClient, userId: string): Promise<SessionProfile | null> {
+export async function getSessionProfile(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<SessionProfileResult> {
   const { data, error } = await supabase
     .from("profiles")
     .select("id, email, role, company_id, companies ( name, kind )")
     .eq("id", userId)
-    .maybeSingle<ProfileWithCompanyRow>();
+    .maybeSingle();
 
   if (error) {
     console.error("Profile lookup failed", error);
-    return null;
+    return { status: "error" };
   }
 
   if (!data?.companies) {
-    return null;
+    return { status: "missing" };
   }
 
   return {
-    id: data.id,
-    email: data.email,
-    role: data.role,
-    companyId: data.company_id,
-    companyName: data.companies.name,
-    companyKind: data.companies.kind,
+    status: "ok",
+    profile: {
+      id: data.id,
+      email: data.email,
+      role: data.role,
+      companyId: data.company_id,
+      companyName: data.companies.name,
+      companyKind: data.companies.kind,
+    },
   };
 }

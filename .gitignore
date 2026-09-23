@@ -14,13 +14,14 @@ yarn-error.log*
 pnpm-debug.log*
 
 # environment variables
-.env
-.env.production
-.env.hosted
+# Ignored by pattern, not by enumeration: the next variant (.env.local,
+# .env.hosted) is created mid-debugging by someone who will not stop to update
+# this file. The template is the one file unblocked explicitly.
+.env*
+!.env.example
 
 # cloudflare
-.dev.vars
-.dev.vars.hosted
+.dev.vars*
 .wrangler/
 
 # macOS-specific files

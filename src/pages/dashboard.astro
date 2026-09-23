@@ -2,7 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import type { UserRole } from "@/types";
 
-const { user, profile } = Astro.locals;
+const { user, profile, profileLookupFailed } = Astro.locals;
 
 const ROLE_LABELS: Record<UserRole, string> = {
   client_user: "Client user",
@@ -11,8 +11,9 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 // A brand-new account lands in the sentinel "unassigned" company until staff
 // moves it to a real one. Until then there is genuinely nothing to show, so say
-// so rather than render an empty dashboard. A missing profile means the same
-// thing from the user's side: no tenancy resolved, nothing to act on.
+// so rather than render an empty dashboard. A lookup that failed is a separate
+// state: telling those users they are not linked to a company would be a
+// confident lie triggered by a transient error.
 const assignedProfile = profile !== null && profile.companyKind !== "unassigned" ? profile : null;
 const isStaff = profile?.role === "service_staff";
 ---
@@ -27,7 +28,15 @@ const isStaff = profile?.role === "service_staff";
         Welcome, <span class="font-semibold text-white">{user?.email}</span>
       </p>
 
-      {assignedProfile === null ? (
+      {profileLookupFailed ? (
+        <>
+          <p class="mt-4 font-semibold text-rose-200">We couldn't load your account</p>
+          <p class="mt-2 text-sm text-blue-100/60">
+            Something went wrong reading your company and role. This is on our side, not yours — please reload in a
+            moment.
+          </p>
+        </>
+      ) : assignedProfile === null ? (
         <>
           <p class="mt-4 font-semibold text-amber-200">Waiting for assignment</p>
           <p class="mt-2 text-sm text-blue-100/60">

@@ -26,7 +26,8 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Auth flow
 
 - `src/lib/supabase.ts` — creates a Supabase SSR client using `@supabase/ssr` with cookie-based sessions. Uses `astro:env/server` for `SUPABASE_URL` and `SUPABASE_KEY` (server-only secrets declared in astro.config.mjs `env.schema`).
-- `src/middleware.ts` — runs on every request, resolves the current user, attaches to `context.locals.user`. Redirects unauthenticated users away from routes listed in `PROTECTED_ROUTES`.
+- `src/middleware.ts` — runs on every request, resolves the current user, attaches to `context.locals.user`. Redirects unauthenticated users away from routes listed in `PROTECTED_ROUTES`. Also resolves the tenancy profile (`context.locals.profile`, `context.locals.profileLookupFailed`) and gates `STAFF_ROUTES` by role: pages get a redirect, paths under `/api/` get 401/403 because a `fetch` caller follows a 302 and reads the resulting HTML as success. When adding a gated path, add its `/api` twin too — prefix matching does not relate `/admin` to `/api/admin`.
+- **Two invariants the route gate depends on, neither visible from `src/middleware.ts`.** (1) Astro normalizes `context.url.pathname` — percent-decoding, duplicate-slash collapsing, dot-segment resolution — *before* middleware runs, which is why `/admin%2Fusers` and `/admin../dashboard` are gated; re-check after an Astro upgrade. (2) `wrangler.jsonc` serves `./dist` as static assets with no `run_worker_first`, so a matching asset is served **before** the Worker runs: a single `export const prerender = true` on a page under a gated prefix, or one file in `public/<gated-prefix>/`, silently removes the gate from that path with no error anywhere.
 - API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`
 - Auth pages: `src/pages/auth/{signin,signup,confirm-email}.astro`
 - Protected page example: `src/pages/dashboard.astro`
