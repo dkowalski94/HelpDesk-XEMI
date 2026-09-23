@@ -110,3 +110,33 @@ export interface SessionProfile {
  */
 export type SessionProfileResult =
   { status: "ok"; profile: SessionProfile } | { status: "missing" } | { status: "error" };
+
+/* -------------------------------------------------------------------------- */
+/* Company assignment (staff)                                                 */
+/* -------------------------------------------------------------------------- */
+
+/** An account still sitting in the `unassigned` company, as listed on `/admin/users`. */
+export interface PendingAssignmentUser {
+  id: string;
+  email: string;
+  fullName: string | null;
+  createdAt: string;
+}
+
+/** A `kind = 'client'` company staff can assign an account to. */
+export interface ClientCompanyOption {
+  id: string;
+  name: string;
+}
+
+export type PendingAssignmentsResult =
+  { status: "ok"; users: PendingAssignmentUser[]; companies: ClientCompanyOption[] } | { status: "error" };
+
+/**
+ * Why an assignment did or did not happen — the endpoint forwards it to
+ * `/admin/users` as a query parameter, and the page maps it to a fixed message.
+ *
+ * `not-updated` is the 0-row case: RLS turns a denied update, a `userId` that does
+ * not exist, and a user who already has a company into the same silent no-op.
+ */
+export type AssignCompanyStatus = "assigned" | "invalid-company" | "not-updated" | "error";

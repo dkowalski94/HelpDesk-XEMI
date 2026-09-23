@@ -781,17 +781,17 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [ ] 4.1 Linting passes: `npm run lint`
-- [ ] 4.2 Type checking passes: `npx astro check`
-- [ ] 4.3 Production build succeeds: `npm run build`
-- [ ] 4.4 `POST /api/admin/assign-company` as a signed-in client user does not modify any row
-- [ ] 4.5 `POST /api/admin/assign-company` with a company whose kind is `internal` is rejected
-- [ ] 4.8 A request carrying an extra `role=service_staff` field changes no role, and the same attempt made directly against the database as `authenticated` is rejected by the immutability trigger
+- [x] 4.1 Linting passes: `npm run lint`
+- [x] 4.2 Type checking passes: `npx astro check`
+- [x] 4.3 Production build succeeds: `npm run build`
+- [x] 4.4 `POST /api/admin/assign-company` as a signed-in client user does not modify any row
+- [x] 4.5 `POST /api/admin/assign-company` with a company whose kind is `internal` is rejected
+- [x] 4.8 A request carrying an extra `role=service_staff` field changes no role, and the same attempt made directly against the database as `authenticated` is rejected by the immutability trigger
 
 #### Manual
 
-- [ ] 4.6 Staff assigns a freshly registered account to a client company through `/admin/users`, and that user's dashboard then shows the company
-- [ ] 4.7 After assignment the user no longer appears in the waiting list
+- [x] 4.6 Staff assigns a freshly registered account to a client company through `/admin/users`, and that user's dashboard then shows the company
+- [x] 4.7 After assignment the user no longer appears in the waiting list
 
 ### Phase 5: Isolation proof and the production migration path
 
