@@ -1,0 +1,92 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+import { listPendingAssignments } from "@/lib/services/company-assignment";
+import type { PendingAssignmentsResult } from "@/types";
+
+// Messages are fixed strings keyed by a code so the query string can never put
+// arbitrary text on the page.
+const ERROR_MESSAGES: Record<string, string> = {
+  "missing-fields": "Choose a company before assigning.",
+  "not-configured": "Supabase is not configured.",
+  "invalid-company": "That company cannot receive users. Pick a client company.",
+  "not-updated": "Nothing was changed — the user no longer exists or already has a company.",
+  error: "The assignment failed. Please try again.",
+};
+
+const status = Astro.url.searchParams.get("status");
+const errorCode = Astro.url.searchParams.get("error");
+const successMessage = status === "assigned" ? "User assigned to the company." : null;
+const errorMessage = errorCode === null ? null : (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.error);
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+const pending: PendingAssignmentsResult = supabase ? await listPendingAssignments(supabase) : { status: "error" };
+---
+
+<Layout title="Assign users">
+  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-2xl rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
+      <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+        Assign users
+      </h1>
+      <p class="mb-6 text-sm text-blue-100/60">Accounts waiting for a company. Assign each to its client company.</p>
+
+      {successMessage && <p class="mb-4 text-sm font-semibold text-emerald-200">{successMessage}</p>}
+      {errorMessage && <p class="mb-4 text-sm font-semibold text-rose-200">{errorMessage}</p>}
+
+      {pending.status === "error" ? (
+        <p class="text-rose-200">We couldn't load the waiting list. Please reload in a moment.</p>
+      ) : pending.users.length === 0 ? (
+        <p class="text-blue-100/80">No accounts are waiting for a company.</p>
+      ) : pending.companies.length === 0 ? (
+        <p class="text-amber-200">There are no client companies to assign users to yet.</p>
+      ) : (
+        <ul class="space-y-3">
+          {pending.users.map((pendingUser) => (
+            <li class="rounded-lg border border-white/10 bg-white/5 p-4">
+              <form
+                method="POST"
+                action="/api/admin/assign-company"
+                class="flex flex-col gap-3 sm:flex-row sm:items-center"
+              >
+                <input type="hidden" name="userId" value={pendingUser.id} />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-semibold">{pendingUser.email}</p>
+                  {pendingUser.fullName && <p class="truncate text-sm text-blue-100/60">{pendingUser.fullName}</p>}
+                </div>
+                <select
+                  name="companyId"
+                  required
+                  aria-label={`Company for ${pendingUser.email}`}
+                  class="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
+                >
+                  <option value="" class="text-black">
+                    Choose a company
+                  </option>
+                  {pending.companies.map((company) => (
+                    <option value={company.id} class="text-black">
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
+                >
+                  Assign
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <a
+        href="/dashboard"
+        class="mt-6 inline-block text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+      >
+        Back to dashboard
+      </a>
+    </div>
+  </div>
+</Layout>
