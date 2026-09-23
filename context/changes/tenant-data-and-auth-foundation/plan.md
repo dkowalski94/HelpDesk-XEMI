@@ -504,6 +504,19 @@ design, and the column grant (`grant update (company_id) … to authenticated`) 
 structural protection against role escalation and re-opens `email`, `id` and `created_at` for
 rewriting.
 
+**Hard constraints (from the 2.12 security review F4 and F5, 2026-09-23)**:
+
+- **Success means exactly one row changed.** RLS turns a non-staff update, or an update for a
+  `userId` that does not exist, into a 0-row success with no error. The endpoint must request
+  the affected rows back (e.g. `.select("id")` on the update) and treat anything other than
+  exactly one row as failure; otherwise it redirects with a success status for a write that
+  did not happen.
+- **First assignment only.** The update filters on `company_id` = the unassigned company in
+  addition to `id`, so a crafted POST cannot move an already-assigned user from one client
+  company to another — which would silently hand them that company's tickets. The database
+  permits re-assignment; the endpoint deliberately does not. Re-assignment, if ever wanted, is
+  a new requirement.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -747,7 +760,7 @@ and for CI's `supabase start`.
 
 - [x] 2.6 Reading the migration confirms `knowledge_base_public` exposes no `source_ticket_id`, `source_company_id`, `user_comment` or `embedding` column — a13931d
 - [x] 2.7 A user in the `unassigned` company cannot insert a ticket at all — a13931d
-- [ ] 2.12 A dedicated security review of migrations 1 and 2 — every policy, every `SECURITY DEFINER` function and the view's guard — is completed and signed off before Phase 4 begins
+- [x] 2.12 A dedicated security review of migrations 1 and 2 — every policy, every `SECURITY DEFINER` function and the view's guard — is completed and signed off before Phase 4 begins — signed off 2026-09-23, see `reviews/security-review-migrations-1-2.md`
 
 ### Phase 3: Identity in the application layer
 
