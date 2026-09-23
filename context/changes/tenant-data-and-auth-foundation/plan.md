@@ -781,32 +781,32 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [x] 4.1 Linting passes: `npm run lint`
-- [x] 4.2 Type checking passes: `npx astro check`
-- [x] 4.3 Production build succeeds: `npm run build`
-- [x] 4.4 `POST /api/admin/assign-company` as a signed-in client user does not modify any row
-- [x] 4.5 `POST /api/admin/assign-company` with a company whose kind is `internal` is rejected
-- [x] 4.8 A request carrying an extra `role=service_staff` field changes no role, and the same attempt made directly against the database as `authenticated` is rejected by the immutability trigger
+- [x] 4.1 Linting passes: `npm run lint` — 37e17b7
+- [x] 4.2 Type checking passes: `npx astro check` — 37e17b7
+- [x] 4.3 Production build succeeds: `npm run build` — 37e17b7
+- [x] 4.4 `POST /api/admin/assign-company` as a signed-in client user does not modify any row — 37e17b7
+- [x] 4.5 `POST /api/admin/assign-company` with a company whose kind is `internal` is rejected — 37e17b7
+- [x] 4.8 A request carrying an extra `role=service_staff` field changes no role, and the same attempt made directly against the database as `authenticated` is rejected by the immutability trigger — 37e17b7
 
 #### Manual
 
-- [x] 4.6 Staff assigns a freshly registered account to a client company through `/admin/users`, and that user's dashboard then shows the company
-- [x] 4.7 After assignment the user no longer appears in the waiting list
+- [x] 4.6 Staff assigns a freshly registered account to a client company through `/admin/users`, and that user's dashboard then shows the company — 37e17b7
+- [x] 4.7 After assignment the user no longer appears in the waiting list — 37e17b7
 
 ### Phase 5: Isolation proof and the production migration path
 
 #### Automated
 
-- [ ] 5.1 Seed loads without error: `npx supabase db reset`
-- [ ] 5.2 Smoke passes including the new isolation steps: `npm run build && npm run smoke`
-- [ ] 5.3 Linting passes: `npm run lint`
-- [ ] 5.4 Type checking passes: `npx astro check`
-- [ ] 5.5 The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build`
-- [ ] 5.9 Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero
-- [ ] 5.10 The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed
+- [x] 5.1 Seed loads without error: `npx supabase db reset`
+- [x] 5.2 Smoke passes including the new isolation steps: `npm run build && npm run smoke`
+- [x] 5.3 Linting passes: `npm run lint`
+- [x] 5.4 Type checking passes: `npx astro check`
+- [x] 5.5 The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build`
+- [x] 5.9 Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero
+- [x] 5.10 The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed
 
 #### Manual
 
 - [ ] 5.6 `npx supabase db push` applies both migrations to the hosted Supabase project and the runbook in `CLAUDE.md` matches what actually happened
 - [ ] 5.7 The hosted project contains the two systemic company rows but none of the demo seed data
-- [ ] 5.8 Signing in as each of the three seeded personas shows the expected company and ticket visibility in the browser
+- [x] 5.8 Signing in as each of the three seeded personas shows the expected company and ticket visibility in the browser

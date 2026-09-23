@@ -140,3 +140,32 @@ export type PendingAssignmentsResult =
  * not exist, and a user who already has a company into the same silent no-op.
  */
 export type AssignCompanyStatus = "assigned" | "invalid-company" | "not-updated" | "error";
+
+/* -------------------------------------------------------------------------- */
+/* Tickets                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** A ticket as `GET /api/tickets` returns it: the fields S-01 and S-02 list. */
+export interface TicketSummary {
+  id: string;
+  companyId: string;
+  status: TicketStatus;
+  errorText: string;
+  createdAt: string;
+}
+
+export interface TicketListSuccess {
+  ok: true;
+  tickets: TicketSummary[];
+}
+
+/** Why the ticket list could not be returned — the API route maps this to a status code. */
+export type TicketListFailureReason = "unauthorized" | "not-configured" | "error";
+
+export interface TicketListFailure {
+  ok: false;
+  reason: TicketListFailureReason;
+  error: string;
+}
+
+export type TicketListResponse = TicketListSuccess | TicketListFailure;
