@@ -753,16 +753,16 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [x] 3.1 Type checking passes with `locals.profile` in use: `npx astro check`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Production build succeeds: `npm run build`
-- [x] 3.4 Existing smoke steps still pass unchanged: `npm run smoke`
-- [x] 3.5 An anonymous request to `/admin/users` redirects to `/auth/signin`
+- [x] 3.1 Type checking passes with `locals.profile` in use: `npx astro check` — 901c68f
+- [x] 3.2 Linting passes: `npm run lint` — 901c68f
+- [x] 3.3 Production build succeeds: `npm run build` — 901c68f
+- [x] 3.4 Existing smoke steps still pass unchanged: `npm run smoke` — 901c68f
+- [x] 3.5 An anonymous request to `/admin/users` redirects to `/auth/signin` — 901c68f
 
 #### Manual
 
-- [x] 3.6 Signing in as the seeded staff account shows the internal company and a link to `/admin/users`
-- [x] 3.7 Registering a brand-new account shows the "waiting for assignment" state, not an empty dashboard
+- [x] 3.6 Signing in as the seeded staff account shows the internal company and a link to `/admin/users` — 901c68f
+- [x] 3.7 Registering a brand-new account shows the "waiting for assignment" state, not an empty dashboard — 901c68f
 
 ### Phase 4: Company assignment screen
 

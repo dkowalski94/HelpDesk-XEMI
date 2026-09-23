@@ -81,6 +81,9 @@ export default defineConfig(
   includeIgnoreFile(gitignorePath),
   // Agent tooling installed under .claude/ is not project source; typed linting has no tsconfig for it.
   { ignores: [".claude/**"] },
+  // Generated from the database schema by `supabase gen types typescript`. Its empty-object and
+  // redundant-union shapes come from the generator, and any fix here is lost on the next run.
+  { ignores: ["src/database.types.ts"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],
