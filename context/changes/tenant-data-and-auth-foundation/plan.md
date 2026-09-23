@@ -797,16 +797,16 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [x] 5.1 Seed loads without error: `npx supabase db reset`
-- [x] 5.2 Smoke passes including the new isolation steps: `npm run build && npm run smoke`
-- [x] 5.3 Linting passes: `npm run lint`
-- [x] 5.4 Type checking passes: `npx astro check`
-- [x] 5.5 The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build`
-- [x] 5.9 Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero
-- [x] 5.10 The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed
+- [x] 5.1 Seed loads without error: `npx supabase db reset` — ae494e5
+- [x] 5.2 Smoke passes including the new isolation steps: `npm run build && npm run smoke` — ae494e5
+- [x] 5.3 Linting passes: `npm run lint` — ae494e5
+- [x] 5.4 Type checking passes: `npx astro check` — ae494e5
+- [x] 5.5 The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build` — ae494e5
+- [x] 5.9 Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero — ae494e5
+- [x] 5.10 The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed — ae494e5
 
 #### Manual
 
-- [ ] 5.6 `npx supabase db push` applies both migrations to the hosted Supabase project and the runbook in `CLAUDE.md` matches what actually happened
-- [ ] 5.7 The hosted project contains the two systemic company rows but none of the demo seed data
-- [x] 5.8 Signing in as each of the three seeded personas shows the expected company and ticket visibility in the browser
+- [x] 5.6 `npx supabase db push` applies both migrations to the hosted Supabase project and the runbook in `CLAUDE.md` matches what actually happened
+- [x] 5.7 The hosted project contains the two systemic company rows but none of the demo seed data
+- [x] 5.8 Signing in as each of the three seeded personas shows the expected company and ticket visibility in the browser — ae494e5
