@@ -1,19 +1,57 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import type { UserRole } from "@/types";
 
-const { user } = Astro.locals;
+const { user, profile } = Astro.locals;
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  client_user: "Client user",
+  service_staff: "Service staff",
+};
+
+// A brand-new account lands in the sentinel "unassigned" company until staff
+// moves it to a real one. Until then there is genuinely nothing to show, so say
+// so rather than render an empty dashboard. A missing profile means the same
+// thing from the user's side: no tenancy resolved, nothing to act on.
+const assignedProfile = profile !== null && profile.companyKind !== "unassigned" ? profile : null;
+const isStaff = profile?.role === "service_staff";
 ---
 
 <Layout title="Dashboard">
   <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
+    <div class="max-w-md rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
       <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
         Dashboard
       </h1>
       <p class="text-blue-100/80">
         Welcome, <span class="font-semibold text-white">{user?.email}</span>
       </p>
-      <p class="mt-2 text-sm text-blue-100/50">This page is only for authenticated users.</p>
+
+      {assignedProfile === null ? (
+        <>
+          <p class="mt-4 font-semibold text-amber-200">Waiting for assignment</p>
+          <p class="mt-2 text-sm text-blue-100/60">
+            Your account is not linked to a company yet. The XEMI service team assigns new accounts; your tickets will
+            appear here once that is done.
+          </p>
+        </>
+      ) : (
+        <>
+          <p class="mt-2 text-sm text-blue-100/60">
+            Acting as <span class="font-semibold text-white">{ROLE_LABELS[assignedProfile.role]}</span> at
+            <span class="font-semibold text-white">{assignedProfile.companyName}</span>
+          </p>
+          {isStaff && (
+            <a
+              href="/admin/users"
+              class="mt-4 inline-block text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+            >
+              Manage users
+            </a>
+          )}
+        </>
+      )}
+
       <form method="POST" action="/api/auth/signout" class="mt-6">
         <button
           type="submit"
