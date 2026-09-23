@@ -261,6 +261,31 @@ companies and demo data are added in Phase 5.
 pause here for manual confirmation from the human that the manual testing was successful before
 proceeding to the next phase.
 
+### Addenda (recorded during implementation review, 2026-09-22)
+
+Changes made in Phase 1 that this plan did not originally call for. Recorded here so later
+reviews read the plan as the source of truth rather than re-flagging them as drift.
+
+4. **`eslint.config.js` — ignore `.claude/**`** (commit `e0b9b05`). `.claude/` is not in
+   `.gitignore`, so `includeIgnoreFile(gitignorePath)` does not cover it, and the agent tooling
+   installed there (`.claude/skills/10x-plan/scripts/metadata-guard.mjs` and its test) falls
+   through to the type-checked `baseConfig` with no tsconfig coverage — which breaks
+   `npm run lint` and therefore CI's `ci` job. Accepted as scope: build tooling only, no runtime
+   or security surface. The tradeoff accepted knowingly is that agent tooling under `.claude/`
+   stays unlinted from here on; the narrower alternative was extending `scriptsConfig`'s `files`
+   glob to `.claude/**/*.mjs` instead.
+
+5. **Systemic company rows moved from `seed.sql` into the migration** (review finding F1). The
+   plan's Phase 1 contract put them in the seed, but Phase 5 states the seed is never applied to
+   production while Phase 5 criterion 5.7 expects those rows in the hosted project — and no phase
+   ever put them there, so signup would have failed on any database built by `db push`. Phase 5's
+   seed contract now covers client companies and demo data only.
+
+6. **Hardening added during review**: column-scoped `UPDATE` grant on `public.profiles`
+   (`company_id` only), RLS helper calls wrapped in scalar subqueries, and
+   `enforce_company_kind_immutable()` on `public.companies`. See
+   `reviews/impl-review.md` findings F2, F3 and F4 for the reasoning.
+
 ---
 
 ## Phase 2: Domain tables (tickets and shared knowledge base)
@@ -468,6 +493,16 @@ layer, matching `src/pages/api/auth/signin.ts:5-7`). Rejects callers whose
 writes `role`, and the Phase 1 immutability trigger makes that structural rather than a matter
 of the handler being written carefully; redirects back to `/admin/users` with a status
 parameter.
+
+**Hard constraint (from implementation review F8, 2026-09-22)**: this endpoint must issue the
+update on the **caller's own `authenticated` session** — the request-scoped client from
+`src/lib/supabase.ts` — and never on a `service_role` client. Both Phase 1 guards are scoped to
+the `authenticated` path: `enforce_profile_role_immutable()` allowlists `service_role` by
+design, and the column grant (`grant update (company_id) … to authenticated`) does not apply to
+`service_role`, which bypasses RLS and column privileges outright. Reaching for a
+`service_role` key here — a common reflex for an admin screen — silently removes every
+structural protection against role escalation and re-opens `email`, `id` and `created_at` for
+rewriting.
 
 ### Success Criteria:
 
@@ -680,19 +715,19 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npx supabase db reset`
-- [x] 1.2 Both tables report RLS on: `select tablename, rowsecurity from pg_tables where schemaname = 'public'` returns `true` for `companies` and `profiles`
-- [x] 1.3 Registering via `POST /api/auth/signup` creates exactly one `profiles` row in the `unassigned` company
-- [x] 1.4 Linting passes: `npm run lint`
-- [x] 1.5 Type checking passes: `npx astro check`
-- [x] 1.8 No `SECURITY DEFINER` function in `public` is executable by `public` or `anon`: `select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute')` returns 0 rows
-- [x] 1.9 Every `SECURITY DEFINER` function in `public` pins an empty `search_path`: `select proname, proconfig from pg_proc …` shows `search_path=` on all five
-- [x] 1.10 Updating `profiles.role` as the `authenticated` role is rejected by the immutability trigger, while the same update as the database owner succeeds
+- [x] 1.1 Migration applies cleanly: `npx supabase db reset` — e0b9b05
+- [x] 1.2 Both tables report RLS on: `select tablename, rowsecurity from pg_tables where schemaname = 'public'` returns `true` for `companies` and `profiles` — e0b9b05
+- [x] 1.3 Registering via `POST /api/auth/signup` creates exactly one `profiles` row in the `unassigned` company — e0b9b05
+- [x] 1.4 Linting passes: `npm run lint` — e0b9b05
+- [x] 1.5 Type checking passes: `npx astro check` — e0b9b05
+- [x] 1.8 No `SECURITY DEFINER` function in `public` is executable by `public` or `anon`: `select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute')` returns 0 rows — e0b9b05
+- [x] 1.9 Every `SECURITY DEFINER` function in `public` pins an empty `search_path`: `select proname, proconfig from pg_proc …` shows `search_path=` on all five — e0b9b05
+- [x] 1.10 Updating `profiles.role` as the `authenticated` role is rejected by the immutability trigger, while the same update as the database owner succeeds — e0b9b05
 
 #### Manual
 
-- [x] 1.6 Supabase Studio shows exactly one `internal` and one `unassigned` company; inserting a second of either is rejected by the singleton index
-- [x] 1.7 Attempting to set `role = 'service_staff'` on a profile in a `client` company is rejected by the constraint trigger
+- [x] 1.6 Supabase Studio shows exactly one `internal` and one `unassigned` company; inserting a second of either is rejected by the singleton index — e0b9b05
+- [x] 1.7 Attempting to set `role = 'service_staff'` on a profile in a `client` company is rejected by the constraint trigger — e0b9b05
 
 ### Phase 2: Domain tables (tickets and shared knowledge base)
 

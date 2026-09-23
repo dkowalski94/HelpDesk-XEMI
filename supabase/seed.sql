@@ -14,15 +14,12 @@ set search_path = public, extensions;
 -- ---------------------------------------------------------------------------
 -- Systemic companies
 -- ---------------------------------------------------------------------------
--- The schema depends on both of these existing: handle_new_user() resolves the
--- unassigned company by kind, and a service_staff profile is only valid inside the
--- internal one. Client companies and demo data arrive in a later phase.
-
-insert into public.companies (id, name, kind)
-values
-  ('00000000-0000-0000-0000-00000000c001', 'XEMI Service', 'internal'),
-  ('00000000-0000-0000-0000-00000000c002', 'Nieprzypisani', 'unassigned')
-on conflict (id) do nothing;
+-- Created by 20260922120000_tenant_identity_foundation.sql, not here. The schema
+-- hard-depends on both rows -- handle_new_user() resolves the unassigned company by
+-- kind, and a service_staff profile is only valid inside the internal one -- and this
+-- seed never reaches a database built by `supabase db push`. Their ids are fixed in
+-- that migration and referenced below. Client companies and demo data arrive in a
+-- later phase.
 
 -- ---------------------------------------------------------------------------
 -- First service_staff account
