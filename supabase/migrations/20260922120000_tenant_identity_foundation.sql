@@ -401,3 +401,11 @@ revoke execute on function public.sync_profile_email() from public, anon, authen
 -- writing NEW.updated_at, which is not column-privilege checked.
 revoke update on public.profiles from authenticated;
 grant update (company_id) on public.profiles to authenticated;
+
+-- The same defaults also hand out TRUNCATE, TRIGGER and REFERENCES, and TRUNCATE is not
+-- subject to RLS at all: a statement-level path that reached it would empty the table no
+-- matter what the policies above say. No client path issues these statements, so the grants
+-- buy nothing and are withdrawn. anon has no policy on either table and loses everything --
+-- the same treatment migration 2 gives its own tables.
+revoke truncate, references, trigger on public.companies, public.profiles from authenticated;
+revoke all on public.companies, public.profiles from anon;

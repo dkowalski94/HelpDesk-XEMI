@@ -15,3 +15,10 @@
 - **Problem**: Phase 2 of `tenant-data-and-auth-foundation` shipped success criteria that all tested reads ("returns 0 rows", "is not selectable by anon"). A definer-rights view stayed auto-updatable and writable by every logged-in user — a client could wipe the entire shared knowledge base in one request — and two column-grant gaps let a client forge a resolved ticket attributed to real staff, and let staff move a ticket into another tenant. All three passed every gate the phase defined.
 - **Rule**: For every RLS-protected surface, assert the denied WRITE (insert, update, delete), not only the denied read — in the same phase that creates the surface, never deferred to a later verification phase. A read-only test suite cannot see a write hole.
 - **Applies to**: all
+
+## Odbieraj domyślne uprawnienia Supabase w migracji, która tworzy obiekt
+
+- **Context**: Każda migracja Supabase tworząca tabelę, widok lub funkcję w schemacie `public`.
+- **Problem**: Domyślne uprawnienia Supabase dają `anon`/`authenticated` ALL (w tym `TRUNCATE`, który omija RLS) i EXECUTE na funkcjach; migracje 1 i 2 zawęziły INSERT/UPDATE ręcznie, ale pominęły `TRUNCATE`/`TRIGGER`/`REFERENCES` i granty `anon` — znalezione dopiero w przeglądzie 2.12.
+- **Rule**: Każdy nowy obiekt w `public` musi w tej samej migracji jawnie odebrać domyślne uprawnienia Supabase — `TRUNCATE`, `TRIGGER`, `REFERENCES` i wszystko dla `anon` na tabelach, EXECUTE od `public`/`anon` na funkcjach — a potem nadać z powrotem tylko to, czego wymaga polityka; weryfikuj przez `information_schema.role_table_grants`, nie przez czytanie SQL.
+- **Applies to**: plan, implement, impl-review

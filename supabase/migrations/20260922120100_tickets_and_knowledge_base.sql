@@ -375,6 +375,12 @@ grant update (status, resolution, resolved_by, resolved_at) on public.tickets to
 revoke all on public.knowledge_base_entries from anon;
 revoke all on public.tickets from anon;
 
+-- TRUNCATE bypasses RLS, so while authenticated holds it any statement-level path would empty
+-- the shared knowledge base or every tenant's tickets regardless of the policies above -- the
+-- same reasoning as migration 1, section 8. TRIGGER and REFERENCES go with it: nothing on the
+-- client side needs either.
+revoke truncate, references, trigger on public.tickets, public.knowledge_base_entries from authenticated;
+
 -- The view runs with its owner's rights, so a grant here is not filtered by RLS afterwards --
 -- it is the whole table minus the columns left out of the projection. Access starts at nothing
 -- and is handed back to logged-in users only; the view's own WHERE clause then decides which
