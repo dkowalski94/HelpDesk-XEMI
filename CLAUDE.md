@@ -32,6 +32,13 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - Protected page example: `src/pages/dashboard.astro`
 - `SUPABASE_URL`/`SUPABASE_KEY` are declared `optional: true` in the `astro:env` schema. `createClient()` (`src/lib/supabase.ts`) returns `null` when either is missing, and the middleware treats that as a logged-out user rather than throwing — the app boots and renders without Supabase configured. `src/lib/config-status.ts` drives the "Supabase not configured" banner shown in that state.
 
+### Web search (Exa)
+
+- `src/lib/exa.ts` — thin `fetch` wrapper over the Exa REST API, keyed by `EXA_API_KEY` from `astro:env/server`. Deliberately **not** the `exa-js` SDK: it depends on `cross-fetch`, which `require`s `node-fetch` and fails in the workerd runtime. `isExaConfigured()` lets callers degrade instead of throwing, same as `createClient()` for Supabase.
+- `src/lib/services/web-search.ts` — sends Exa's recommended `/search` request: `query` + `type: "auto"` + `contents: { highlights: true }`, and nothing else. Do not add `numResults`, `category`, domain filters or date/freshness filters without a stated requirement — over-specifying the request is the documented integration mistake.
+- `src/pages/api/web-search.ts` — `POST`, signed-in users only (each call spends Exa credits). Returns the `WebSearchResponse` discriminated union from `src/types.ts`; the route maps `WebSearchFailureReason` to a status code.
+- UI: `src/pages/search.astro` (in `PROTECTED_ROUTES`) mounting the `src/components/search/WebSearchPanel.tsx` island.
+
 ### Key conventions
 
 - **Path alias**: `@/*` maps to `./src/*` (tsconfig paths).
@@ -48,7 +55,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)
-- Env vars: `SUPABASE_URL`, `SUPABASE_KEY` (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
+- Env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `EXA_API_KEY` (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
 - Local Supabase: `npx supabase start` (requires Docker)
 - Cloudflare local dev: secrets go in `.dev.vars` (gitignored)
 - Deploy: `npx wrangler deploy` (requires Cloudflare account + `wrangler` auth)
