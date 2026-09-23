@@ -7,7 +7,9 @@
 -- Affected: new extension vector (in schema extensions), new enums public.ticket_status /
 --           public.kb_source, new tables public.tickets / public.knowledge_base_entries,
 --           new view public.knowledge_base_public, new SECURITY DEFINER trigger function
---           public.enforce_ticket_company_kind().
+--           public.enforce_ticket_company_kind(), three new triggers (the company-kind guard
+--           plus set_updated_at() on both tables), and a closing section that revokes and
+--           re-grants table, column and function privileges rather than leaving the defaults.
 -- Notes:    This is the direct sequel to 20260922120000_tenant_identity_foundation.sql and
 --           reuses its contract: tenancy is resolved only through current_company_id() /
 --           current_company_kind() / is_service_staff(), timestamps are maintained by its
@@ -25,11 +27,35 @@
 -- below qualifies it anyway, so nothing here depends on the applying session's search_path.
 create extension if not exists vector with schema extensions;
 
+-- `if not exists` above is a no-op when the extension is already installed -- including when it
+-- is installed somewhere else. A hosted project where pgvector was enabled into `public` (older
+-- dashboard behaviour) would sail past line 26 and then fail at the column definition below
+-- with a bare "type extensions.vector does not exist". `supabase db reset` can never reproduce
+-- that, because a fresh database always takes the branch above. Fail with the actual diagnosis.
+do $$
+declare
+  installed_schema text;
+begin
+  select extnamespace::regnamespace::text into installed_schema
+  from pg_extension
+  where extname = 'vector';
+
+  if installed_schema <> 'extensions' then
+    raise exception
+      'pgvector is installed in schema % but this migration expects "extensions". Run: alter extension vector set schema extensions;',
+      installed_schema;
+  end if;
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- 2. Enums
 -- ---------------------------------------------------------------------------
 
 create type public.ticket_status as enum ('todo', 'resolved');
+
+comment on type public.ticket_status is
+  'todo = waiting for the service team; resolved = a staff member recorded a resolution. There is deliberately no in-between state: the PRD''s loop is file -> resolve.';
 
 create type public.kb_source as enum ('ticket', 'erp_doc');
 
@@ -43,21 +69,44 @@ comment on type public.kb_source is
 create table public.tickets (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references public.companies (id),
-  created_by uuid not null references public.profiles (id),
+  -- Nullable and cleared rather than blocking, for the same reason the knowledge base clears
+  -- its provenance below: profiles cascade from auth.users, so a NOT NULL / NO ACTION pair
+  -- here would make every erasure request fail with a foreign-key error for any user who had
+  -- ever filed a ticket -- which is every real client user. The ticket and its resolution stay
+  -- useful after the person who filed it is gone. The INSERT policy still requires
+  -- `created_by = auth.uid()`, so a ticket can never be *created* without an author.
+  created_by uuid references public.profiles (id) on delete set null,
   error_text text not null,
   user_comment text,
   status public.ticket_status not null default 'todo',
   resolution text,
-  resolved_by uuid references public.profiles (id),
+  resolved_by uuid references public.profiles (id) on delete set null,
   resolved_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  -- A resolved ticket with no resolution is what the client would see as an answered ticket
-  -- holding nothing: the status flips and the screen stays empty. Keeping the three facts
-  -- consistent in the table means no endpoint has to remember to.
-  constraint tickets_resolved_requires_resolution check (
-    status <> 'resolved'
-    or (resolution is not null and resolved_by is not null)
+  -- Both directions, explicitly. A resolved ticket holding no resolution is an answered ticket
+  -- with an empty screen; an unresolved ticket carrying a stale resolution is the same failure
+  -- mirrored, and the original one-directional check allowed it. Two branches rather than a
+  -- biconditional because a biconditional over the pair still lets an unresolved ticket carry
+  -- exactly one of resolution / resolved_at.
+  --
+  -- resolved_by is required to be NULL on the unresolved branch but is NOT required on the
+  -- resolved branch: ON DELETE SET NULL (see created_by / resolved_by above) fires an UPDATE
+  -- on this row, which re-checks this constraint. Demanding resolved_by here would make
+  -- erasing a staff account fail on the CHECK instead of the foreign key -- the same problem
+  -- one layer down. A resolution stays valid after we stop knowing who wrote it.
+  constraint tickets_resolution_matches_status check (
+    (
+      status = 'resolved'
+      and resolution is not null
+      and resolved_at is not null
+    )
+    or (
+      status <> 'resolved'
+      and resolution is null
+      and resolved_at is null
+      and resolved_by is null
+    )
   )
 );
 
@@ -67,12 +116,19 @@ comment on table public.tickets is
 comment on column public.tickets.user_comment is
   'The client''s own note on top of the pasted error, and later the "this did not help" escalation text (FR-011). No screen writes it yet.';
 
--- The client dashboard filters by company, the staff dashboard by status, and both travel on
--- company_id; the composite covers the leading-column lookup too.
+-- The client dashboard filters by company, optionally narrowed by status, and the composite
+-- covers the company_id-only lookup on its leading column too. It deliberately does NOT serve
+-- the staff queue ("every todo ticket across all companies"): status is the trailing column,
+-- so a status-only predicate cannot use this index. That screen is S-02's, and it will want
+-- its own partial index such as `on public.tickets (status) where status = 'todo'`.
 create index tickets_company_id_status_idx on public.tickets (company_id, status);
 
 -- "my tickets" for a single client user, and an unindexed foreign key would scan the table.
 create index tickets_created_by_idx on public.tickets (created_by);
+
+-- Same rule: resolved_by is ON DELETE SET NULL, so erasing a staff account rewrites every
+-- ticket that account resolved, and without this that is a sequential scan plus row locks.
+create index tickets_resolved_by_idx on public.tickets (resolved_by);
 
 create table public.knowledge_base_entries (
   id uuid primary key default gen_random_uuid(),
@@ -105,6 +161,15 @@ comment on column public.knowledge_base_entries.source_company_id is
 create index knowledge_base_entries_embedding_idx
   on public.knowledge_base_entries
   using hnsw (embedding extensions.vector_cosine_ops);
+
+-- Both provenance columns are ON DELETE SET NULL, so deleting one ticket or one company
+-- rewrites every knowledge base row pointing at it. This is the table the product expects to
+-- grow largest, which makes an unindexed foreign key here the most expensive one in the schema.
+create index knowledge_base_entries_source_ticket_id_idx
+  on public.knowledge_base_entries (source_ticket_id);
+
+create index knowledge_base_entries_source_company_id_idx
+  on public.knowledge_base_entries (source_company_id);
 
 -- ---------------------------------------------------------------------------
 -- 4. Invariants and timestamp maintenance
@@ -263,7 +328,7 @@ where (select public.current_company_kind()) = 'client'
    or (select public.is_service_staff());
 
 comment on view public.knowledge_base_public is
-  'Client-readable projection of public.knowledge_base_entries: no provenance, no embedding, no user comment. Definer rights are intentional -- see the migration for why security_invoker must stay off.';
+  'Client-readable projection of public.knowledge_base_entries: no provenance, no embedding, no user comment. Definer rights are intentional -- see the migration for why security_invoker must stay off. Supabase''s database linter flags this as security_definer_view; that warning is expected and accepted here, and the write verbs are revoked in section 7 so the definer rights buy reads only.';
 
 -- Pinned rather than inherited: a definer view runs with its owner's rights, so leaving the
 -- owner to be whoever happened to apply the migration would make the bypass depend on that
@@ -280,13 +345,47 @@ alter view public.knowledge_base_public owner to postgres;
 -- Invoked by the trigger, never by a client.
 revoke execute on function public.enforce_ticket_company_kind() from public, anon, authenticated;
 
--- anon has no policies on the knowledge base and so already reads nothing, but the grant is
--- what a future policy would silently widen. This table is not part of the anonymous surface.
+-- The INSERT policy pins company_id, created_by and the company kind, but a policy authorizes
+-- rows, not columns -- migration 1, section 8 makes the same point about profiles. Supabase's
+-- default privileges hand authenticated INSERT on all eleven columns, so without the grant
+-- below a client could file a ticket that is already `resolved`, carrying a resolution it
+-- wrote itself, with resolved_by pointing at a real service_staff profile and a backdated
+-- created_at. created_by is pinned by the policy; resolved_by was pinned by nothing.
+--
+-- Column privileges are checked before RLS and before triggers, so this makes "a client files
+-- an error, staff answers it" a property of the table rather than of every future endpoint
+-- remembering to omit the columns.
+revoke insert on public.tickets from authenticated;
+grant insert (company_id, created_by, error_text, user_comment) on public.tickets to authenticated;
+
+-- Same reasoning on the write side. The UPDATE policy authorizes staff as a row-level fact,
+-- which left a staff session able to rewrite error_text -- the client's original evidence --
+-- and to move a ticket's company_id to a different client company. The kind trigger waves that
+-- through, because the target is still of kind `client`, so the tenant boundary the rest of
+-- this file defends was crossable by the one role that can reach every tenant's rows.
+--
+-- Recording a resolution touches exactly these four columns. updated_at is deliberately NOT
+-- granted: it is maintained by the BEFORE UPDATE trigger writing NEW, which is not
+-- column-privilege checked -- the same carve-out migration 1 documents for profiles.
+revoke update on public.tickets from authenticated;
+grant update (status, resolution, resolved_by, resolved_at) on public.tickets to authenticated;
+
+-- anon has no policies on either table and so already reads nothing, but the grant is what a
+-- future policy would silently widen. Neither table is part of the anonymous surface.
 revoke all on public.knowledge_base_entries from anon;
+revoke all on public.tickets from anon;
 
 -- The view runs with its owner's rights, so a grant here is not filtered by RLS afterwards --
 -- it is the whole table minus the columns left out of the projection. Access starts at nothing
 -- and is handed back to logged-in users only; the view's own WHERE clause then decides which
 -- of them see rows.
-revoke all on public.knowledge_base_public from public, anon;
+--
+-- `authenticated` has to be named in the revoke, not just public and anon. This view is a
+-- single-table projection of plain column references, which makes it auto-updatable, and
+-- definer rights mean a write through it executes as the owner -- past the base table's
+-- staff-only RLS. Supabase's default privileges hand `authenticated` ALL, so without the
+-- revoke below any logged-in account, including one still sitting in the sentinel company,
+-- could INSERT, UPDATE and DELETE the shared knowledge base over PostgREST. The WHERE clause
+-- above does not help: it has no WITH CHECK OPTION, so it only ever runs on SELECT.
+revoke all on public.knowledge_base_public from public, anon, authenticated;
 grant select on public.knowledge_base_public to authenticated;
