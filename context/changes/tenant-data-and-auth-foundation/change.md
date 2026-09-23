@@ -1,9 +1,9 @@
 ---
 change_id: tenant-data-and-auth-foundation
 title: Tenant data & auth foundation
-status: impl_reviewed
+status: implementing
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
 archived_at: null
 ---
 

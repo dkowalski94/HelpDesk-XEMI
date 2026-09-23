@@ -733,20 +733,20 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [ ] 2.1 Migration applies cleanly: `npx supabase db reset`
-- [ ] 2.2 The `vector` extension is installed and the HNSW index exists on `knowledge_base_entries.embedding`
-- [ ] 2.3 As a client user, `select * from knowledge_base_entries` returns 0 rows while `select * from knowledge_base_public` returns the seeded rows
-- [ ] 2.4 Inserting a ticket with another company's `company_id` is rejected by the WITH CHECK policy
-- [ ] 2.5 Linting passes: `npm run lint`
-- [ ] 2.8 As an unassigned user, `select * from knowledge_base_public` returns 0 rows while the same query as an assigned client returns the seeded rows
-- [ ] 2.9 As an unassigned user, inserting a ticket is rejected, and selecting from `tickets` returns 0 rows even when a row carrying the sentinel `company_id` is planted by the database owner
-- [ ] 2.10 Inserting a ticket whose company `kind` is `internal` or `unassigned` is rejected by the ticket company-kind trigger
-- [ ] 2.11 `knowledge_base_public` is not selectable by `anon`
+- [x] 2.1 Migration applies cleanly: `npx supabase db reset`
+- [x] 2.2 The `vector` extension is installed and the HNSW index exists on `knowledge_base_entries.embedding`
+- [x] 2.3 As a client user, `select * from knowledge_base_entries` returns 0 rows while `select * from knowledge_base_public` returns the seeded rows
+- [x] 2.4 Inserting a ticket with another company's `company_id` is rejected by the WITH CHECK policy
+- [x] 2.5 Linting passes: `npm run lint`
+- [x] 2.8 As an unassigned user, `select * from knowledge_base_public` returns 0 rows while the same query as an assigned client returns the seeded rows
+- [x] 2.9 As an unassigned user, inserting a ticket is rejected, and selecting from `tickets` returns 0 rows even when a row carrying the sentinel `company_id` is planted by the database owner
+- [x] 2.10 Inserting a ticket whose company `kind` is `internal` or `unassigned` is rejected by the ticket company-kind trigger
+- [x] 2.11 `knowledge_base_public` is not selectable by `anon`
 
 #### Manual
 
-- [ ] 2.6 Reading the migration confirms `knowledge_base_public` exposes no `source_ticket_id`, `source_company_id`, `user_comment` or `embedding` column
-- [ ] 2.7 A user in the `unassigned` company cannot insert a ticket at all
+- [x] 2.6 Reading the migration confirms `knowledge_base_public` exposes no `source_ticket_id`, `source_company_id`, `user_comment` or `embedding` column
+- [x] 2.7 A user in the `unassigned` company cannot insert a ticket at all
 - [ ] 2.12 A dedicated security review of migrations 1 and 2 — every policy, every `SECURITY DEFINER` function and the view's guard — is completed and signed off before Phase 4 begins
 
 ### Phase 3: Identity in the application layer
