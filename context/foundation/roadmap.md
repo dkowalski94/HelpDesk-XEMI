@@ -42,7 +42,7 @@ An ERP (XEMI) end user — purchasing, sales, accounting, or warehouse staff at 
 | ID   | Change ID                       | Outcome (user can …)                                                              | Prerequisites | PRD refs                          | Status   |
 | ---- | -------------------------------- | ---------------------------------------------------------------------------------- | -------------- | ---------------------------------- | -------- |
 | F-01 | tenant-data-and-auth-foundation  | (foundation) multi-tenant schema + role model landed, enforcing per-company isolation | —              | Access Control, FR-007, FR-008    | done |
-| F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | proposed |
+| F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | in-progress |
 | S-01 | first-gated-error-resolution     | paste an error and see a matched cause/steps, or have it auto-escalated to a ticket | F-01, F-02     | US-01, FR-001, FR-002, FR-003, FR-007, FR-012 | proposed |
 | S-02 | service-staff-ticket-resolution  | (service staff) see to-do tickets from all client companies and record a resolution that feeds the knowledge base | F-01, S-01     | FR-004, FR-005, FR-006, FR-008    | proposed |
 | S-03 | mark-suggestion-unhelpful        | mark a suggested resolution as not helpful, escalating it to a ticket with a comment | S-01           | FR-011                            | proposed |
@@ -102,7 +102,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - The script is run by a service-staff member on their own machine, so its setup, credentials handling and error output must be usable by a non-developer.
 - **Unknowns:** —
 - **Risk:** Sequenced right after F-01 and before the north star, since the user explicitly chose the "full" north star (both knowledge-base sources) over the narrower ticket-history-only alternative. Large PDFs keep ingestion firmly offline (outside the Worker's CPU and request-size limits), and staff-owned updates mean re-ingestion must be repeatable and must replace a document's old entries rather than duplicate them.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Slices
 
