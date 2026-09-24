@@ -232,9 +232,26 @@ create temp table rls_expected_grants (object text, grantee text, privilege text
 insert into rls_expected_grants values
   ('companies',              'authenticated', 'SELECT'),
   ('erp_documents',          'authenticated', 'SELECT'),
-  ('knowledge_base_entries', 'authenticated', 'INSERT'),
   ('knowledge_base_entries', 'authenticated', 'SELECT'),
-  ('knowledge_base_entries', 'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.cause',             'authenticated', 'INSERT'),
+  ('knowledge_base_entries.created_at',        'authenticated', 'INSERT'),
+  ('knowledge_base_entries.embedding',         'authenticated', 'INSERT'),
+  ('knowledge_base_entries.error_text',        'authenticated', 'INSERT'),
+  ('knowledge_base_entries.id',                'authenticated', 'INSERT'),
+  ('knowledge_base_entries.source',            'authenticated', 'INSERT'),
+  ('knowledge_base_entries.source_company_id', 'authenticated', 'INSERT'),
+  ('knowledge_base_entries.source_ticket_id',  'authenticated', 'INSERT'),
+  ('knowledge_base_entries.steps',             'authenticated', 'INSERT'),
+  ('knowledge_base_entries.updated_at',        'authenticated', 'INSERT'),
+  ('knowledge_base_entries.cause',             'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.created_at',        'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.embedding',         'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.error_text',        'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.id',                'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.source_company_id', 'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.source_ticket_id',  'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.steps',             'authenticated', 'UPDATE'),
+  ('knowledge_base_entries.updated_at',        'authenticated', 'UPDATE'),
   ('knowledge_base_public',  'authenticated', 'SELECT'),
   ('profiles',               'authenticated', 'SELECT'),
   ('profiles.company_id',    'authenticated', 'UPDATE'),
@@ -414,13 +431,13 @@ select pg_temp.expect_denied('alfa: deleting from erp_document_upload_chunks',
   $q$delete from public.erp_document_upload_chunks$q$);
 
 -- The write path: every function refuses a client with 42501 before touching anything.
-select pg_temp.expect_denied('alfa: calling stage_erp_document_chunks()',
+select pg_temp.expect_sqlstate('alfa: calling stage_erp_document_chunks()',
   $q$select public.stage_erp_document_chunks(gen_random_uuid(), 'rls.pdf', repeat('a', 64),
-       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$);
-select pg_temp.expect_denied('alfa: calling publish_erp_document()',
-  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$);
-select pg_temp.expect_denied('alfa: calling remove_erp_document()',
-  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
+       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$, '42501');
+select pg_temp.expect_sqlstate('alfa: calling publish_erp_document()',
+  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$, '42501');
+select pg_temp.expect_sqlstate('alfa: calling remove_erp_document()',
+  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$, '42501');
 
 reset role;
 
@@ -482,13 +499,13 @@ select pg_temp.expect_denied('unassigned: inserting into erp_document_upload_chu
 select pg_temp.expect_denied('unassigned: deleting from erp_document_upload_chunks',
   $q$delete from public.erp_document_upload_chunks$q$);
 
-select pg_temp.expect_denied('unassigned: calling stage_erp_document_chunks()',
+select pg_temp.expect_sqlstate('unassigned: calling stage_erp_document_chunks()',
   $q$select public.stage_erp_document_chunks(gen_random_uuid(), 'rls.pdf', repeat('a', 64),
-       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$);
-select pg_temp.expect_denied('unassigned: calling publish_erp_document()',
-  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$);
-select pg_temp.expect_denied('unassigned: calling remove_erp_document()',
-  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
+       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$, '42501');
+select pg_temp.expect_sqlstate('unassigned: calling publish_erp_document()',
+  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$, '42501');
+select pg_temp.expect_sqlstate('unassigned: calling remove_erp_document()',
+  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$, '42501');
 
 reset role;
 
@@ -553,6 +570,23 @@ select pg_temp.expect_denied('staff: inserting into erp_document_upload_chunks d
              (pg_temp.erp_chunk(0, 'rls test') ->> 'embedding')::extensions.vector(1536),
              '00000000-0000-0000-0000-0000000000a1')$q$);
 
+-- erp_doc entries: staff keeps its other knowledge-base writes, but erp_document_id (and source
+-- on UPDATE) has no grant, so no direct write can attach an entry to a document -- whose publish
+-- or remove would then cascade-delete it.
+select pg_temp.expect_sqlstate('staff: attaching a ticket entry to an erp document',
+  $q$update public.knowledge_base_entries
+     set source = 'erp_doc', erp_document_id = '00000000-0000-0000-0000-00000000d101'
+     where id = '00000000-0000-0000-0000-00000000f101'$q$, '42501');
+select pg_temp.expect_sqlstate('staff: changing an entry''s source',
+  $q$update public.knowledge_base_entries set source = 'erp_doc'
+     where id = '00000000-0000-0000-0000-00000000f101'$q$, '42501');
+select pg_temp.expect_sqlstate('staff: inserting an entry that names an erp document',
+  $q$insert into public.knowledge_base_entries (source, error_text, steps, erp_document_id)
+     values ('erp_doc', 'rls test', 'rls test', '00000000-0000-0000-0000-00000000d101')$q$, '42501');
+select pg_temp.expect_check_violation('staff: inserting an erp_doc entry without a document',
+  $q$insert into public.knowledge_base_entries (source, error_text, steps)
+     values ('erp_doc', 'rls test', 'rls test')$q$);
+
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -585,6 +619,20 @@ select pg_temp.expect_denied('staff: staging a chunk without an embedding',
 select pg_temp.expect_denied('staff: staging a chunk with blank steps',
   $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
        repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, '   ')))$q$);
+-- A bad seq is a validation error (P0001), not the raw CHECK or cast error the insert would raise.
+select pg_temp.expect_sqlstate('staff: staging a chunk with a negative seq',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(-1, 'rls test')))$q$, 'P0001');
+select pg_temp.expect_sqlstate('staff: staging a chunk with a non-integer seq',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(jsonb_set(pg_temp.erp_chunk(0, 'rls test'), '{seq}', '1.5')))$q$, 'P0001');
+-- File identity is the base name, so a path in either separator style is refused.
+select pg_temp.expect_sqlstate('staff: staging a file name with a folder path',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'C:\Dokumentacja\rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$, 'P0001');
+select pg_temp.expect_sqlstate('staff: staging a file name with a forward-slash path',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'docs/rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$, 'P0001');
 -- pgvector rejects the dimension in the cast itself, with data_exception rather than a
 -- privilege or guard error -- asserted by exact SQLSTATE, not through expect_denied().
 select pg_temp.expect_sqlstate('staff: staging a vector of the wrong dimension',

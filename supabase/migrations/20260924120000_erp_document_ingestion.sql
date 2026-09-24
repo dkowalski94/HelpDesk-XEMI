@@ -9,7 +9,8 @@
 --           new SECURITY DEFINER functions public.stage_erp_document_chunks(),
 --           public.publish_erp_document(), public.remove_erp_document(), one set_updated_at()
 --           trigger, and a closing section that revokes and re-grants privileges on everything
---           created here.
+--           created here, narrowing authenticated's INSERT/UPDATE on
+--           public.knowledge_base_entries to column-scoped grants without erp_document_id.
 -- Notes:    Reuses the contract of migrations 1-3: staff is resolved only through
 --           is_service_staff(), timestamps through set_updated_at(), every helper call in a
 --           policy is wrapped in a scalar subquery, and every function is SECURITY DEFINER with a
@@ -196,6 +197,12 @@ begin
     raise exception 'file_name is required';
   end if;
 
+  -- Identity is the base name (lower(file_name)); a path would make the same file a second
+  -- document. The script sends path.basename().
+  if p_file_name ~ '[/\\]' then
+    raise exception 'file_name must be a file name without a folder path';
+  end if;
+
   if p_content_hash is null or p_content_hash !~ '^[0-9a-f]{64}$' then
     raise exception 'content_hash must be 64 lowercase hex characters (SHA-256)';
   end if;
@@ -227,6 +234,22 @@ begin
     where btrim(c ->> 'steps') = ''
   ) then
     raise exception 'chunk steps must not be blank';
+  end if;
+
+  -- seq must be a non-negative integer that fits the column; otherwise the insert below would
+  -- fail with a raw cast (22P02/22003) or CHECK (23514) error instead of a readable one.
+  if exists (
+    select 1
+    from jsonb_array_elements(p_chunks) as c
+    where case
+            when jsonb_typeof(c -> 'seq') = 'number'
+              then (c ->> 'seq')::numeric < 0
+                or (c ->> 'seq')::numeric <> trunc((c ->> 'seq')::numeric)
+                or (c ->> 'seq')::numeric > 2147483647
+            else true
+          end
+  ) then
+    raise exception 'chunk seq must be a non-negative integer';
   end if;
 
   -- An upload_id belongs to one person uploading one version of one file. Mixing would let
@@ -278,6 +301,7 @@ create function public.publish_erp_document(p_upload_id uuid, p_page_count integ
   security definer
   set search_path = ''
 as $$
+#variable_conflict use_column
 declare
   v_file_name text;
   v_content_hash text;
@@ -285,6 +309,8 @@ declare
   v_owned integer;
   v_min_seq integer;
   v_max_seq integer;
+  v_file_names integer;
+  v_hashes integer;
   v_document_id uuid;
   v_inserted integer;
 begin
@@ -311,8 +337,10 @@ begin
     min(s.seq),
     max(s.seq),
     min(s.file_name),
-    min(s.content_hash)
-  into v_total, v_owned, v_min_seq, v_max_seq, v_file_name, v_content_hash
+    min(s.content_hash),
+    count(distinct s.file_name),
+    count(distinct s.content_hash)
+  into v_total, v_owned, v_min_seq, v_max_seq, v_file_name, v_content_hash, v_file_names, v_hashes
   from public.erp_document_upload_chunks s
   where s.upload_id = p_upload_id;
 
@@ -325,6 +353,17 @@ begin
   then
     raise exception 'incomplete upload %: expected fragments 0..n-1 staged by the caller', p_upload_id;
   end if;
+
+  -- stage_erp_document_chunks() refuses mixing, but two of its calls racing on a fresh upload_id
+  -- could both pass that check; never publish one file's name with another's fragments or hash.
+  if v_file_names <> 1 or v_hashes <> 1 then
+    raise exception 'upload % mixes fragments of different files', p_upload_id;
+  end if;
+
+  -- Two uploads of the same file published at once would otherwise both pass the DELETE and
+  -- collide on erp_documents_file_name_key (raw 23505). Serialize them per file name: the
+  -- second one then replaces what the first just published.
+  perform pg_advisory_xact_lock(hashtext(lower(v_file_name)));
 
   delete from public.erp_documents d
   where lower(d.file_name) = lower(v_file_name);
@@ -341,11 +380,16 @@ begin
 
   get diagnostics v_inserted = row_count;
 
-  -- This upload, plus anything the caller abandoned (a crashed or killed run) more than a day
-  -- ago. Other people's in-flight uploads are left alone.
+  -- A stage call committing mid-publish would add rows the count above never saw.
+  if v_inserted <> v_total then
+    raise exception 'upload % changed while publishing; run it again', p_upload_id;
+  end if;
+
+  -- This upload, plus anything anyone abandoned (a crashed or killed run) more than a day ago.
+  -- An upload takes minutes, so the day-old cut-off never touches one still in flight.
   delete from public.erp_document_upload_chunks s
   where s.upload_id = p_upload_id
-     or (s.uploaded_by = auth.uid() and s.created_at < now() - interval '24 hours');
+     or s.created_at < now() - interval '24 hours';
 
   return query select v_document_id, v_inserted;
 end;
@@ -393,6 +437,12 @@ grant select on public.erp_documents to authenticated;
 -- Staging: no grant at all, for any client role.
 revoke all on public.erp_document_upload_chunks from public, anon, authenticated;
 
+-- Staging access rests on the functions owning the tables they write (RLS on, no policy,
+-- no FORCE); pin it the way migration 2 pins its definer view.
+alter function public.stage_erp_document_chunks(uuid, text, text, jsonb) owner to postgres;
+alter function public.publish_erp_document(uuid, integer) owner to postgres;
+alter function public.remove_erp_document(text) owner to postgres;
+
 -- The functions are the write path. anon never reaches them; authenticated may call them and
 -- each one refuses anyone but service staff with 42501.
 revoke execute on function public.stage_erp_document_chunks(uuid, text, text, jsonb) from public, anon;
@@ -402,3 +452,16 @@ revoke execute on function public.remove_erp_document(text) from public, anon;
 grant execute on function public.stage_erp_document_chunks(uuid, text, text, jsonb) to authenticated;
 grant execute on function public.publish_erp_document(uuid, integer) to authenticated;
 grant execute on function public.remove_erp_document(text) to authenticated;
+
+-- knowledge_base_entries: authenticated's table-level INSERT/UPDATE (migrations 2-3) would also
+-- cover erp_document_id, letting a direct staff write attach any entry -- a ticket-derived one
+-- included -- to a document, whose next publish or remove then deletes it through the cascade.
+-- Re-grant both column by column without erp_document_id (and without source on UPDATE), so an
+-- erp_doc entry has exactly one write path: the functions above.
+revoke insert, update on public.knowledge_base_entries from authenticated;
+grant insert (id, source, error_text, cause, steps, embedding, source_ticket_id,
+              source_company_id, created_at, updated_at)
+  on public.knowledge_base_entries to authenticated;
+grant update (id, error_text, cause, steps, embedding, source_ticket_id,
+              source_company_id, created_at, updated_at)
+  on public.knowledge_base_entries to authenticated;
