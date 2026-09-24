@@ -779,85 +779,85 @@ and for CI's `supabase start`.
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npx supabase db reset` — e0b9b05
-- [x] 1.2 Both tables report RLS on: `select tablename, rowsecurity from pg_tables where schemaname = 'public'` returns `true` for `companies` and `profiles` — e0b9b05
-- [x] 1.3 Registering via `POST /api/auth/signup` creates exactly one `profiles` row in the `unassigned` company — e0b9b05
-- [x] 1.4 Linting passes: `npm run lint` — e0b9b05
-- [x] 1.5 Type checking passes: `npx astro check` — e0b9b05
-- [x] 1.8 No `SECURITY DEFINER` function in `public` is executable by `public` or `anon`: `select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute')` returns 0 rows — e0b9b05
-- [x] 1.9 Every `SECURITY DEFINER` function in `public` pins an empty `search_path`: `select proname, proconfig from pg_proc …` shows `search_path=` on all five — e0b9b05
-- [x] 1.10 Updating `profiles.role` as the `authenticated` role is rejected by the immutability trigger, while the same update as the database owner succeeds — e0b9b05
+- [x] 1.1 Migration applies cleanly: `npx supabase db reset` — 59e4d95
+- [x] 1.2 Both tables report RLS on: `select tablename, rowsecurity from pg_tables where schemaname = 'public'` returns `true` for `companies` and `profiles` — 59e4d95
+- [x] 1.3 Registering via `POST /api/auth/signup` creates exactly one `profiles` row in the `unassigned` company — 59e4d95
+- [x] 1.4 Linting passes: `npm run lint` — 59e4d95
+- [x] 1.5 Type checking passes: `npx astro check` — 59e4d95
+- [x] 1.8 No `SECURITY DEFINER` function in `public` is executable by `public` or `anon`: `select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute')` returns 0 rows — 59e4d95
+- [x] 1.9 Every `SECURITY DEFINER` function in `public` pins an empty `search_path`: `select proname, proconfig from pg_proc …` shows `search_path=` on all five — 59e4d95
+- [x] 1.10 Updating `profiles.role` as the `authenticated` role is rejected by the immutability trigger, while the same update as the database owner succeeds — 59e4d95
 
 #### Manual
 
-- [x] 1.6 Supabase Studio shows exactly one `internal` and one `unassigned` company; inserting a second of either is rejected by the singleton index — e0b9b05
-- [x] 1.7 Attempting to set `role = 'service_staff'` on a profile in a `client` company is rejected by the constraint trigger — e0b9b05
+- [x] 1.6 Supabase Studio shows exactly one `internal` and one `unassigned` company; inserting a second of either is rejected by the singleton index — 59e4d95
+- [x] 1.7 Attempting to set `role = 'service_staff'` on a profile in a `client` company is rejected by the constraint trigger — 59e4d95
 
 ### Phase 2: Domain tables (tickets and shared knowledge base)
 
 #### Automated
 
-- [x] 2.1 Migration applies cleanly: `npx supabase db reset` — a13931d
-- [x] 2.2 The `vector` extension is installed and the HNSW index exists on `knowledge_base_entries.embedding` — a13931d
-- [x] 2.3 As a client user, `select * from knowledge_base_entries` returns 0 rows while `select * from knowledge_base_public` returns the seeded rows — a13931d
-- [x] 2.4 Inserting a ticket with another company's `company_id` is rejected by the WITH CHECK policy — a13931d
-- [x] 2.5 Linting passes: `npm run lint` — a13931d
-- [x] 2.8 As an unassigned user, `select * from knowledge_base_public` returns 0 rows while the same query as an assigned client returns the seeded rows — a13931d
-- [x] 2.9 As an unassigned user, inserting a ticket is rejected, and selecting from `tickets` returns 0 rows even when a row carrying the sentinel `company_id` is planted by the database owner — a13931d
-- [x] 2.10 Inserting a ticket whose company `kind` is `internal` or `unassigned` is rejected by the ticket company-kind trigger — a13931d
-- [x] 2.11 `knowledge_base_public` is not selectable by `anon` — a13931d
+- [x] 2.1 Migration applies cleanly: `npx supabase db reset` — fb833a4
+- [x] 2.2 The `vector` extension is installed and the HNSW index exists on `knowledge_base_entries.embedding` — fb833a4
+- [x] 2.3 As a client user, `select * from knowledge_base_entries` returns 0 rows while `select * from knowledge_base_public` returns the seeded rows — fb833a4
+- [x] 2.4 Inserting a ticket with another company's `company_id` is rejected by the WITH CHECK policy — fb833a4
+- [x] 2.5 Linting passes: `npm run lint` — fb833a4
+- [x] 2.8 As an unassigned user, `select * from knowledge_base_public` returns 0 rows while the same query as an assigned client returns the seeded rows — fb833a4
+- [x] 2.9 As an unassigned user, inserting a ticket is rejected, and selecting from `tickets` returns 0 rows even when a row carrying the sentinel `company_id` is planted by the database owner — fb833a4
+- [x] 2.10 Inserting a ticket whose company `kind` is `internal` or `unassigned` is rejected by the ticket company-kind trigger — fb833a4
+- [x] 2.11 `knowledge_base_public` is not selectable by `anon` — fb833a4
 
 #### Manual
 
-- [x] 2.6 Reading the migration confirms `knowledge_base_public` exposes no `source_ticket_id`, `source_company_id`, `user_comment` or `embedding` column — a13931d
-- [x] 2.7 A user in the `unassigned` company cannot insert a ticket at all — a13931d
+- [x] 2.6 Reading the migration confirms `knowledge_base_public` exposes no `source_ticket_id`, `source_company_id`, `user_comment` or `embedding` column — fb833a4
+- [x] 2.7 A user in the `unassigned` company cannot insert a ticket at all — fb833a4
 - [x] 2.12 A dedicated security review of migrations 1 and 2 — every policy, every `SECURITY DEFINER` function and the view's guard — is completed and signed off before Phase 4 begins — signed off 2026-09-23, see `reviews/security-review-migrations-1-2.md`
 
 ### Phase 3: Identity in the application layer
 
 #### Automated
 
-- [x] 3.1 Type checking passes with `locals.profile` in use: `npx astro check` — 901c68f
-- [x] 3.2 Linting passes: `npm run lint` — 901c68f
-- [x] 3.3 Production build succeeds: `npm run build` — 901c68f
-- [x] 3.4 Existing smoke steps still pass unchanged: `npm run smoke` — 901c68f
-- [x] 3.5 An anonymous request to `/admin/users` redirects to `/auth/signin` — 901c68f
+- [x] 3.1 Type checking passes with `locals.profile` in use: `npx astro check` — 238dd37
+- [x] 3.2 Linting passes: `npm run lint` — 238dd37
+- [x] 3.3 Production build succeeds: `npm run build` — 238dd37
+- [x] 3.4 Existing smoke steps still pass unchanged: `npm run smoke` — 238dd37
+- [x] 3.5 An anonymous request to `/admin/users` redirects to `/auth/signin` — 238dd37
 
 #### Manual
 
-- [x] 3.6 Signing in as the seeded staff account shows the internal company and a link to `/admin/users` — 901c68f
-- [x] 3.7 Registering a brand-new account shows the "waiting for assignment" state, not an empty dashboard — 901c68f
+- [x] 3.6 Signing in as the seeded staff account shows the internal company and a link to `/admin/users` — 238dd37
+- [x] 3.7 Registering a brand-new account shows the "waiting for assignment" state, not an empty dashboard — 238dd37
 
 ### Phase 4: Company assignment screen
 
 #### Automated
 
-- [x] 4.1 Linting passes: `npm run lint` — 37e17b7
-- [x] 4.2 Type checking passes: `npx astro check` — 37e17b7
-- [x] 4.3 Production build succeeds: `npm run build` — 37e17b7
-- [x] 4.4 `POST /api/admin/assign-company` as a signed-in client user does not modify any row — 37e17b7
-- [x] 4.5 `POST /api/admin/assign-company` with a company whose kind is `internal` is rejected — 37e17b7
-- [x] 4.8 A request carrying an extra `role=service_staff` field changes no role, and the same attempt made directly against the database as `authenticated` is rejected by the immutability trigger — 37e17b7
+- [x] 4.1 Linting passes: `npm run lint` — 44965f9
+- [x] 4.2 Type checking passes: `npx astro check` — 44965f9
+- [x] 4.3 Production build succeeds: `npm run build` — 44965f9
+- [x] 4.4 `POST /api/admin/assign-company` as a signed-in client user does not modify any row — 44965f9
+- [x] 4.5 `POST /api/admin/assign-company` with a company whose kind is `internal` is rejected — 44965f9
+- [x] 4.8 A request carrying an extra `role=service_staff` field changes no role, and the same attempt made directly against the database as `authenticated` is rejected by the immutability trigger — 44965f9
 
 #### Manual
 
-- [x] 4.6 Staff assigns a freshly registered account to a client company through `/admin/users`, and that user's dashboard then shows the company — 37e17b7
-- [x] 4.7 After assignment the user no longer appears in the waiting list — 37e17b7
+- [x] 4.6 Staff assigns a freshly registered account to a client company through `/admin/users`, and that user's dashboard then shows the company — 44965f9
+- [x] 4.7 After assignment the user no longer appears in the waiting list — 44965f9
 
 ### Phase 5: Isolation proof and the production migration path
 
 #### Automated
 
-- [x] 5.1 Seed loads without error: `npx supabase db reset` — ae494e5
-- [x] 5.2 Smoke passes including the new isolation steps: `npm run build && npm run smoke` — ae494e5
-- [x] 5.3 Linting passes: `npm run lint` — ae494e5
-- [x] 5.4 Type checking passes: `npx astro check` — ae494e5
-- [x] 5.5 The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build` — ae494e5
-- [x] 5.9 Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero — ae494e5
-- [x] 5.10 The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed — ae494e5
+- [x] 5.1 Seed loads without error: `npx supabase db reset` — 38996df
+- [x] 5.2 Smoke passes including the new isolation steps: `npm run build && npm run smoke` — 38996df
+- [x] 5.3 Linting passes: `npm run lint` — 38996df
+- [x] 5.4 Type checking passes: `npx astro check` — 38996df
+- [x] 5.5 The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build` — 38996df
+- [x] 5.9 Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero — 38996df
+- [x] 5.10 The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed — 38996df
 
 #### Manual
 
 - [x] 5.6 `npx supabase db push` applies both migrations to the hosted Supabase project and the runbook in `CLAUDE.md` matches what actually happened
 - [x] 5.7 The hosted project contains the two systemic company rows but none of the demo seed data
-- [x] 5.8 Signing in as each of the three seeded personas shows the expected company and ticket visibility in the browser — ae494e5
+- [x] 5.8 Signing in as each of the three seeded personas shows the expected company and ticket visibility in the browser — 38996df

@@ -3,7 +3,7 @@ project: "HelpDesk XEMI"
 version: 1
 status: draft
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-24
 prd_version: 1
 main_goal: speed
 top_blocker: decisions
@@ -41,7 +41,7 @@ An ERP (XEMI) end user — purchasing, sales, accounting, or warehouse staff at 
 
 | ID   | Change ID                       | Outcome (user can …)                                                              | Prerequisites | PRD refs                          | Status   |
 | ---- | -------------------------------- | ---------------------------------------------------------------------------------- | -------------- | ---------------------------------- | -------- |
-| F-01 | tenant-data-and-auth-foundation  | (foundation) multi-tenant schema + role model landed, enforcing per-company isolation | —              | Access Control, FR-007, FR-008    | in-progress |
+| F-01 | tenant-data-and-auth-foundation  | (foundation) multi-tenant schema + role model landed, enforcing per-company isolation | —              | Access Control, FR-007, FR-008    | done |
 | F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | blocked  |
 | S-01 | first-gated-error-resolution     | paste an error and see a matched cause/steps, or have it auto-escalated to a ticket | F-01, F-02     | US-01, FR-001, FR-002, FR-003, FR-007, FR-012 | proposed |
 | S-02 | service-staff-ticket-resolution  | (service staff) see to-do tickets from all client companies and record a resolution that feeds the knowledge base | F-01, S-01     | FR-004, FR-005, FR-006, FR-008    | proposed |
@@ -82,7 +82,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Expected QPS / data-volume ballpark, to size indexes and connection limits. Owner: user. Block: no.
 - **Risk:** Sequenced first because every other item depends on tenant isolation being correct from the start; retrofitting RLS after tickets/knowledge-base rows exist is riskier than building it in from day one.
-- **Status:** in-progress
+- **Status:** done
 
 ### F-02: ERP documentation ingestion pipeline
 
@@ -168,4 +168,4 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 
 ## Done
 
-(Empty — `/10x-archive` appends here when a matching change is archived.)
+- **F-01: (foundation) a multi-tenant Postgres schema (client companies, tickets, shared knowledge base) with RLS lands, and the existing generic auth model is extended with a company reference and a client-user/service-staff role — enforcing the PRD's per-company data isolation guardrail from the ground up.** — Archived 2026-09-24 → `context/archive/2026-09-22-tenant-data-and-auth-foundation/`. Lesson: —.
