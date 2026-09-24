@@ -525,31 +525,31 @@ runbook.
 
 #### Automated
 
-- [x] 1.1 `npx supabase db reset` applies all migrations and the seed without error
-- [x] 1.2 `supabase/tests/rls.sql` passes against the reset database (exit code 0), including the new grant inventory and denied-write checks
-- [x] 1.3 `npm run lint` passes
-- [x] 1.4 `npm run build` passes (no application code changed)
-- [x] 1.5 `npm run smoke` passes against the local preview
+- [x] 1.1 `npx supabase db reset` applies all migrations and the seed without error — 5f318ef
+- [x] 1.2 `supabase/tests/rls.sql` passes against the reset database (exit code 0), including the new grant inventory and denied-write checks — 5f318ef
+- [x] 1.3 `npm run lint` passes — 5f318ef
+- [x] 1.4 `npm run build` passes (no application code changed) — 5f318ef
+- [x] 1.5 `npm run smoke` passes against the local preview — 5f318ef
 
 #### Manual
 
-- [x] 1.6 Supabase Studio's database linter shows no new warning other than the already-accepted `security_definer_view`, or each new one is explained in the migration comment
-- [x] 1.7 On a scratch copy of the local DB, inserting an orphan `erp_doc` entry and re-running the migration's pre-check block aborts with the actionable message
+- [x] 1.6 Supabase Studio's database linter shows no new warning other than the already-accepted `security_definer_view`, or each new one is explained in the migration comment — 5f318ef
+- [x] 1.7 On a scratch copy of the local DB, inserting an orphan `erp_doc` entry and re-running the migration's pre-check block aborts with the actionable message — 5f318ef
 
 ### Phase 2: PDF extraction and chunking (dry run)
 
 #### Automated
 
-- [ ] 2.1 `npm run lint` passes (covers `scripts/**/*.mjs`)
-- [ ] 2.2 `npm run build` passes and the built Worker bundle does not contain `unpdf`
-- [ ] 2.3 `npm run ingest -- --pomoc` prints the Polish usage text and exits 0
-- [ ] 2.4 `npm run ingest -- --dry-run nieistniejacy.pdf` reports the missing file in Polish and exits 1
+- [x] 2.1 `npm run lint` passes (covers `scripts/**/*.mjs`)
+- [x] 2.2 `npm run build` passes and the built Worker bundle does not contain `unpdf`
+- [x] 2.3 `npm run ingest -- --pomoc` prints the Polish usage text and exits 0
+- [x] 2.4 `npm run ingest -- --dry-run nieistniejacy.pdf` reports the missing file in Polish and exits 1
 
 #### Manual
 
-- [ ] 2.5 `npm run ingest -- --dry-run <real ~200 MB ERP PDF>` completes, prints page count, fragment count and the first fragments with page labels, with memory staying reasonable on a staff-class laptop
-- [ ] 2.6 Fragment boundaries read sensibly on the real document (no fragment cut mid-word, page labels match the PDF)
-- [ ] 2.7 A PDF with no text layer produces the "możliwe, że to skan" message, not an empty success
+- [x] 2.5 `npm run ingest -- --dry-run <real ~200 MB ERP PDF>` completes, prints page count, fragment count and the first fragments with page labels, with memory staying reasonable on a staff-class laptop
+- [x] 2.6 Fragment boundaries read sensibly on the real document (no fragment cut mid-word, page labels match the PDF)
+- [x] 2.7 A PDF with no text layer produces the "możliwe, że to skan" message, not an empty success
 
 ### Phase 3: Embeddings, sign-in and publish
 
