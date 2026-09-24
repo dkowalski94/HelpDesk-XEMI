@@ -1,0 +1,17 @@
+---
+change_id: erp-doc-ingestion-pipeline
+title: ERP documentation ingestion pipeline
+status: implementing
+created: 2026-09-24
+updated: 2026-09-24
+archived_at: null
+---
+
+## Notes
+
+Roadmap item **F-02** (`context/foundation/roadmap.md`). Unlocks S-01 — the north star's
+"match against ERP documentation" source has nothing to search until this pipeline has run
+at least once.
+
+Change folder created by `/10x-plan` (mirroring `/10x-new` semantics); `/10x-new` was
+never run for this item.

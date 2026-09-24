@@ -230,6 +230,27 @@ values
   )
 on conflict (id) do nothing;
 
+-- The ERP document the seeded erp_doc entry below belongs to: every erp_doc entry
+-- must point at one (knowledge_base_entries_erp_doc_has_document). The hash is a
+-- placeholder of the right shape, not the digest of a real file.
+insert into public.erp_documents (
+  id,
+  file_name,
+  content_hash,
+  page_count,
+  chunk_count,
+  ingested_by
+)
+values (
+  '00000000-0000-0000-0000-00000000d101',
+  'Dokumentacja-demo.pdf',
+  repeat('d1', 32),
+  1,
+  1,
+  '00000000-0000-0000-0000-0000000000a1'
+)
+on conflict (id) do nothing;
+
 -- Two shared knowledge base entries: one distilled from a ticket, carrying the
 -- provenance only staff may read, and one from the ERP documentation without any.
 insert into public.knowledge_base_entries (
@@ -239,7 +260,8 @@ insert into public.knowledge_base_entries (
   cause,
   steps,
   source_ticket_id,
-  source_company_id
+  source_company_id,
+  erp_document_id
 )
 values
   (
@@ -249,7 +271,8 @@ values
     'Dokument ma datę w okresie, który został już zamknięty.',
     'Otwórz okres w Księgowość → Okresy albo zmień datę dokumentu na bieżący okres.',
     '00000000-0000-0000-0000-00000000e101',
-    '00000000-0000-0000-0000-00000000c101'
+    '00000000-0000-0000-0000-00000000c101',
+    null
   ),
   (
     '00000000-0000-0000-0000-00000000f102',
@@ -258,6 +281,7 @@ values
     'Operator nie ma przypisanej roli z dostępem do modułu.',
     'Administrator nadaje rolę w Konfiguracja → Operatorzy → Uprawnienia.',
     null,
-    null
+    null,
+    '00000000-0000-0000-0000-00000000d101'
   )
 on conflict (id) do nothing;

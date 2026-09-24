@@ -26,6 +26,10 @@
 -- stopped by the column grant before enforce_profile_role_immutable() is reached).
 -- It does reject any *other* error, so a typo in a statement fails the run instead of
 -- passing as a "denial".
+--
+-- Rejections that are neither a privilege nor a guard -- a CHECK constraint (23514), a
+-- pgvector dimension mismatch (22000) -- are asserted with expect_sqlstate() naming the
+-- exact SQLSTATE, so expect_denied() never has to be widened to swallow them.
 
 \set ON_ERROR_STOP on
 -- The helpers return void; only their NOTICE lines are worth reading.
@@ -99,6 +103,66 @@ as $$
   select set_config('request.jwt.claims', json_build_object('sub', user_id, 'role', 'authenticated')::text, true);
 $$;
 
+-- Asserts a statement fails with exactly this SQLSTATE; any other error, or success,
+-- fails the run.
+create function pg_temp.expect_sqlstate(label text, stmt text, expected_state text) returns void
+  language plpgsql
+as $$
+begin
+  begin
+    execute stmt;
+  exception
+    when others then
+      if sqlstate = expected_state then
+        raise notice 'ok    % (rejected %: %)', label, sqlstate, sqlerrm;
+        return;
+      end if;
+      raise exception 'FAIL  % -- expected SQLSTATE %, statement raised %: %', label, expected_state, sqlstate, sqlerrm;
+  end;
+  raise exception 'FAIL  % -- statement succeeded but must fail with SQLSTATE %: %', label, expected_state, stmt;
+end;
+$$;
+
+create function pg_temp.expect_check_violation(label text, stmt text) returns void
+  language sql
+as $$
+  select pg_temp.expect_sqlstate(label, stmt, '23514');
+$$;
+
+-- Runs a query returning one value and compares its text form. Unlike expect_rows(), the
+-- statement's effects are kept: the ERP function-path controls build on each other and
+-- are undone by their own savepoint instead.
+create function pg_temp.expect_equal(label text, query text, expected text) returns void
+  language plpgsql
+as $$
+declare
+  actual text;
+begin
+  begin
+    execute query into actual;
+  exception
+    when others then
+      raise exception 'FAIL  % -- expected %, statement raised %: %', label, expected, sqlstate, sqlerrm;
+  end;
+  if actual is distinct from expected then
+    raise exception 'FAIL  % -- expected %, got %', label, expected, actual;
+  end if;
+  raise notice 'ok    % (%)', label, actual;
+end;
+$$;
+
+-- One ERP document fragment in the shape stage_erp_document_chunks() accepts. p_dims
+-- other than 1536 builds the wrong-dimension case.
+create function pg_temp.erp_chunk(p_seq integer, p_steps text, p_dims integer default 1536) returns jsonb
+  language sql
+as $$
+  select jsonb_build_object(
+    'seq', p_seq,
+    'error_text', 'rls-test.pdf — s. ' || (p_seq + 1),
+    'steps', p_steps,
+    'embedding', (select jsonb_agg(0.001) from generate_series(1, p_dims)));
+$$;
+
 -- The helpers are called after `set local role authenticated` (or `anon`), so those
 -- roles need EXECUTE on them; a temporary function is invisible outside this session anyway.
 grant execute on all functions in schema pg_temp to authenticated, anon;
@@ -110,7 +174,8 @@ grant execute on all functions in schema pg_temp to authenticated, anon;
 --              c101 Klient Alfa (client)      c102 Klient Beta (client)
 --   profiles   a1 staff   a2 Alfa client   a3 Beta client   a4 unassigned
 --   tickets    e101 Alfa's   e102 Beta's
---   kb         f101 source=ticket (Alfa provenance)   f102 source=erp_doc
+--   kb         f101 source=ticket (Alfa provenance)   f102 source=erp_doc (document d101)
+--   erp docs   d101 Dokumentacja-demo.pdf
 
 do $$
 begin
@@ -124,6 +189,9 @@ begin
          where id in ('00000000-0000-0000-0000-00000000e101', '00000000-0000-0000-0000-00000000e102')) <> 2
      or (select count(*) from public.knowledge_base_entries
          where id in ('00000000-0000-0000-0000-00000000f101', '00000000-0000-0000-0000-00000000f102')) <> 2
+     or (select count(*) from public.knowledge_base_entries
+         where id = '00000000-0000-0000-0000-00000000f102'
+           and erp_document_id = '00000000-0000-0000-0000-00000000d101') <> 1
   then
     raise exception 'FAIL  seed fixtures missing -- run `npx supabase db reset` first';
   end if;
@@ -143,7 +211,13 @@ select 'profiles', md5(coalesce(string_agg(p::text, '|' order by p.id), ''))
 from public.profiles p
 union all
 select 'companies', md5(coalesce(string_agg(c::text, '|' order by c.id), ''))
-from public.companies c;
+from public.companies c
+union all
+select 'erp_documents', md5(coalesce(string_agg(d::text, '|' order by d.id), ''))
+from public.erp_documents d
+union all
+select 'erp_document_upload_chunks', md5(coalesce(string_agg(s::text, '|' order by s.upload_id, s.seq), ''))
+from public.erp_document_upload_chunks s;
 
 -- ---------------------------------------------------------------------------
 -- Grant inventory: the exact privileges anon / authenticated / PUBLIC hold in public
@@ -157,6 +231,7 @@ from public.companies c;
 create temp table rls_expected_grants (object text, grantee text, privilege text);
 insert into rls_expected_grants values
   ('companies',              'authenticated', 'SELECT'),
+  ('erp_documents',          'authenticated', 'SELECT'),
   ('knowledge_base_entries', 'authenticated', 'INSERT'),
   ('knowledge_base_entries', 'authenticated', 'SELECT'),
   ('knowledge_base_entries', 'authenticated', 'UPDATE'),
@@ -174,7 +249,10 @@ insert into rls_expected_grants values
   ('tickets.status',         'authenticated', 'UPDATE'),
   ('current_company_id()',   'authenticated', 'EXECUTE'),
   ('current_company_kind()', 'authenticated', 'EXECUTE'),
-  ('is_service_staff()',     'authenticated', 'EXECUTE');
+  ('is_service_staff()',     'authenticated', 'EXECUTE'),
+  ('stage_erp_document_chunks()', 'authenticated', 'EXECUTE'),
+  ('publish_erp_document()',      'authenticated', 'EXECUTE'),
+  ('remove_erp_document()',       'authenticated', 'EXECUTE');
 
 do $$
 declare
@@ -311,6 +389,39 @@ select pg_temp.expect_denied('alfa: renaming its own company',
 select pg_temp.expect_denied('alfa: deleting its own company',
   $q$delete from public.companies where id = '00000000-0000-0000-0000-00000000c101'$q$);
 
+-- ERP document registry: staff-only reads, and no write grant for anyone.
+select pg_temp.expect_count('alfa: selecting erp_documents returns nothing',
+  $q$select 1 from public.erp_documents$q$, 0);
+select pg_temp.expect_denied('alfa: inserting into erp_documents',
+  $q$insert into public.erp_documents (file_name, content_hash, page_count, chunk_count)
+     values ('rls.pdf', repeat('a', 64), 1, 1)$q$);
+select pg_temp.expect_denied('alfa: updating erp_documents',
+  $q$update public.erp_documents set file_name = 'rls.pdf'$q$);
+select pg_temp.expect_denied('alfa: deleting from erp_documents',
+  $q$delete from public.erp_documents$q$);
+select pg_temp.expect_denied('alfa: truncating erp_documents', $q$truncate public.erp_documents$q$);
+
+-- Upload staging: no grant and no policy for any client role.
+select pg_temp.expect_denied('alfa: selecting erp_document_upload_chunks',
+  $q$select 1 from public.erp_document_upload_chunks$q$);
+select pg_temp.expect_denied('alfa: inserting into erp_document_upload_chunks',
+  $q$insert into public.erp_document_upload_chunks
+       (upload_id, seq, file_name, content_hash, error_text, steps, embedding, uploaded_by)
+     values (gen_random_uuid(), 0, 'rls.pdf', repeat('a', 64), 'rls test', 'rls test',
+             (pg_temp.erp_chunk(0, 'rls test') ->> 'embedding')::extensions.vector(1536),
+             '00000000-0000-0000-0000-0000000000a2')$q$);
+select pg_temp.expect_denied('alfa: deleting from erp_document_upload_chunks',
+  $q$delete from public.erp_document_upload_chunks$q$);
+
+-- The write path: every function refuses a client with 42501 before touching anything.
+select pg_temp.expect_denied('alfa: calling stage_erp_document_chunks()',
+  $q$select public.stage_erp_document_chunks(gen_random_uuid(), 'rls.pdf', repeat('a', 64),
+       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$);
+select pg_temp.expect_denied('alfa: calling publish_erp_document()',
+  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$);
+select pg_temp.expect_denied('alfa: calling remove_erp_document()',
+  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
+
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -348,6 +459,36 @@ select pg_temp.expect_denied('unassigned: updating its own profiles.role',
 select pg_temp.expect_rows('unassigned: assigning itself to a client company touches no row',
   $q$update public.profiles set company_id = '00000000-0000-0000-0000-00000000c101'
      where id = '00000000-0000-0000-0000-0000000000a4'$q$, 0);
+
+select pg_temp.expect_count('unassigned: selecting erp_documents returns nothing',
+  $q$select 1 from public.erp_documents$q$, 0);
+select pg_temp.expect_denied('unassigned: inserting into erp_documents',
+  $q$insert into public.erp_documents (file_name, content_hash, page_count, chunk_count)
+     values ('rls.pdf', repeat('a', 64), 1, 1)$q$);
+select pg_temp.expect_denied('unassigned: updating erp_documents',
+  $q$update public.erp_documents set file_name = 'rls.pdf'$q$);
+select pg_temp.expect_denied('unassigned: deleting from erp_documents',
+  $q$delete from public.erp_documents$q$);
+select pg_temp.expect_denied('unassigned: truncating erp_documents', $q$truncate public.erp_documents$q$);
+
+select pg_temp.expect_denied('unassigned: selecting erp_document_upload_chunks',
+  $q$select 1 from public.erp_document_upload_chunks$q$);
+select pg_temp.expect_denied('unassigned: inserting into erp_document_upload_chunks',
+  $q$insert into public.erp_document_upload_chunks
+       (upload_id, seq, file_name, content_hash, error_text, steps, embedding, uploaded_by)
+     values (gen_random_uuid(), 0, 'rls.pdf', repeat('a', 64), 'rls test', 'rls test',
+             (pg_temp.erp_chunk(0, 'rls test') ->> 'embedding')::extensions.vector(1536),
+             '00000000-0000-0000-0000-0000000000a4')$q$);
+select pg_temp.expect_denied('unassigned: deleting from erp_document_upload_chunks',
+  $q$delete from public.erp_document_upload_chunks$q$);
+
+select pg_temp.expect_denied('unassigned: calling stage_erp_document_chunks()',
+  $q$select public.stage_erp_document_chunks(gen_random_uuid(), 'rls.pdf', repeat('a', 64),
+       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$);
+select pg_temp.expect_denied('unassigned: calling publish_erp_document()',
+  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$);
+select pg_temp.expect_denied('unassigned: calling remove_erp_document()',
+  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
 
 reset role;
 
@@ -391,7 +532,167 @@ select pg_temp.expect_denied('staff: creating a company',
 select pg_temp.expect_denied('staff: deleting a company',
   $q$delete from public.companies where id = '00000000-0000-0000-0000-00000000c102'$q$);
 
+-- ERP documents: staff reads the registry, but even staff writes it only through the
+-- functions -- there is no table-level write grant to fall back on.
+select pg_temp.expect_count('staff: sees the seeded erp document (control)',
+  $q$select 1 from public.erp_documents where id = '00000000-0000-0000-0000-00000000d101'$q$, 1);
+select pg_temp.expect_denied('staff: inserting into erp_documents directly',
+  $q$insert into public.erp_documents (file_name, content_hash, page_count, chunk_count)
+     values ('rls.pdf', repeat('a', 64), 1, 1)$q$);
+select pg_temp.expect_denied('staff: updating erp_documents directly',
+  $q$update public.erp_documents set file_name = 'rls.pdf'$q$);
+select pg_temp.expect_denied('staff: deleting from erp_documents directly',
+  $q$delete from public.erp_documents$q$);
+select pg_temp.expect_denied('staff: truncating erp_documents', $q$truncate public.erp_documents$q$);
+select pg_temp.expect_denied('staff: selecting erp_document_upload_chunks directly',
+  $q$select 1 from public.erp_document_upload_chunks$q$);
+select pg_temp.expect_denied('staff: inserting into erp_document_upload_chunks directly',
+  $q$insert into public.erp_document_upload_chunks
+       (upload_id, seq, file_name, content_hash, error_text, steps, embedding, uploaded_by)
+     values (gen_random_uuid(), 0, 'rls.pdf', repeat('a', 64), 'rls test', 'rls test',
+             (pg_temp.erp_chunk(0, 'rls test') ->> 'embedding')::extensions.vector(1536),
+             '00000000-0000-0000-0000-0000000000a1')$q$);
+
 reset role;
+
+-- ---------------------------------------------------------------------------
+-- ERP document write path: staff through the functions
+-- ---------------------------------------------------------------------------
+-- The staging calls below succeed and the positive controls publish and remove real
+-- rows, so the whole section runs under a savepoint that is rolled back at its end;
+-- the fingerprint at the bottom then proves nothing leaked out of it.
+--   uploads    b001 gap in seq   b002 staged by alfa (owner-side)
+--              b003 first version   b004 replacement in different case
+
+savepoint erp_function_path;
+
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+
+-- Input validation: each malformed call is refused before anything is staged.
+select pg_temp.expect_denied('staff: staging an empty chunk array',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), '[]'::jsonb)$q$);
+select pg_temp.expect_denied('staff: staging chunks that are not an array',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), pg_temp.erp_chunk(0, 'rls test'))$q$);
+select pg_temp.expect_denied('staff: staging more than 200 chunks in one call',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), (select jsonb_agg(pg_temp.erp_chunk(g, 'rls test', 1)) from generate_series(0, 200) g))$q$);
+select pg_temp.expect_denied('staff: staging a chunk without an embedding',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls test') - 'embedding'))$q$);
+select pg_temp.expect_denied('staff: staging a chunk with blank steps',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, '   ')))$q$);
+-- pgvector rejects the dimension in the cast itself, with data_exception rather than a
+-- privilege or guard error -- asserted by exact SQLSTATE, not through expect_denied().
+select pg_temp.expect_sqlstate('staff: staging a vector of the wrong dimension',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b0ff', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls test', 3)))$q$, '22000');
+
+-- An upload with a gap in seq never publishes.
+select pg_temp.expect_equal('staff: staging fragments 0 and 2 (setup)',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b001', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls gap 0'), pg_temp.erp_chunk(2, 'rls gap 2')))$q$,
+  '2');
+select pg_temp.expect_denied('staff: publishing an upload with a gap in seq',
+  $q$select * from public.publish_erp_document('00000000-0000-0000-0000-00000000b001', 1)$q$);
+select pg_temp.expect_denied('staff: staging a different file under an existing upload id',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b001', 'inny.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(1, 'rls gap 1')))$q$);
+
+-- An upload staged by someone else is neither extendable nor publishable. The rows are
+-- planted by the owner, because no client path can stage as a non-staff account.
+reset role;
+insert into public.erp_document_upload_chunks
+  (upload_id, seq, file_name, content_hash, error_text, steps, embedding, uploaded_by)
+values (
+  '00000000-0000-0000-0000-00000000b002', 0, 'rls-test.pdf', repeat('a', 64), 'rls test', 'rls foreign 0',
+  (pg_temp.erp_chunk(0, 'rls test') ->> 'embedding')::extensions.vector(1536),
+  '00000000-0000-0000-0000-0000000000a2'
+);
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+
+select pg_temp.expect_denied('staff: staging into an upload held by another user',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b002', 'rls-test.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(1, 'rls foreign 1')))$q$);
+select pg_temp.expect_denied('staff: publishing an upload staged by another user',
+  $q$select * from public.publish_erp_document('00000000-0000-0000-0000-00000000b002', 1)$q$);
+
+-- Positive control: a first version of a document.
+select pg_temp.expect_equal('staff: staging 2 fragments of a new document',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b003', 'Magazyn-rls.pdf',
+       repeat('a', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls first version 0'),
+                                          pg_temp.erp_chunk(1, 'rls first version 1')))$q$,
+  '2');
+select pg_temp.expect_equal('staff: publishing it adds 2 fragments',
+  $q$select chunk_count from public.publish_erp_document('00000000-0000-0000-0000-00000000b003', 3)$q$,
+  '2');
+select pg_temp.expect_count('staff: one registry row for the document',
+  $q$select 1 from public.erp_documents where lower(file_name) = 'magazyn-rls.pdf'$q$, 1);
+select pg_temp.expect_equal('staff: the registry row records who loaded it, pages and fragments',
+  $q$select ingested_by || ' ' || page_count || ' ' || chunk_count
+     from public.erp_documents where lower(file_name) = 'magazyn-rls.pdf'$q$,
+  '00000000-0000-0000-0000-0000000000a1 3 2');
+select pg_temp.expect_count('staff: 2 erp_doc entries linked to it',
+  $q$select 1 from public.knowledge_base_entries e
+     join public.erp_documents d on d.id = e.erp_document_id
+     where e.source = 'erp_doc' and lower(d.file_name) = 'magazyn-rls.pdf'$q$, 2);
+
+reset role;
+select pg_temp.expect_count('owner: publishing cleared the upload''s staging rows',
+  $q$select 1 from public.erp_document_upload_chunks where upload_id = '00000000-0000-0000-0000-00000000b003'$q$, 0);
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+
+-- Positive control: the same file name in different case replaces, never duplicates.
+select pg_temp.expect_equal('staff: staging 1 fragment of the same document, name in different case',
+  $q$select public.stage_erp_document_chunks('00000000-0000-0000-0000-00000000b004', 'MAGAZYN-RLS.PDF',
+       repeat('b', 64), jsonb_build_array(pg_temp.erp_chunk(0, 'rls replacement fragment')))$q$,
+  '1');
+select pg_temp.expect_equal('staff: publishing the replacement',
+  $q$select chunk_count from public.publish_erp_document('00000000-0000-0000-0000-00000000b004', 1)$q$,
+  '1');
+select pg_temp.expect_count('staff: still one registry row for the document',
+  $q$select 1 from public.erp_documents where lower(file_name) = 'magazyn-rls.pdf'$q$, 1);
+select pg_temp.expect_count('staff: exactly 1 erp_doc entry linked to it',
+  $q$select 1 from public.knowledge_base_entries e
+     join public.erp_documents d on d.id = e.erp_document_id
+     where e.source = 'erp_doc' and lower(d.file_name) = 'magazyn-rls.pdf'$q$, 1);
+select pg_temp.expect_count('staff: the first version''s fragments are gone',
+  $q$select 1 from public.knowledge_base_entries where steps like 'rls first version%'$q$, 0);
+
+-- Published fragments reach clients through the shared view.
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a2');
+select pg_temp.expect_count('alfa: sees the published fragment through knowledge_base_public',
+  $q$select 1 from public.knowledge_base_public where source = 'erp_doc' and steps = 'rls replacement fragment'$q$, 1);
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+
+-- Positive control: removal takes the entries with it.
+select pg_temp.expect_equal('staff: removing the document',
+  $q$select public.remove_erp_document('magazyn-rls.pdf')$q$, 'true');
+select pg_temp.expect_count('staff: its registry row is gone',
+  $q$select 1 from public.erp_documents where lower(file_name) = 'magazyn-rls.pdf'$q$, 0);
+select pg_temp.expect_count('staff: its entries went with it',
+  $q$select 1 from public.knowledge_base_entries where steps = 'rls replacement fragment'$q$, 0);
+select pg_temp.expect_equal('staff: removing it again reports it missing',
+  $q$select public.remove_erp_document('magazyn-rls.pdf')$q$, 'false');
+
+rollback to savepoint erp_function_path;
+release savepoint erp_function_path;
+
+-- ---------------------------------------------------------------------------
+-- Owner-side: the erp_doc / document invariant holds below RLS too
+-- ---------------------------------------------------------------------------
+-- The owner bypasses RLS and every grant, so only the CHECK constraint stands here.
+
+select pg_temp.expect_check_violation('owner: an erp_doc entry without a document',
+  $q$insert into public.knowledge_base_entries (source, error_text) values ('erp_doc', 'rls test')$q$);
+select pg_temp.expect_check_violation('owner: a ticket entry pointing at a document',
+  $q$insert into public.knowledge_base_entries (source, error_text, erp_document_id)
+     values ('ticket', 'rls test', '00000000-0000-0000-0000-00000000d101')$q$);
 
 -- ---------------------------------------------------------------------------
 -- Persona: anonymous caller (anon, no JWT subject)
@@ -409,6 +710,16 @@ select pg_temp.expect_denied('anon: filing a ticket',
   $q$insert into public.tickets (company_id, created_by, error_text)
      values ('00000000-0000-0000-0000-00000000c101', '00000000-0000-0000-0000-0000000000a2', 'rls test')$q$);
 select pg_temp.expect_denied('anon: calling current_company_id()', $q$select public.current_company_id()$q$);
+select pg_temp.expect_denied('anon: selecting erp_documents', $q$select 1 from public.erp_documents$q$);
+select pg_temp.expect_denied('anon: selecting erp_document_upload_chunks',
+  $q$select 1 from public.erp_document_upload_chunks$q$);
+select pg_temp.expect_denied('anon: calling stage_erp_document_chunks()',
+  $q$select public.stage_erp_document_chunks(gen_random_uuid(), 'rls.pdf', repeat('a', 64),
+       jsonb_build_array(pg_temp.erp_chunk(0, 'rls test')))$q$);
+select pg_temp.expect_denied('anon: calling publish_erp_document()',
+  $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$);
+select pg_temp.expect_denied('anon: calling remove_erp_document()',
+  $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
 
 reset role;
 
@@ -434,6 +745,12 @@ begin
     union all
     select 'companies', md5(coalesce(string_agg(c::text, '|' order by c.id), ''))
     from public.companies c
+    union all
+    select 'erp_documents', md5(coalesce(string_agg(d::text, '|' order by d.id), ''))
+    from public.erp_documents d
+    union all
+    select 'erp_document_upload_chunks', md5(coalesce(string_agg(s::text, '|' order by s.upload_id, s.seq), ''))
+    from public.erp_document_upload_chunks s
   ) now_ on now_.surface = b.surface
   where now_.digest <> b.digest;
 
@@ -449,7 +766,7 @@ begin
     raise exception 'FAIL  a profile other than the seeded staff account holds service_staff';
   end if;
 
-  raise notice 'ok    no row changed on tickets, knowledge_base_entries, profiles or companies';
+  raise notice 'ok    no row changed on tickets, knowledge_base_entries, profiles, companies, erp_documents or erp_document_upload_chunks';
 end;
 $$;
 
