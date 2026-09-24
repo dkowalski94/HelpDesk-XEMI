@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { listVisibleTickets } from "@/lib/services/tickets";
+import { listVisibleTickets, TICKET_PAGE_DEFAULT, TICKET_PAGE_MAX } from "@/lib/services/tickets";
 import type { TicketListFailureReason, TicketListResponse } from "@/types";
 
 // Read-only for now: the smallest HTTP surface over which tenant isolation can be
@@ -11,6 +11,13 @@ const FAILURE_STATUS: Record<TicketListFailureReason, number> = {
   "not-configured": 503,
   error: 500,
 };
+
+// No validation layer (see CLAUDE.md): a missing or non-numeric value falls back to the
+// default, and anything out of range is clamped rather than rejected.
+function intParam(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isNaN(parsed) ? fallback : Math.min(Math.max(parsed, min), max);
+}
 
 function json(body: TicketListResponse, status: number) {
   return new Response(JSON.stringify(body), {
@@ -34,10 +41,14 @@ export const GET: APIRoute = async (context) => {
     );
   }
 
-  const tickets = await listVisibleTickets(supabase);
-  if (tickets === null) {
+  const params = context.url.searchParams;
+  const page = await listVisibleTickets(supabase, {
+    limit: intParam(params.get("limit"), TICKET_PAGE_DEFAULT, 1, TICKET_PAGE_MAX),
+    offset: intParam(params.get("offset"), 0, 0, Number.MAX_SAFE_INTEGER),
+  });
+  if (page === null) {
     return json({ ok: false, reason: "error", error: "Could not load tickets." }, FAILURE_STATUS.error);
   }
 
-  return json({ ok: true, tickets }, 200);
+  return json({ ok: true, ...page }, 200);
 };

@@ -168,7 +168,9 @@ const steps = [
     {
       status: 200,
       check: ({ json }) =>
-        json?.ok === true && [TICKET.alfa, TICKET.beta].every((id) => json.tickets.some((ticket) => ticket.id === id)),
+        json?.ok === true &&
+        json.nextOffset === null &&
+        [TICKET.alfa, TICKET.beta].every((id) => json.tickets.some((ticket) => ticket.id === id)),
     },
   ],
   [
@@ -244,14 +246,50 @@ const steps = [
     () => request("/admin/users"),
     { status: 302, location: "/dashboard" },
   ],
+
+  // --- The one successful write: staff assigns the throwaway account -----------------
+  // Reaches assign-company.ts itself (every attempt above stops at the middleware), and
+  // carries a smuggled role field the endpoint must ignore. Also drains the waiting list.
+  [
+    "staff assigns the new account to Klient Alfa, ignoring a smuggled role=service_staff",
+    () => assignCompany("staff", { userId: smokeUserId, companyId: COMPANY.alfa, role: "service_staff" }),
+    { status: 302, location: "/admin/users?status=assigned" },
+  ],
+  [
+    "...and the account has left the waiting list",
+    () => request("/admin/users", { as: "staff" }),
+    { status: 200, check: ({ text }) => smokeUserId !== null && waitingUserId(text, email) === null },
+  ],
+  [
+    "...and now sees only Alfa's tickets",
+    () => request("/api/tickets"),
+    { status: 200, check: onlyTicketsOf(COMPANY.alfa, TICKET.alfa) },
+  ],
+  [
+    "...and its dashboard says Client user at Klient Alfa",
+    () => request("/dashboard"),
+    { status: 200, check: ({ text }) => text.includes("Client user") && text.includes("Klient Alfa") },
+  ],
+  [
+    "...and it is still turned away from /admin/users",
+    () => request("/admin/users"),
+    { status: 302, location: "/dashboard" },
+  ],
 ];
+
+// A bare path must match exactly: "/" as a prefix would also accept /auth/signin?error=….
+// An expectation carrying a query string is a prefix, because the value after it varies
+// (e.g. Supabase's error message).
+function locationMatches(actual, expected) {
+  return expected.includes("?") ? actual.startsWith(expected) : actual === expected;
+}
 
 let failed = 0;
 for (const [name, run, expected] of steps) {
   const actual = await run();
   const ok =
     actual.status === expected.status &&
-    (expected.location === undefined || actual.location.startsWith(expected.location)) &&
+    (expected.location === undefined || locationMatches(actual.location, expected.location)) &&
     (expected.check === undefined || expected.check(actual));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {

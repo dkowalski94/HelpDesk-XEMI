@@ -154,9 +154,14 @@ export interface TicketSummary {
   createdAt: string;
 }
 
-export interface TicketListSuccess {
-  ok: true;
+/** One page of the ticket list. `nextOffset` is `null` on the last page. */
+export interface TicketPage {
   tickets: TicketSummary[];
+  nextOffset: number | null;
+}
+
+export interface TicketListSuccess extends TicketPage {
+  ok: true;
 }
 
 /** Why the ticket list could not be returned — the API route maps this to a status code. */

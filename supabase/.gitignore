@@ -1,6 +1,8 @@
 # Supabase
 .branches
 .temp
+# Studio auto-saved SQL snippets (local scratch, never schema)
+snippets
 
 # dotenvx
 .env.keys
