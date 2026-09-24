@@ -42,7 +42,7 @@ An ERP (XEMI) end user — purchasing, sales, accounting, or warehouse staff at 
 | ID   | Change ID                       | Outcome (user can …)                                                              | Prerequisites | PRD refs                          | Status   |
 | ---- | -------------------------------- | ---------------------------------------------------------------------------------- | -------------- | ---------------------------------- | -------- |
 | F-01 | tenant-data-and-auth-foundation  | (foundation) multi-tenant schema + role model landed, enforcing per-company isolation | —              | Access Control, FR-007, FR-008    | done |
-| F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | blocked  |
+| F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | proposed |
 | S-01 | first-gated-error-resolution     | paste an error and see a matched cause/steps, or have it auto-escalated to a ticket | F-01, F-02     | US-01, FR-001, FR-002, FR-003, FR-007, FR-012 | proposed |
 | S-02 | service-staff-ticket-resolution  | (service staff) see to-do tickets from all client companies and record a resolution that feeds the knowledge base | F-01, S-01     | FR-004, FR-005, FR-006, FR-008    | proposed |
 | S-03 | mark-suggestion-unhelpful        | mark a suggested resolution as not helpful, escalating it to a ticket with a comment | S-01           | FR-011                            | proposed |
@@ -93,11 +93,16 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Prerequisites:** F-01 (needs the knowledge-base table schema to write into)
 - **Parallel with:** —
 - **Blockers:** —
-- **Unknowns:**
-  - How much ERP documentation exists, and how consistent is its format (PDF/Word/Excel)? Owner: user. Block: yes.
-  - Does the ERP documentation change over time, and who owns re-ingesting updates? Owner: user. Block: yes.
-- **Risk:** Sequenced right after F-01 and before the north star, since the user explicitly chose the "full" north star (both knowledge-base sources) over the narrower ticket-history-only alternative — but the two Open Questions above must resolve before the ingestion approach itself can be designed.
-- **Status:** blocked
+- **Resolved (2026-09-24, user):**
+  - Volume and format: PDF only, up to ~20 files, but large — around 200 MB. Word/Excel are not in scope for the current corpus.
+  - Change over time: yes, the documentation changes, and service staff (serwisanci) own it — so re-ingesting updated documents is a service-staff responsibility, not a one-off developer import.
+  - Size: ~200 MB **per file** (so up to ~4 GB in total), mostly from embedded screenshots. The screenshots will not be shown to users, so ingestion extracts text only and drops images; no image storage is needed.
+  - Re-ingestion: a script run outside the app (no in-app upload), which keeps large files away from the Worker entirely.
+  - Screenshots carry no information missing from the text — they illustrate the same solution visually. Text-only ingestion is sufficient; no OCR. Showing the screenshots alongside a suggestion is parked as nice-to-have (see `## Parked`).
+  - The script is run by a service-staff member on their own machine, so its setup, credentials handling and error output must be usable by a non-developer.
+- **Unknowns:** —
+- **Risk:** Sequenced right after F-01 and before the north star, since the user explicitly chose the "full" north star (both knowledge-base sources) over the narrower ticket-history-only alternative. Large PDFs keep ingestion firmly offline (outside the Worker's CPU and request-size limits), and staff-owned updates mean re-ingestion must be repeatable and must replace a document's old entries rather than duplicate them.
+- **Status:** proposed
 
 ## Slices
 
@@ -141,9 +146,9 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 | Roadmap ID | Change ID                       | Suggested issue title                                             | Ready for `/10x-plan` | Notes                                              |
 | ---------- | -------------------------------- | -------------------------------------------------------------------- | ---------------------- | --------------------------------------------------- |
-| F-01       | tenant-data-and-auth-foundation  | Build multi-tenant schema + role model with RLS                     | yes                    | Run `/10x-plan tenant-data-and-auth-foundation`     |
-| F-02       | erp-doc-ingestion-pipeline       | Build offline ERP-doc ingestion pipeline (FR-012)                   | no                     | Blocked on doc volume/format + re-ingestion ownership |
-| S-01       | first-gated-error-resolution     | Client error paste → matched suggestion or auto-escalated ticket    | no                     | Blocked on F-01, F-02 landing first                 |
+| F-01       | tenant-data-and-auth-foundation  | Build multi-tenant schema + role model with RLS                     | —                      | Done — archived 2026-09-24                          |
+| F-02       | erp-doc-ingestion-pipeline       | Build offline ERP-doc ingestion pipeline (FR-012)                   | yes                    | Run `/10x-plan erp-doc-ingestion-pipeline`          |
+| S-01       | first-gated-error-resolution     | Client error paste → matched suggestion or auto-escalated ticket    | no                     | Blocked on F-02 landing first                       |
 | S-02       | service-staff-ticket-resolution  | Service-staff ticket dashboard + resolution recording               | no                     | Blocked on F-01, S-01 landing first                 |
 | S-03       | mark-suggestion-unhelpful        | "Not helpful" marking escalates suggestion with comment              | no                     | Blocked on S-01 landing first                       |
 
@@ -160,6 +165,7 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 - **Fully automating ticket closure without service staff** — Why parked: PRD §Non-Goals; the AI never closes a ticket on its own.
 - **Analytics dashboards / error trend reporting** — Why parked: PRD §Non-Goals; a possible future extension.
 - **Email notification to the service mailbox on new ticket, and its native ERP-UI display (FR-009, FR-010)** — Why parked: both nice-to-have priority; not on the must-have critical path under the `speed` sequencing goal.
+- **Showing ERP-documentation screenshots alongside a matched suggestion** — Why parked: nice-to-have (user, 2026-09-24). The screenshots illustrate the solution but carry no information missing from the text, so F-02 ingests text only; showing them later would need image extraction, storage and a display surface in S-01.
 - **In-app error tracking/alerting for the Workers CPU-time-ceiling risk** — Why parked: `infrastructure.md` flags this as pre-go-live hardening, not required for this milestone's core loop; the already-present dashboard-side observability is sufficient for now.
 
 ## Milestone History
