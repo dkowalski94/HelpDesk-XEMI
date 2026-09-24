@@ -3,7 +3,7 @@
 // with S-01's query side: change one and every stored vector becomes unmatchable.
 
 import { setTimeout as sleep } from "node:timers/promises";
-import { IngestError } from "./messages.mjs";
+import { IngestError, MSG } from "./messages.mjs";
 
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 1536;
@@ -23,6 +23,8 @@ const CHARS_PER_TOKEN = 3;
 const MAX_ATTEMPTS = 5;
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 60_000;
+/** Per attempt, body included. A batch normally answers in 1–3 s; a stalled connection is retried. */
+const REQUEST_TIMEOUT_MS = 60_000;
 
 /** `retry-after-ms` / `retry-after` (seconds or an HTTP date) in milliseconds, or undefined. */
 function retryAfterMs(response) {
@@ -54,16 +56,25 @@ async function readErrorBody(response) {
 async function requestBatch(apiKey, inputs, onRetry) {
   for (let attempt = 1; ; attempt++) {
     let response;
+    let text;
     try {
       response = await fetch(ENDPOINT, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ model: EMBEDDING_MODEL, input: inputs, encoding_format: "float" }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
+      // Read inside the try: a connection dropped mid-body is a network failure, retried like one.
+      if (response.ok) text = await response.text();
     } catch (error) {
       if (attempt >= MAX_ATTEMPTS) {
         const cause = error instanceof Error ? error.cause : undefined;
-        const detail = cause && typeof cause === "object" && "code" in cause ? String(cause.code) : undefined;
+        const detail =
+          error?.name === "TimeoutError"
+            ? "ETIMEDOUT"
+            : cause && typeof cause === "object" && "code" in cause
+              ? String(cause.code)
+              : undefined;
         throw new IngestError("OPENAI_NETWORK", detail, { cause: error });
       }
       const delay = backoffMs(attempt);
@@ -74,9 +85,9 @@ async function requestBatch(apiKey, inputs, onRetry) {
 
     if (response.ok) {
       try {
-        return await response.json();
+        return JSON.parse(text);
       } catch (error) {
-        throw new IngestError("OPENAI_BAD_RESPONSE", "odpowiedź nie jest poprawnym JSON-em", { cause: error });
+        throw new IngestError("OPENAI_BAD_RESPONSE", MSG.badJson, { cause: error });
       }
     }
 
@@ -103,19 +114,19 @@ async function requestBatch(apiKey, inputs, onRetry) {
 function vectorsFrom(body, expected) {
   const items = Array.isArray(body?.data) ? body.data : undefined;
   if (!items || items.length !== expected)
-    throw new IngestError("OPENAI_BAD_RESPONSE", `oczekiwano ${expected} wektorów, otrzymano ${items?.length ?? 0}`);
+    throw new IngestError("OPENAI_BAD_RESPONSE", MSG.vectorCount(expected, items?.length ?? 0));
   const vectors = new Array(expected);
   for (const item of items) {
     const { index, embedding } = item ?? {};
     if (!Number.isInteger(index) || index < 0 || index >= expected || vectors[index] !== undefined)
-      throw new IngestError("OPENAI_BAD_RESPONSE", "nieprawidłowa kolejność wektorów");
+      throw new IngestError("OPENAI_BAD_RESPONSE", MSG.vectorOrder);
     if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS)
       throw new IngestError(
         "OPENAI_BAD_RESPONSE",
-        `wektor ma ${Array.isArray(embedding) ? embedding.length : 0} wymiarów zamiast ${EMBEDDING_DIMENSIONS}`,
+        MSG.vectorDimensions(Array.isArray(embedding) ? embedding.length : 0, EMBEDDING_DIMENSIONS),
       );
     if (!embedding.every((value) => typeof value === "number" && Number.isFinite(value)))
-      throw new IngestError("OPENAI_BAD_RESPONSE", "wektor zawiera nieprawidłowe liczby");
+      throw new IngestError("OPENAI_BAD_RESPONSE", MSG.vectorValues);
     vectors[index] = embedding;
   }
   return vectors;

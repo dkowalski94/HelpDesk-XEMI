@@ -72,6 +72,12 @@ export const MSG = {
   openAiRetry: (seconds, attempt, maxAttempts) =>
     `  OpenAI chwilowo nie odpowiada lub ogranicza liczbę zapytań — ponowna próba za ${seconds} s (${attempt}/${maxAttempts})...`,
   uploading: (batch, total) => `  wysyłanie ${batch}/${total}`,
+  // Details of OPENAI_BAD_RESPONSE
+  badJson: "odpowiedź nie jest poprawnym JSON-em",
+  vectorCount: (expected, received) => `oczekiwano ${expected} wektorów, otrzymano ${received}`,
+  vectorOrder: "nieprawidłowa kolejność wektorów",
+  vectorDimensions: (received, expected) => `wektor ma ${received} wymiarów zamiast ${expected}`,
+  vectorValues: "wektor zawiera nieprawidłowe liczby",
   published: (count) => `  Dodano nowy dokument: ${count} fragmentów.`,
   replaced: (count) => `  Zastąpiono poprzednią wersję dokumentu: ${count} fragmentów.`,
   loadSummary: ({ added, replaced, skipped, failed }) =>
@@ -127,6 +133,10 @@ const ERROR_MESSAGES = {
     `${names.length === 1 ? `Brak ustawienia ${names[0]}` : `Brak ustawień: ${names.join(", ")}`}. ${ENV_FILE_HINT(envFile)}`,
   CONFIG_BAD_URL: ({ name, envFile }) =>
     `Ustawienie ${name} nie jest poprawnym adresem (powinno wyglądać jak https://xxxx.supabase.co). ${ENV_FILE_HINT(envFile)}`,
+  CONFIG_SECRET_KEY: ({ envFile }) =>
+    `Ustawienie SUPABASE_KEY zawiera klucz tajny (service_role / sb_secret_…), który daje pełny dostęp do bazy. Wpisz klucz publiczny (anon / sb_publishable_…), a klucz tajny usuń z pliku ${envFile}.`,
+  CONFIG_ENCODING: ({ envFile }) =>
+    `Plik ${envFile} jest zapisany w kodowaniu UTF-16, którego nie da się odczytać. Otwórz go w Notatniku i zapisz ponownie, wybierając kodowanie „UTF-8”.`,
 
   // Prompting
   NO_TERMINAL: () =>
@@ -145,6 +155,10 @@ const ERROR_MESSAGES = {
     `Nie można połączyć się z bazą HelpDesku${detail ? ` (${detail})` : ""}. ` +
     "Sprawdź połączenie z internetem i ustawienie SUPABASE_URL; jeśli wszystko się zgadza, baza może być chwilowo niedostępna.",
   DB_MIGRATION_MISSING: () => "Baza nie ma jeszcze migracji — skontaktuj się z administratorem.",
+  DB_UPLOAD_INTERRUPTED: () =>
+    "Wysyłanie dokumentu zostało przerwane lub zakłócone (np. przez drugie jednoczesne wgrywanie). Baza HelpDesku jest bez zmian — uruchom wgrywanie ponownie.",
+  DB_TIMEOUT: () =>
+    "Baza przerwała zapis dokumentu, bo trwał za długo. Baza HelpDesku jest bez zmian — spróbuj ponownie, a jeśli błąd się powtarza, skontaktuj się z administratorem.",
   DB_FAILED: (detail) => `Baza odpowiedziała błędem: ${detail ?? "brak szczegółów"}`,
 
   // OpenAI
@@ -177,6 +191,10 @@ export function toUserMessage(error) {
 // Postgres: 42883 = undefined function, 42P01 = undefined table.
 const MISSING_SCHEMA_CODES = new Set(["PGRST202", "PGRST205", "42883", "42P01"]);
 
+// publish_erp_document() raises these (P0001) when an upload is incomplete or was disturbed while
+// publishing; a fresh run fixes all of them. Other P0001 texts fall through to DB_FAILED.
+const UPLOAD_INTERRUPTED_MESSAGES = [/^incomplete upload /, /changed while publishing/, /mixes fragments/];
+
 /**
  * Maps an error returned by supabase-js (auth or PostgREST) to an `IngestError`.
  * `status` is the HTTP status of the PostgREST response; 0 means the request never reached a
@@ -192,6 +210,10 @@ export function databaseError(error, status) {
   if (code === "invalid_credentials") return new IngestError("INVALID_CREDENTIALS", undefined, options);
   if (code === "email_not_confirmed") return new IngestError("EMAIL_NOT_CONFIRMED", undefined, options);
   if (code === "42501") return new IngestError("DB_DENIED", undefined, options);
+  // 57014 = query_canceled: the role's statement_timeout (8 s for authenticated) cut the call off.
+  if (code === "57014") return new IngestError("DB_TIMEOUT", undefined, options);
+  if (code === "P0001" && UPLOAD_INTERRUPTED_MESSAGES.some((pattern) => pattern.test(message)))
+    return new IngestError("DB_UPLOAD_INTERRUPTED", undefined, options);
   if (MISSING_SCHEMA_CODES.has(code)) return new IngestError("DB_MIGRATION_MISSING", undefined, options);
   return new IngestError("DB_FAILED", message, options);
 }

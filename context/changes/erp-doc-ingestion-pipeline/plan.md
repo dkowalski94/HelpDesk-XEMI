@@ -356,6 +356,11 @@ exponential backoff honouring `retry-after`, up to 5 attempts; 401 → "Klucz Op
 nieprawidłowy"; 429 with `insufficient_quota` → quota message, no retry. Every returned vector is
 checked to have length 1536. No SDK (keeps the dependency surface to one package).
 
+*Addendum (impl review, phase 3):* each request is capped at ~8000 estimated tokens as well as
+64 inputs (at the lowest OpenAI tier, 40k TPM, 64 full fragments are one oversize request), and
+each attempt times out after 60 s. The body is read inside the retry, so a stalled or dropped
+response is retried as a network error.
+
 #### 2. Supabase session and upload
 
 **File**: `scripts/ingest/upload.mjs`
@@ -382,6 +387,15 @@ only through the Phase 1 functions.
 - Error mapping (in `messages.mjs`): invalid credentials, 42501 from any RPC, network/DNS failure,
   PostgREST "function does not exist" (→ "baza nie ma jeszcze migracji — skontaktuj się z
   administratorem"), and a generic fallback that prints the server message.
+- *Addendum (impl review, phase 3):*
+  - `.env.ingest` is resolved against the repo root and read by the script's own loader. A UTF-8
+    BOM is stripped, UTF-16 gets a Polish "zapisz jako UTF-8" message, and variables already in
+    the environment win.
+  - `OPENAI_API_KEY` is required only to load documents, not for `--lista`/`--usun`.
+  - `SUPABASE_URL` must be `https:`; `http:` is accepted only for localhost.
+  - Database requests time out after 60 s, reported as a network error.
+  - 57014 (statement timeout) has its own Polish message. Publishing 7 × 400 fragments measured
+    0.4–1.4 s against authenticated's 8 s limit.
 
 ### Success Criteria:
 
@@ -561,19 +575,19 @@ runbook.
 
 #### Automated
 
-- [x] 3.1 `npm run lint` passes
-- [x] 3.2 `npm run build` passes
-- [x] 3.3 With `.env.ingest` missing a variable, `npm run ingest -- plik.pdf` names the missing variable in Polish and exits 1 without prompting for a password
+- [x] 3.1 `npm run lint` passes — e93b278
+- [x] 3.2 `npm run build` passes — e93b278
+- [x] 3.3 With `.env.ingest` missing a variable, `npm run ingest -- plik.pdf` names the missing variable in Polish and exits 1 without prompting for a password — e93b278
 
 #### Manual
 
-- [x] 3.4 Against local Supabase (`db reset`) signed in as `serwis@xemi.local`: ingesting a real ERP PDF creates one `erp_documents` row and N `erp_doc` entries with non-null embeddings; `--lista` shows it
-- [x] 3.5 Re-running the same command prints "bez zmian, pominięto" and changes no row (`updated_at` unchanged)
-- [x] 3.6 Re-running with `--wymus` (or on an edited copy with the same name) replaces the entries: same single registry row, entry ids all new, total `erp_doc` count equals the new fragment count
-- [x] 3.7 Signing in as `alfa@klient-alfa.local` stops with "To konto nie jest kontem serwisanta" before any file is read
-- [x] 3.8 A wrong password, a wrong OpenAI key and a stopped Supabase each produce a single readable Polish message
-- [x] 3.9 Killing the script mid-upload leaves `knowledge_base_entries` unchanged; the next successful run publishes cleanly
-- [x] 3.10 `--usun <nazwa>` removes the document and its entries; the client view (as alfa) no longer returns them
+- [x] 3.4 Against local Supabase (`db reset`) signed in as `serwis@xemi.local`: ingesting a real ERP PDF creates one `erp_documents` row and N `erp_doc` entries with non-null embeddings; `--lista` shows it — e93b278
+- [x] 3.5 Re-running the same command prints "bez zmian, pominięto" and changes no row (`updated_at` unchanged) — e93b278
+- [x] 3.6 Re-running with `--wymus` (or on an edited copy with the same name) replaces the entries: same single registry row, entry ids all new, total `erp_doc` count equals the new fragment count — e93b278
+- [x] 3.7 Signing in as `alfa@klient-alfa.local` stops with "To konto nie jest kontem serwisanta" before any file is read — e93b278
+- [x] 3.8 A wrong password, a wrong OpenAI key and a stopped Supabase each produce a single readable Polish message — e93b278
+- [x] 3.9 Killing the script mid-upload leaves `knowledge_base_entries` unchanged; the next successful run publishes cleanly — e93b278
+- [x] 3.10 `--usun <nazwa>` removes the document and its entries; the client view (as alfa) no longer returns them — e93b278
 
 ### Phase 4: Staff runbook and production rollout
 

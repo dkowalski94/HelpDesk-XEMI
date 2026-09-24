@@ -3,10 +3,13 @@
 // 20260924120000_erp_document_ingestion.sql; the script never holds a key stronger than the
 // app's publishable/anon key, so RLS and the functions' staff check stay in force.
 
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { URL } from "node:url";
+import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { IngestError, MSG, databaseError } from "./messages.mjs";
 
@@ -16,6 +19,15 @@ const ENV_PATH = path.resolve(import.meta.dirname, "..", "..", ENV_FILE);
 
 /** Fragments per stage_erp_document_chunks() call (the function accepts at most 200). */
 export const STAGE_BATCH_SIZE = 50;
+
+/** Per database request. Publish measured ≤1.4 s; this only stops a stalled connection hanging for 5 min. */
+const REQUEST_TIMEOUT_MS = 60_000;
+
+/** `fetch` for supabase-js with a timeout; a timed-out request surfaces as DB_NETWORK. */
+function fetchWithTimeout(input, init = {}) {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: init.signal ? AbortSignal.any([init.signal, timeout]) : timeout });
+}
 
 /**
  * Loads `.env.ingest` into `process.env` (a missing file is fine — the variables may come from
@@ -28,11 +40,7 @@ export const STAGE_BATCH_SIZE = 50;
  * @param {{ needOpenAi: boolean }} options `OPENAI_API_KEY` is required only to load documents.
  */
 export function loadConfig({ needOpenAi }) {
-  try {
-    process.loadEnvFile(ENV_PATH);
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
-  }
+  loadEnvFile();
 
   const read = (name) => process.env[name]?.trim() ?? "";
   const required = ["SUPABASE_URL", "SUPABASE_KEY", ...(needOpenAi ? ["OPENAI_API_KEY"] : [])];
@@ -46,15 +54,50 @@ export function loadConfig({ needOpenAi }) {
   } catch {
     parsed = undefined;
   }
-  if (parsed?.protocol !== "https:" && parsed?.protocol !== "http:")
+  // Plain http only for a local Supabase; anywhere else the password would travel unencrypted.
+  const isLocal = ["localhost", "127.0.0.1", "[::1]"].includes(parsed?.hostname ?? "");
+  if (parsed?.protocol !== "https:" && !(parsed?.protocol === "http:" && isLocal))
     throw new IngestError("CONFIG_BAD_URL", { name: "SUPABASE_URL", envFile: ENV_FILE });
+
+  const supabaseKey = read("SUPABASE_KEY");
+  if (isSecretKey(supabaseKey)) throw new IngestError("CONFIG_SECRET_KEY", { envFile: ENV_FILE });
 
   return {
     supabaseUrl,
-    supabaseKey: read("SUPABASE_KEY"),
+    supabaseKey,
     openAiKey: needOpenAi ? read("OPENAI_API_KEY") : undefined,
     email: read("HELPDESK_EMAIL") || undefined,
   };
+}
+
+/** A secret key bypasses RLS; the script must only ever hold the publishable/anon key. */
+function isSecretKey(key) {
+  if (key.startsWith("sb_secret_")) return true;
+  try {
+    const payload = JSON.parse(Buffer.from(key.split(".")[1] ?? "", "base64url").toString("utf8"));
+    return payload?.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Like `process.loadEnvFile`, but tolerant of how Windows editors save text: a UTF-8 byte-order
+ * mark would otherwise glue itself to the first key (reported as "missing"), and UTF-16 — what
+ * PowerShell 5.1's `>` writes — gets a readable message instead. Existing variables win.
+ */
+function loadEnvFile() {
+  let bytes;
+  try {
+    bytes = readFileSync(ENV_PATH);
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+  if ((bytes[0] === 0xff && bytes[1] === 0xfe) || (bytes[0] === 0xfe && bytes[1] === 0xff))
+    throw new IngestError("CONFIG_ENCODING", { envFile: ENV_FILE });
+  const parsed = parseEnv(bytes.toString("utf8").replace(/^\uFEFF/, ""));
+  for (const [name, value] of Object.entries(parsed)) process.env[name] ??= value;
 }
 
 /**
@@ -106,6 +149,7 @@ export async function signIn(config) {
 
   const client = createClient(config.supabaseUrl, config.supabaseKey, {
     auth: { persistSession: false, detectSessionInUrl: false },
+    global: { fetch: fetchWithTimeout },
   });
 
   console.log(MSG.signingIn(email));
@@ -113,7 +157,10 @@ export async function signIn(config) {
   if (error) throw databaseError(error);
 
   const profile = await client.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
-  if (profile.error) throw databaseError(profile.error, profile.status);
+  if (profile.error) {
+    await signOut(client);
+    throw databaseError(profile.error, profile.status);
+  }
   if (profile.data?.role !== "service_staff") {
     await signOut(client);
     throw new IngestError("NOT_STAFF");
@@ -146,8 +193,9 @@ export async function signOut(client) {
 export async function findDocument(client, fileName) {
   const { data, error, status } = await client.from("erp_documents").select("id, file_name, content_hash");
   if (error) throw databaseError(error, status);
-  const key = fileName.toLowerCase();
-  return data.find((row) => row.file_name.toLowerCase() === key);
+  // NFC on both sides: rows loaded before names were normalized may still be stored as NFD.
+  const key = fileName.normalize("NFC").toLowerCase();
+  return data.find((row) => row.file_name.normalize("NFC").toLowerCase() === key);
 }
 
 /**

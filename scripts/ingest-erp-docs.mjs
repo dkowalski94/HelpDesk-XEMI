@@ -29,6 +29,12 @@ const PREVIEW_CHARS = 200;
 
 const isPdfName = (name) => path.extname(name).toLowerCase() === ".pdf";
 
+/**
+ * A document's identity: the base name in Unicode NFC. Names copied from macOS or some ZIP tools
+ * spell "ę" as "e" + combining ogonek (NFD); without this, the same file would be two documents.
+ */
+const documentName = (filePath) => path.basename(filePath).normalize("NFC");
+
 function printError(error) {
   const details = debugDetails(error);
   if (details) console.error(details);
@@ -97,7 +103,7 @@ async function expandInputs(inputs) {
       problems++;
       continue;
     }
-    const key = path.basename(resolved).toLowerCase();
+    const key = documentName(resolved).toLowerCase();
     const seen = byName.get(key);
     if (seen === resolved) continue; // the same file given twice (e.g. itself and its folder)
     if (seen !== undefined) {
@@ -118,7 +124,10 @@ function describeArgumentError(error) {
   const option = /'(-[^'\s]+)/.exec(message)?.[1] ?? "";
   if (error?.code === "ERR_PARSE_ARGS_UNKNOWN_OPTION") return MSG.unknownOption(option);
   if (error?.code === "ERR_PARSE_ARGS_INVALID_OPTION_VALUE")
-    return message.includes("argument missing") ? MSG.missingOptionValue(option) : MSG.unexpectedOptionValue(option);
+    // "argument is ambiguous": the value looks like another option (--usun --lista), i.e. it is missing.
+    return /argument missing|ambiguous/.test(message)
+      ? MSG.missingOptionValue(option)
+      : MSG.unexpectedOptionValue(option);
   return message;
 }
 
@@ -129,7 +138,7 @@ function preview(text) {
 
 /** Read → hash → extract → chunk → print. Throws on a per-file failure; the caller reports it. */
 async function dryRunFile(filePath) {
-  const fileName = path.basename(filePath);
+  const fileName = documentName(filePath);
   const { bytes, size, contentHash } = await readPdfFile(filePath);
   console.log(MSG.fileSize((size / (1024 * 1024)).toFixed(1)));
   console.log(MSG.fileHash(contentHash));
@@ -159,7 +168,7 @@ async function dryRunFile(filePath) {
  * Returns "skipped" | "added" | "replaced". Throws on a per-file failure; the caller reports it.
  */
 async function loadFile(client, config, filePath, force) {
-  const fileName = path.basename(filePath);
+  const fileName = documentName(filePath);
   const { bytes, contentHash } = await readPdfFile(filePath);
 
   // Before parsing: a routine re-run over the whole folder costs one hash per unchanged file.
@@ -270,7 +279,7 @@ async function printDocumentList(client) {
 
 async function removeByName(client, name) {
   // Identity is the base name; accept a full path too, as staff may paste one.
-  const fileName = path.basename(name.trim());
+  const fileName = documentName(name.trim());
   const removed = await removeDocument(client, fileName);
   console.log(removed ? MSG.removed(fileName) : MSG.notFound(fileName));
   return 0;
