@@ -1,8 +1,9 @@
 -- Policy-level negative checks for the tenant schema.
 --
 -- Covers the write and escalation attempts that have no HTTP surface yet (ticket writes
--- belong to S-01), plus the denied write on every RLS-protected surface, per
--- context/foundation/lessons.md. scripts/smoke.mjs covers what is reachable over HTTP.
+-- belong to S-01), plus the denied write on every RLS-protected surface and an exact
+-- inventory of what anon/authenticated are granted, per context/foundation/lessons.md.
+-- scripts/smoke.mjs covers what is reachable over HTTP.
 --
 -- Run against a database loaded with supabase/seed.sql:
 --   psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
@@ -98,9 +99,9 @@ as $$
   select set_config('request.jwt.claims', json_build_object('sub', user_id, 'role', 'authenticated')::text, true);
 $$;
 
--- The helpers are called after `set local role authenticated`, so that role needs
--- EXECUTE on them; a temporary function is invisible outside this session anyway.
-grant execute on all functions in schema pg_temp to authenticated;
+-- The helpers are called after `set local role authenticated` (or `anon`), so those
+-- roles need EXECUTE on them; a temporary function is invisible outside this session anyway.
+grant execute on all functions in schema pg_temp to authenticated, anon;
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: the seeded personas and rows, by the fixed ids in supabase/seed.sql
@@ -145,6 +146,81 @@ select 'companies', md5(coalesce(string_agg(c::text, '|' order by c.id), ''))
 from public.companies c;
 
 -- ---------------------------------------------------------------------------
+-- Grant inventory: the exact privileges anon / authenticated / PUBLIC hold in public
+-- ---------------------------------------------------------------------------
+-- Supabase's default privileges hand out ALL (TRUNCATE included, which bypasses RLS) on
+-- every new table and EXECUTE on every new function. Any grant not listed here fails the
+-- run, so a migration that widens a grant has to update this list deliberately
+-- (context/foundation/lessons.md: verify via role_table_grants, not by reading SQL).
+-- Column-scoped grants are listed as `table.column`; functions as `name()`.
+
+create temp table rls_expected_grants (object text, grantee text, privilege text);
+insert into rls_expected_grants values
+  ('companies',              'authenticated', 'SELECT'),
+  ('knowledge_base_entries', 'authenticated', 'INSERT'),
+  ('knowledge_base_entries', 'authenticated', 'SELECT'),
+  ('knowledge_base_entries', 'authenticated', 'UPDATE'),
+  ('knowledge_base_public',  'authenticated', 'SELECT'),
+  ('profiles',               'authenticated', 'SELECT'),
+  ('profiles.company_id',    'authenticated', 'UPDATE'),
+  ('tickets',                'authenticated', 'SELECT'),
+  ('tickets.company_id',     'authenticated', 'INSERT'),
+  ('tickets.created_by',     'authenticated', 'INSERT'),
+  ('tickets.error_text',     'authenticated', 'INSERT'),
+  ('tickets.user_comment',   'authenticated', 'INSERT'),
+  ('tickets.resolution',     'authenticated', 'UPDATE'),
+  ('tickets.resolved_at',    'authenticated', 'UPDATE'),
+  ('tickets.resolved_by',    'authenticated', 'UPDATE'),
+  ('tickets.status',         'authenticated', 'UPDATE'),
+  ('current_company_id()',   'authenticated', 'EXECUTE'),
+  ('current_company_kind()', 'authenticated', 'EXECUTE'),
+  ('is_service_staff()',     'authenticated', 'EXECUTE');
+
+do $$
+declare
+  drift text;
+begin
+  with actual as (
+    select g.table_name as object, g.grantee, g.privilege_type as privilege
+    from information_schema.role_table_grants g
+    where g.table_schema = 'public' and g.grantee in ('PUBLIC', 'anon', 'authenticated')
+    union
+    -- Column grants only where the table-level grant is absent (a table-level grant
+    -- lists every column here too).
+    select cp.table_name || '.' || cp.column_name, cp.grantee, cp.privilege_type
+    from information_schema.column_privileges cp
+    where cp.table_schema = 'public' and cp.grantee in ('PUBLIC', 'anon', 'authenticated')
+      and not exists (
+        select 1 from information_schema.role_table_grants g
+        where g.table_schema = 'public' and g.table_name = cp.table_name
+          and g.grantee = cp.grantee and g.privilege_type = cp.privilege_type)
+    union
+    select p.proname || '()', r.rolname, 'EXECUTE'
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    cross join (values ('anon'), ('authenticated')) as r (rolname)
+    where n.nspname = 'public' and has_function_privilege(r.rolname, p.oid, 'execute')
+  )
+  select string_agg(
+           format('%s %s %s on %s',
+                  case when e.object is null then 'unexpected' else 'missing' end,
+                  coalesce(a.grantee, e.grantee), coalesce(a.privilege, e.privilege),
+                  coalesce(a.object, e.object)),
+           '; ' order by coalesce(a.object, e.object), coalesce(a.grantee, e.grantee))
+    into drift
+  from actual a
+  full join rls_expected_grants e
+    on e.object = a.object and e.grantee = a.grantee and e.privilege = a.privilege
+  where a.object is null or e.object is null;
+
+  if drift is not null then
+    raise exception 'FAIL  grant inventory drifted: %', drift;
+  end if;
+  raise notice 'ok    grant inventory matches (no TRUNCATE/TRIGGER/REFERENCES, nothing for anon)';
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Persona: Klient Alfa client user (a2)
 -- ---------------------------------------------------------------------------
 
@@ -176,6 +252,18 @@ select pg_temp.expect_denied('alfa: filing a ticket already resolved',
   $q$insert into public.tickets (company_id, created_by, error_text, status, resolution, resolved_at)
      values ('00000000-0000-0000-0000-00000000c101', '00000000-0000-0000-0000-0000000000a2', 'rls test',
              'resolved', 'self-answered', now())$q$);
+select pg_temp.expect_denied('alfa: filing a ticket attributed to someone else',
+  $q$insert into public.tickets (company_id, created_by, error_text)
+     values ('00000000-0000-0000-0000-00000000c101', '00000000-0000-0000-0000-0000000000a1', 'rls test')$q$);
+select pg_temp.expect_denied('alfa: filing a ticket with no author',
+  $q$insert into public.tickets (company_id, created_by, error_text)
+     values ('00000000-0000-0000-0000-00000000c101', null, 'rls test')$q$);
+
+-- TRUNCATE bypasses RLS entirely, so the grant layer is the only thing that stops it.
+select pg_temp.expect_denied('alfa: truncating tickets', $q$truncate public.tickets$q$);
+select pg_temp.expect_denied('alfa: truncating knowledge_base_entries', $q$truncate public.knowledge_base_entries$q$);
+select pg_temp.expect_denied('alfa: truncating profiles', $q$truncate public.profiles$q$);
+select pg_temp.expect_denied('alfa: truncating companies', $q$truncate public.companies$q$);
 
 -- Ticket updates and deletes: resolving is staff-only, deleting is nobody's.
 select pg_temp.expect_rows('alfa: resolving its own ticket touches no row',
@@ -184,16 +272,16 @@ select pg_temp.expect_rows('alfa: resolving its own ticket touches no row',
 select pg_temp.expect_denied('alfa: rewriting a ticket''s company',
   $q$update public.tickets set company_id = '00000000-0000-0000-0000-00000000c102'
      where id = '00000000-0000-0000-0000-00000000e101'$q$);
-select pg_temp.expect_rows('alfa: deleting its own ticket touches no row',
-  $q$delete from public.tickets where id = '00000000-0000-0000-0000-00000000e101'$q$, 0);
+select pg_temp.expect_denied('alfa: deleting its own ticket',
+  $q$delete from public.tickets where id = '00000000-0000-0000-0000-00000000e101'$q$);
 
 -- Knowledge base base table: staff-only in every direction.
 select pg_temp.expect_denied('alfa: inserting into knowledge_base_entries',
   $q$insert into public.knowledge_base_entries (source, error_text) values ('erp_doc', 'rls test')$q$);
 select pg_temp.expect_rows('alfa: updating knowledge_base_entries touches no row',
   $q$update public.knowledge_base_entries set steps = 'rls test'$q$, 0);
-select pg_temp.expect_rows('alfa: deleting from knowledge_base_entries touches no row',
-  $q$delete from public.knowledge_base_entries$q$, 0);
+select pg_temp.expect_denied('alfa: deleting from knowledge_base_entries',
+  $q$delete from public.knowledge_base_entries$q$);
 
 -- Knowledge base view: definer rights must buy reads only.
 select pg_temp.expect_denied('alfa: inserting through knowledge_base_public',
@@ -209,12 +297,19 @@ select pg_temp.expect_denied('alfa: updating its own profiles.role',
 select pg_temp.expect_rows('alfa: moving itself to another company touches no row',
   $q$update public.profiles set company_id = '00000000-0000-0000-0000-00000000c102'
      where id = '00000000-0000-0000-0000-0000000000a2'$q$, 0);
+select pg_temp.expect_denied('alfa: creating a profile',
+  $q$insert into public.profiles (id, company_id, email)
+     values (gen_random_uuid(), '00000000-0000-0000-0000-00000000c101', 'rls-test@example.com')$q$);
+select pg_temp.expect_denied('alfa: deleting its own profile',
+  $q$delete from public.profiles where id = '00000000-0000-0000-0000-0000000000a2'$q$);
 
 -- Companies: no write path for anyone but the owner.
 select pg_temp.expect_denied('alfa: creating a company',
   $q$insert into public.companies (name, kind) values ('rls test', 'client')$q$);
-select pg_temp.expect_rows('alfa: renaming its own company touches no row',
-  $q$update public.companies set name = 'rls test' where id = '00000000-0000-0000-0000-00000000c101'$q$, 0);
+select pg_temp.expect_denied('alfa: renaming its own company',
+  $q$update public.companies set name = 'rls test' where id = '00000000-0000-0000-0000-00000000c101'$q$);
+select pg_temp.expect_denied('alfa: deleting its own company',
+  $q$delete from public.companies where id = '00000000-0000-0000-0000-00000000c101'$q$);
 
 reset role;
 
@@ -241,8 +336,12 @@ select pg_temp.expect_denied('unassigned: filing a ticket for a client company',
 
 select pg_temp.expect_denied('unassigned: inserting through knowledge_base_public',
   $q$insert into public.knowledge_base_public (source, error_text) values ('erp_doc', 'rls test')$q$);
+select pg_temp.expect_denied('unassigned: updating through knowledge_base_public',
+  $q$update public.knowledge_base_public set steps = 'rls test'$q$);
 select pg_temp.expect_denied('unassigned: deleting through knowledge_base_public',
   $q$delete from public.knowledge_base_public$q$);
+select pg_temp.expect_denied('unassigned: inserting into knowledge_base_entries',
+  $q$insert into public.knowledge_base_entries (source, error_text) values ('erp_doc', 'rls test')$q$);
 
 select pg_temp.expect_denied('unassigned: updating its own profiles.role',
   $q$update public.profiles set role = 'service_staff' where id = '00000000-0000-0000-0000-0000000000a4'$q$);
@@ -266,11 +365,16 @@ select pg_temp.expect_count('staff: sees both client tickets (control)',
 select pg_temp.expect_denied('staff: filing a ticket against the internal company',
   $q$insert into public.tickets (company_id, created_by, error_text)
      values ('00000000-0000-0000-0000-00000000c001', '00000000-0000-0000-0000-0000000000a1', 'rls test')$q$);
+-- A client company passes enforce_ticket_company_kind(), so this one is stopped by the
+-- INSERT policy itself: staff has no path to file tickets.
+select pg_temp.expect_denied('staff: filing a ticket for Klient Alfa',
+  $q$insert into public.tickets (company_id, created_by, error_text)
+     values ('00000000-0000-0000-0000-00000000c101', '00000000-0000-0000-0000-0000000000a1', 'rls test')$q$);
 select pg_temp.expect_denied('staff: moving a ticket to another client company',
   $q$update public.tickets set company_id = '00000000-0000-0000-0000-00000000c102'
      where id = '00000000-0000-0000-0000-00000000e101'$q$);
-select pg_temp.expect_rows('staff: deleting a ticket touches no row',
-  $q$delete from public.tickets where id = '00000000-0000-0000-0000-00000000e101'$q$, 0);
+select pg_temp.expect_denied('staff: deleting a ticket',
+  $q$delete from public.tickets where id = '00000000-0000-0000-0000-00000000e101'$q$);
 
 -- Role changes are out of band even for staff, on others and on itself.
 select pg_temp.expect_denied('staff: promoting a client user via profiles.role',
@@ -280,6 +384,31 @@ select pg_temp.expect_denied('staff: demoting itself via profiles.role',
 
 select pg_temp.expect_denied('staff: deleting through knowledge_base_public',
   $q$delete from public.knowledge_base_public$q$);
+
+-- Companies are created out of band (seed or Studio), even by staff.
+select pg_temp.expect_denied('staff: creating a company',
+  $q$insert into public.companies (name, kind) values ('rls test', 'client')$q$);
+select pg_temp.expect_denied('staff: deleting a company',
+  $q$delete from public.companies where id = '00000000-0000-0000-0000-00000000c102'$q$);
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Persona: anonymous caller (anon, no JWT subject)
+-- ---------------------------------------------------------------------------
+
+set local role anon;
+select set_config('request.jwt.claims', '', true);
+
+select pg_temp.expect_denied('anon: selecting tickets', $q$select 1 from public.tickets$q$);
+select pg_temp.expect_denied('anon: selecting profiles', $q$select 1 from public.profiles$q$);
+select pg_temp.expect_denied('anon: selecting companies', $q$select 1 from public.companies$q$);
+select pg_temp.expect_denied('anon: selecting knowledge_base_entries', $q$select 1 from public.knowledge_base_entries$q$);
+select pg_temp.expect_denied('anon: selecting knowledge_base_public', $q$select 1 from public.knowledge_base_public$q$);
+select pg_temp.expect_denied('anon: filing a ticket',
+  $q$insert into public.tickets (company_id, created_by, error_text)
+     values ('00000000-0000-0000-0000-00000000c101', '00000000-0000-0000-0000-0000000000a2', 'rls test')$q$);
+select pg_temp.expect_denied('anon: calling current_company_id()', $q$select public.current_company_id()$q$);
 
 reset role;
 

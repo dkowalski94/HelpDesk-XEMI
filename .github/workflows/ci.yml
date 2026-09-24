@@ -32,9 +32,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Pinned to the CLI version package-lock.json resolves, so a CLI release cannot break
+      # this job without a code change; bump the two together.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.117.0
       - run: npm ci
       - name: Start local Supabase
         run: |

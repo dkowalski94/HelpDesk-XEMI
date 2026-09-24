@@ -286,6 +286,13 @@ reviews read the plan as the source of truth rather than re-flagging them as dri
    `enforce_company_kind_immutable()` on `public.companies`. See
    `reviews/impl-review.md` findings F2, F3 and F4 for the reasoning.
 
+7. **Further hardening from `reviews/impl-review.md`** (F6, F7, F9, F10): `set_updated_at()`
+   with BEFORE UPDATE triggers, `sync_profile_email()` on an `auth.users` email change, an
+   explicit NULL guard in `enforce_profile_company_kind()`, and `full_name` bounded (CHECK
+   ≤ 200 plus `left(…, 200)` in `handle_new_user`). These add four `SECURITY DEFINER`
+   functions, so criterion 1.9's "all five" now reads **all nine**; the Progress title is kept
+   per the progress-format convention. (Recorded 2026-09-24, `reviews/impl-review-full.md` F6.)
+
 ---
 
 ## Phase 2: Domain tables (tickets and shared knowledge base)
@@ -367,6 +374,26 @@ every isolation guarantee in the product is actually written, and a single over-
 policy or unguarded `SECURITY DEFINER` function here would expose every company's data. The
 security review named above is a gate on starting Phase 4, not a formality to be batched with
 the final review.
+
+### Addenda (recorded during reviews, 2026-09-23/24)
+
+Contract changes made after the Phase 2 contract above was written. Recorded here so later
+changes read the plan as the source of truth.
+
+1. **`tickets.created_by` is nullable**, with `on delete set null` on both `created_by` and
+   `resolved_by`, so tickets outlive their author (`reviews/impl-review-phase-2.md` F4).
+2. **The resolved CHECK is two-branched**: resolved ⇒ `resolution` and `resolved_at` present,
+   `resolved_by` optional (so `set null` cannot break it); unresolved ⇒ all three null (F5).
+3. **Column-scoped ticket grants**: INSERT on `company_id, created_by, error_text,
+   user_comment`; UPDATE on `status, resolution, resolved_by, resolved_at`. The view's write
+   verbs are revoked from `authenticated` as well, and every foreign key is indexed (F1–F3, F6).
+4. **`vector` lives in the `extensions` schema**, with a DO block that names the problem if
+   pgvector is installed elsewhere (F8).
+5. **`TRUNCATE`/`TRIGGER`/`REFERENCES` revoked** from `authenticated` on all four tables, and
+   everything revoked from `anon` (`reviews/security-review-migrations-1-2.md` F1).
+6. **Migration `20260924090000_revoke_unused_write_grants.sql`** withdraws the write grants no
+   policy uses (`reviews/impl-review-full.md` F2). The resulting grant set is pinned exactly in
+   `supabase/tests/rls.sql`.
 
 ---
 
@@ -450,6 +477,16 @@ to `/admin/users`.
 **Implementation Note**: After completing this phase and all automated verification passes,
 pause here for manual confirmation from the human that the manual testing was successful before
 proceeding to the next phase.
+
+### Addenda (recorded during review, 2026-09-23)
+
+1. **`getSessionProfile` returns `SessionProfileResult`** (`ok | missing | error`) rather than
+   `SessionProfile | null`, and `App.Locals` gains `profileLookupFailed`; the dashboard renders a
+   third "lookup failed" state (`reviews/impl-review-phase-3.md` F4).
+2. **`STAFF_ROUTES = ["/admin", "/api/admin"]`**: API paths get 401/403 instead of a redirect
+   (F1).
+3. **Row and enum types derive from the generated `src/database.types.ts`**, and the client is
+   `createServerClient<Database>` (F3).
 
 ---
 
@@ -641,6 +678,10 @@ executing `supabase/tests/rls.sql` against the local database. No new secrets; n
 - The full CI sequence passes locally: `npx astro sync && npm run lint && npx astro check && npm run build`
 - Every negative check passes: `supabase/tests/rls.sql` runs against the local database and exits zero
 - The `smoke` job runs `supabase/tests/rls.sql` and fails the build when any assertion in it is removed
+  - *Note (impl-review-full F5, 2026-09-24): what CI enforces is that the build fails when any
+    assertion **fails** (`ON_ERROR_STOP` + `raise`). Removing an assertion is not detected — there
+    is no assertion-count guard. The Progress title is kept per the progress-format convention;
+    this note is the effective criterion.*
 
 #### Manual Verification:
 
@@ -650,6 +691,16 @@ executing `supabase/tests/rls.sql` against the local database. No new secrets; n
 
 **Implementation Note**: After completing this phase and all automated verification passes,
 pause here for manual confirmation from the human that the manual testing was successful.
+
+### Addenda (recorded during review, 2026-09-24)
+
+1. **A fourth seeded persona**, `oczekujacy@xemi.local`, is left in the unassigned company; the
+   Testing Strategy's manual step 1 and `supabase/tests/rls.sql` rely on it.
+2. **`src/lib/services/tickets.ts`** (service extraction per `CLAUDE.md`) and
+   `TicketSummary`/`TicketListResponse` in `src/types.ts`; `GET /api/tickets` also returns
+   503/500 on a configuration or query failure.
+3. **`rls.sql` also pins the exact grant inventory and covers the `anon` persona; `smoke.mjs`
+   ends with the one successful staff assignment** (`reviews/impl-review-full.md` F1, F3, F4).
 
 ---
 
