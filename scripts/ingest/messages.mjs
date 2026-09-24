@@ -21,6 +21,8 @@ Opcje:
 Przykłady:
   npm run ingest -- --dry-run "C:\\Dokumentacja\\Magazyn.pdf"
   npm run ingest -- "C:\\Dokumentacja"
+  npm run ingest -- --lista
+  npm run ingest -- --usun Magazyn.pdf
 `;
 
 export const MSG = {
@@ -29,9 +31,10 @@ export const MSG = {
   missingOptionValue: (option) => `opcja ${option} wymaga wartości, np. --usun Magazyn.pdf`,
   unexpectedOptionValue: (option) => `opcja ${option} nie przyjmuje wartości`,
   noInputs: "Nie podano żadnego pliku PDF ani folderu. Użyj --pomoc, aby zobaczyć przykłady.",
-  notAvailableYet:
-    "Wgrywanie do bazy wiedzy (oraz --lista, --usun i --wymus) nie jest jeszcze dostępne w tej wersji skryptu.\n" +
-    "Użyj --dry-run, aby zobaczyć, na jakie fragmenty zostanie pocięty dokument.",
+  conflictingOptions:
+    "Tych opcji nie można łączyć: --dry-run, --lista i --usun działają osobno, --wymus działa tylko przy " +
+    "wgrywaniu plików, a --lista i --usun nie przyjmują plików. Użyj --pomoc, aby zobaczyć przykłady.",
+  fatal: (message) => `BŁĄD: ${message}`,
 
   // Input expansion
   inputMissing: (input) => `Nie znaleziono: ${input} — pominięto.`,
@@ -55,21 +58,104 @@ export const MSG = {
 
   // Summary
   summary: (processed, failed) => `\nPodsumowanie: przetworzono ${processed}, błędy ${failed}.`,
+
+  // Sign-in
+  emailPrompt: "E-mail konta serwisanta w HelpDesku: ",
+  passwordPrompt: "Hasło (nie jest wyświetlane podczas wpisywania): ",
+  signingIn: (email) => `Logowanie jako ${email}...`,
+  signedIn: "Zalogowano.",
+
+  // Load
+  loadHeader: (count) => `Wgrywanie do bazy wiedzy: ${count} plik(ów).`,
+  unchangedSkipped: "  Bez zmian, pominięto (ten sam plik jest już w bazie; --wymus wgra go ponownie).",
+  embedding: (done, total) => `  Obliczanie wektorów (OpenAI): ${done}/${total}`,
+  openAiRetry: (seconds, attempt, maxAttempts) =>
+    `  OpenAI chwilowo nie odpowiada lub ogranicza liczbę zapytań — ponowna próba za ${seconds} s (${attempt}/${maxAttempts})...`,
+  uploading: (batch, total) => `  wysyłanie ${batch}/${total}`,
+  published: (count) => `  Dodano nowy dokument: ${count} fragmentów.`,
+  replaced: (count) => `  Zastąpiono poprzednią wersję dokumentu: ${count} fragmentów.`,
+  loadSummary: ({ added, replaced, skipped, failed }) =>
+    `\nPodsumowanie: dodano ${added}, zastąpiono ${replaced}, bez zmian ${skipped}, błędy ${failed}.`,
+  aborted: (remaining) =>
+    remaining > 0 ? `Przerwano — pozostałe pliki (${remaining}) nie zostały przetworzone.` : "Przerwano.",
+
+  // --lista
+  listEmpty: "Baza wiedzy nie zawiera jeszcze żadnych dokumentów ERP.",
+  listHeader: (count) => `Dokumenty ERP w bazie wiedzy: ${count}\n`,
+  listColumns: ["Plik", "Wgrano", "Wgrał(a)", "Strony", "Fragmenty"],
+  unknownPerson: "—",
+
+  // --usun
+  removed: (fileName) => `Usunięto dokument ${fileName} i jego fragmenty z bazy wiedzy.`,
+  notFound: (fileName) => `Nie znaleziono dokumentu ${fileName} w bazie wiedzy (--lista pokazuje wgrane dokumenty).`,
 };
 
 /** An expected failure with a known Polish explanation; `code` selects the message. */
 export class IngestError extends Error {
-  constructor(code, detail) {
-    super(detail ?? code);
+  constructor(code, detail, options) {
+    super(detail ?? code, options);
     this.name = "IngestError";
     this.code = code;
     this.detail = detail;
   }
+
+  /** Errors that would repeat identically for every remaining file stop the whole run. */
+  get fatal() {
+    return FATAL_CODES.has(this.code);
+  }
 }
+
+const FATAL_CODES = new Set([
+  "OPENAI_KEY_INVALID",
+  "OPENAI_QUOTA",
+  "DB_NETWORK",
+  "DB_DENIED",
+  "DB_MIGRATION_MISSING",
+  "INVALID_CREDENTIALS",
+  "NOT_STAFF",
+]);
+
+const ENV_FILE_HINT = (envFile) =>
+  `Uzupełnij plik ${envFile} (w folderze projektu) — każda wartość w osobnej linii, np. NAZWA=wartość.`;
 
 const ERROR_MESSAGES = {
   NO_TEXT: () => "PDF nie zawiera tekstu — możliwe, że to skan. Taki dokument trzeba najpierw przepuścić przez OCR.",
   READ_FAILED: (detail) => (detail ? `Nie można odczytać pliku (${detail}).` : "Nie można odczytać pliku."),
+
+  // Configuration (.env.ingest); detail = { names, envFile } or { name, envFile }
+  CONFIG_MISSING: ({ names, envFile }) =>
+    `${names.length === 1 ? `Brak ustawienia ${names[0]}` : `Brak ustawień: ${names.join(", ")}`}. ${ENV_FILE_HINT(envFile)}`,
+  CONFIG_BAD_URL: ({ name, envFile }) =>
+    `Ustawienie ${name} nie jest poprawnym adresem (powinno wyglądać jak https://xxxx.supabase.co). ${ENV_FILE_HINT(envFile)}`,
+
+  // Prompting
+  NO_TERMINAL: () =>
+    "Nie można bezpiecznie zapytać o hasło, bo skrypt nie działa w zwykłym oknie terminala. " +
+    "Uruchom go w PowerShellu, Wierszu polecenia albo Windows Terminal (w samym Git Bash wpisz: winpty npm.cmd run ingest -- ...).",
+  CANCELLED: () => "Anulowano.",
+  EMPTY_INPUT: () => "Nie podano e-maila albo hasła.",
+
+  // Sign-in and database
+  INVALID_CREDENTIALS: () => "Nieprawidłowy e-mail lub hasło. Użyj tych samych danych, co przy logowaniu do HelpDesku.",
+  EMAIL_NOT_CONFIRMED: () =>
+    "Adres e-mail tego konta nie został jeszcze potwierdzony. Potwierdź go i spróbuj ponownie.",
+  NOT_STAFF: () => "To konto nie jest kontem serwisanta. Dokumentację ERP może wgrywać tylko serwisant.",
+  DB_DENIED: () => "Baza odmówiła dostępu — ta operacja jest dostępna tylko dla konta serwisanta.",
+  DB_NETWORK: (detail) =>
+    `Nie można połączyć się z bazą HelpDesku${detail ? ` (${detail})` : ""}. ` +
+    "Sprawdź połączenie z internetem i ustawienie SUPABASE_URL; jeśli wszystko się zgadza, baza może być chwilowo niedostępna.",
+  DB_MIGRATION_MISSING: () => "Baza nie ma jeszcze migracji — skontaktuj się z administratorem.",
+  DB_FAILED: (detail) => `Baza odpowiedziała błędem: ${detail ?? "brak szczegółów"}`,
+
+  // OpenAI
+  OPENAI_KEY_INVALID: () => "Klucz OpenAI jest nieprawidłowy. Sprawdź ustawienie OPENAI_API_KEY w pliku .env.ingest.",
+  OPENAI_QUOTA: () =>
+    "Konto OpenAI nie ma już środków (limit wykorzystany). Doładuj konto lub zmień limit na platform.openai.com i spróbuj ponownie.",
+  OPENAI_NETWORK: (detail) =>
+    `Nie można połączyć się z OpenAI${detail ? ` (${detail})` : ""} mimo kilku prób. Sprawdź połączenie z internetem i spróbuj ponownie.`,
+  OPENAI_FAILED: (detail) => `OpenAI odpowiedziało błędem: ${detail ?? "brak szczegółów"}`,
+  OPENAI_BAD_RESPONSE: (detail) =>
+    `OpenAI zwróciło nieoczekiwaną odpowiedź (${detail ?? "brak szczegółów"}). Spróbuj ponownie.`,
 };
 
 /**
@@ -87,7 +173,34 @@ export function toUserMessage(error) {
   return `Nieoczekiwany błąd: ${raw}`;
 }
 
+// PostgREST: PGRST202 = function not found in the schema cache, PGRST205 = table not found;
+// Postgres: 42883 = undefined function, 42P01 = undefined table.
+const MISSING_SCHEMA_CODES = new Set(["PGRST202", "PGRST205", "42883", "42P01"]);
+
+/**
+ * Maps an error returned by supabase-js (auth or PostgREST) to an `IngestError`.
+ * `status` is the HTTP status of the PostgREST response; 0 means the request never reached a
+ * server (DNS, refused connection, no internet).
+ */
+export function databaseError(error, status) {
+  const code = typeof error?.code === "string" ? error.code : "";
+  const message = typeof error?.message === "string" ? error.message : String(error);
+  const options = { cause: error };
+
+  if (error?.name === "AuthRetryableFetchError" || status === 0)
+    return new IngestError("DB_NETWORK", error?.status ? `HTTP ${error.status}` : undefined, options);
+  if (code === "invalid_credentials") return new IngestError("INVALID_CREDENTIALS", undefined, options);
+  if (code === "email_not_confirmed") return new IngestError("EMAIL_NOT_CONFIRMED", undefined, options);
+  if (code === "42501") return new IngestError("DB_DENIED", undefined, options);
+  if (MISSING_SCHEMA_CODES.has(code)) return new IngestError("DB_MIGRATION_MISSING", undefined, options);
+  return new IngestError("DB_FAILED", message, options);
+}
+
 /** Stack trace for DEBUG=1 runs; empty otherwise, so staff never see one by default. */
 export function debugDetails(error) {
-  return process.env.DEBUG === "1" && error instanceof Error && error.stack ? error.stack : "";
+  if (process.env.DEBUG !== "1" || !(error instanceof Error) || !error.stack) return "";
+  const cause = error.cause;
+  if (cause === undefined) return error.stack;
+  const causeText = cause instanceof Error && cause.stack ? cause.stack : JSON.stringify(cause, null, 2);
+  return `${error.stack}\nCaused by: ${causeText}`;
 }

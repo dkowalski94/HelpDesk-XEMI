@@ -1,14 +1,28 @@
 // Loads the ERP (XEMI) documentation PDFs into the shared knowledge base (roadmap F-02).
 // Run by a service-staff member on their own machine: `npm run ingest -- <plik.pdf | folder> ...`
-// This version implements the offline half only (`--dry-run`): read, hash, extract, chunk, print.
+// Offline (`--dry-run`): read, hash, extract, chunk, print — no configuration, no network.
+// Online (load, `--lista`, `--usun`): validate .env.ingest, sign in as the staff member and check
+// the role before touching any file; then per file hash → skip if unchanged → extract → chunk →
+// embed all fragments → stage in batches → publish. Nothing reaches the knowledge base before
+// every fragment has its embedding and is staged.
 // All user-facing text lives in scripts/ingest/messages.mjs.
 
 import { readdir, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { chunkPages, fragmentLabel } from "./ingest/chunking.mjs";
-import { MSG, USAGE, debugDetails, toUserMessage } from "./ingest/messages.mjs";
+import { embedTexts } from "./ingest/embeddings.mjs";
+import { IngestError, MSG, USAGE, debugDetails, toUserMessage } from "./ingest/messages.mjs";
 import { extractPages, readPdfFile } from "./ingest/pdf-text.mjs";
+import {
+  findDocument,
+  listDocuments,
+  loadConfig,
+  removeDocument,
+  signIn,
+  signOut,
+  uploadDocument,
+} from "./ingest/upload.mjs";
 
 const PREVIEW_FRAGMENTS = 3;
 const PREVIEW_CHARS = 200;
@@ -74,7 +88,15 @@ async function expandInputs(inputs) {
   for (const filePath of files) {
     // realpath gives one spelling per file on a case-insensitive disk (magazyn.pdf vs Magazyn.pdf,
     // short 8.3 names), so the same file reached two ways is not mistaken for a name clash.
-    const resolved = await realpath(filePath);
+    let resolved;
+    try {
+      resolved = await realpath(filePath);
+    } catch (error) {
+      console.log(MSG.inputUnreadable(filePath));
+      printError(error);
+      problems++;
+      continue;
+    }
     const key = path.basename(resolved).toLowerCase();
     const seen = byName.get(key);
     if (seen === resolved) continue; // the same file given twice (e.g. itself and its folder)
@@ -132,6 +154,145 @@ async function dryRunFile(filePath) {
   }
 }
 
+/**
+ * Hash → skip if unchanged → extract → chunk → embed → stage → publish.
+ * Returns "skipped" | "added" | "replaced". Throws on a per-file failure; the caller reports it.
+ */
+async function loadFile(client, config, filePath, force) {
+  const fileName = path.basename(filePath);
+  const { bytes, contentHash } = await readPdfFile(filePath);
+
+  // Before parsing: a routine re-run over the whole folder costs one hash per unchanged file.
+  const existing = await findDocument(client, fileName);
+  if (existing?.content_hash === contentHash && !force) {
+    console.log(MSG.unchangedSkipped);
+    return "skipped";
+  }
+
+  const { pageCount, pages } = await extractPages(bytes);
+  console.log(MSG.pageCount(pageCount, pages.filter(Boolean).length));
+  const fragments = chunkPages(pages);
+  console.log(MSG.fragmentCount(fragments.length));
+
+  const embeddings = await embedTexts(
+    config.openAiKey,
+    fragments.map((fragment) => fragment.text),
+    {
+      onProgress: (done, total) => {
+        console.log(MSG.embedding(done, total));
+      },
+      onRetry: (seconds, attempt, maxAttempts) => {
+        console.log(MSG.openAiRetry(seconds, attempt, maxAttempts));
+      },
+    },
+  );
+
+  const { chunkCount } = await uploadDocument(
+    client,
+    {
+      fileName,
+      contentHash,
+      pageCount,
+      fragments: fragments.map((fragment, index) => ({
+        seq: fragment.seq,
+        label: fragmentLabel(fileName, fragment),
+        text: fragment.text,
+        embedding: embeddings[index],
+      })),
+    },
+    (batch, total) => {
+      console.log(MSG.uploading(batch, total));
+    },
+  );
+
+  console.log(existing ? MSG.replaced(chunkCount) : MSG.published(chunkCount));
+  return existing ? "replaced" : "added";
+}
+
+async function loadFiles(client, config, inputs, force) {
+  const { files, problems } = await expandInputs(inputs);
+  const counts = { added: 0, replaced: 0, skipped: 0, failed: problems };
+
+  if (files.length > 0) console.log(MSG.loadHeader(files.length));
+  for (const [index, filePath] of files.entries()) {
+    console.log(MSG.fileHeader(index + 1, files.length, path.basename(filePath)));
+    try {
+      counts[await loadFile(client, config, filePath, force)]++;
+    } catch (error) {
+      console.log(MSG.fileFailed(toUserMessage(error)));
+      printError(error);
+      counts.failed++;
+      // A bad OpenAI key or an unreachable database would fail every remaining file the same way.
+      if (error instanceof IngestError && error.fatal) {
+        console.log(MSG.aborted(files.length - index - 1));
+        break;
+      }
+    }
+  }
+
+  console.log(MSG.loadSummary(counts));
+  return counts.failed > 0 ? 1 : 0;
+}
+
+function formatDate(value) {
+  return new Date(value).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+}
+
+async function printDocumentList(client) {
+  const documents = await listDocuments(client);
+  if (documents.length === 0) {
+    console.log(MSG.listEmpty);
+    return;
+  }
+
+  const rows = documents.map((document) => [
+    document.fileName,
+    formatDate(document.ingestedAt),
+    document.ingestedBy ?? MSG.unknownPerson,
+    String(document.pageCount),
+    String(document.chunkCount),
+  ]);
+  const widths = MSG.listColumns.map((header, column) =>
+    Math.max(header.length, ...rows.map((row) => row[column].length)),
+  );
+  const numeric = new Set([3, 4]);
+  const line = (cells) =>
+    cells
+      .map((cell, column) => (numeric.has(column) ? cell.padStart(widths[column]) : cell.padEnd(widths[column])))
+      .join("  ")
+      .trimEnd();
+
+  console.log(MSG.listHeader(documents.length));
+  console.log(line(MSG.listColumns));
+  console.log(line(widths.map((width) => "-".repeat(width))));
+  for (const row of rows) console.log(line(row));
+}
+
+async function removeByName(client, name) {
+  // Identity is the base name; accept a full path too, as staff may paste one.
+  const fileName = path.basename(name.trim());
+  const removed = await removeDocument(client, fileName);
+  console.log(removed ? MSG.removed(fileName) : MSG.notFound(fileName));
+  return 0;
+}
+
+/** --lista, --usun and a real load: configuration → sign-in and role check → the operation. */
+async function runOnline(values, positionals) {
+  const isLoad = !values.lista && values.usun === undefined;
+  const config = loadConfig({ needOpenAi: isLoad });
+  const client = await signIn(config);
+  try {
+    if (values.lista) {
+      await printDocumentList(client);
+      return 0;
+    }
+    if (values.usun !== undefined) return await removeByName(client, values.usun);
+    return await loadFiles(client, config, positionals, values.wymus === true);
+  } finally {
+    await signOut(client);
+  }
+}
+
 async function main() {
   let values;
   let positionals;
@@ -158,15 +319,34 @@ async function main() {
     return 0;
   }
 
-  // --lista, --usun, --wymus and a real load need the database (next version of the script).
-  if (!values["dry-run"] || values.lista || values.usun !== undefined || values.wymus) {
-    console.error(MSG.notAvailableYet);
+  const dryRun = values["dry-run"] === true;
+  const listOrRemove = values.lista === true || values.usun !== undefined;
+  const conflicting =
+    [dryRun, values.lista === true, values.usun !== undefined].filter(Boolean).length > 1 ||
+    (values.wymus === true && (dryRun || listOrRemove)) ||
+    (listOrRemove && positionals.length > 0);
+  if (conflicting) {
+    console.error(MSG.conflictingOptions);
+    return 1;
+  }
+  if (values.usun?.trim() === "") {
+    console.error(MSG.badArguments(MSG.missingOptionValue("--usun")));
     return 1;
   }
 
-  if (positionals.length === 0) {
+  if (!listOrRemove && positionals.length === 0) {
     console.error(MSG.noInputs);
     return 1;
+  }
+
+  if (!dryRun) {
+    try {
+      return await runOnline(values, positionals);
+    } catch (error) {
+      console.error(MSG.fatal(toUserMessage(error)));
+      printError(error);
+      return 1;
+    }
   }
 
   const { files, problems } = await expandInputs(positionals);

@@ -93,6 +93,9 @@ no-op.
 - Structure-aware chunking (detecting per-error headings) — fixed-size fragments were chosen;
   revisit only if S-01 match quality on real documents is poor.
 - Stripping repeated page headers/footers from extracted text.
+- Stripping table-of-contents dot leaders (`Rozdział 3 ........ 12`) — the Phase 2 dry run on the
+  real document showed they survive extraction and dilute fragments; accepted for now, revisit
+  together with headers if S-01 match quality on real documents is poor.
 - A packaged single-file executable — the script runs from the repo clone.
 - An automated end-to-end ingestion test in CI with a fixture PDF and fake embeddings — test
   strategy belongs to Module 3; verification here is `rls.sql` plus `--dry-run` and a manual run.
@@ -289,6 +292,9 @@ Polish progress and a summary; exit 1 if any file failed, continuing past per-fi
   `--pomoc` / no arguments → Polish usage text.
 - Output language: Polish for every user-facing line; no stack traces unless `DEBUG=1`.
 - Uses `node:util` `parseArgs`; no CLI framework, no lodash.
+- *Addendum (impl review, phase 2):* two inputs with the same case-insensitive base name are
+  rejected (the second is reported and skipped, since they would replace each other in the
+  database), and a folder without PDFs counts as a failure (exit 1).
 
 #### 3. Extraction and chunking modules
 
@@ -540,34 +546,34 @@ runbook.
 
 #### Automated
 
-- [x] 2.1 `npm run lint` passes (covers `scripts/**/*.mjs`)
-- [x] 2.2 `npm run build` passes and the built Worker bundle does not contain `unpdf`
-- [x] 2.3 `npm run ingest -- --pomoc` prints the Polish usage text and exits 0
-- [x] 2.4 `npm run ingest -- --dry-run nieistniejacy.pdf` reports the missing file in Polish and exits 1
+- [x] 2.1 `npm run lint` passes (covers `scripts/**/*.mjs`) — dde7409
+- [x] 2.2 `npm run build` passes and the built Worker bundle does not contain `unpdf` — dde7409
+- [x] 2.3 `npm run ingest -- --pomoc` prints the Polish usage text and exits 0 — dde7409
+- [x] 2.4 `npm run ingest -- --dry-run nieistniejacy.pdf` reports the missing file in Polish and exits 1 — dde7409
 
 #### Manual
 
-- [x] 2.5 `npm run ingest -- --dry-run <real ~200 MB ERP PDF>` completes, prints page count, fragment count and the first fragments with page labels, with memory staying reasonable on a staff-class laptop
-- [x] 2.6 Fragment boundaries read sensibly on the real document (no fragment cut mid-word, page labels match the PDF)
-- [x] 2.7 A PDF with no text layer produces the "możliwe, że to skan" message, not an empty success
+- [x] 2.5 `npm run ingest -- --dry-run <real ~200 MB ERP PDF>` completes, prints page count, fragment count and the first fragments with page labels, with memory staying reasonable on a staff-class laptop — dde7409
+- [x] 2.6 Fragment boundaries read sensibly on the real document (no fragment cut mid-word, page labels match the PDF) — dde7409
+- [x] 2.7 A PDF with no text layer produces the "możliwe, że to skan" message, not an empty success — dde7409
 
 ### Phase 3: Embeddings, sign-in and publish
 
 #### Automated
 
-- [ ] 3.1 `npm run lint` passes
-- [ ] 3.2 `npm run build` passes
-- [ ] 3.3 With `.env.ingest` missing a variable, `npm run ingest -- plik.pdf` names the missing variable in Polish and exits 1 without prompting for a password
+- [x] 3.1 `npm run lint` passes
+- [x] 3.2 `npm run build` passes
+- [x] 3.3 With `.env.ingest` missing a variable, `npm run ingest -- plik.pdf` names the missing variable in Polish and exits 1 without prompting for a password
 
 #### Manual
 
-- [ ] 3.4 Against local Supabase (`db reset`) signed in as `serwis@xemi.local`: ingesting a real ERP PDF creates one `erp_documents` row and N `erp_doc` entries with non-null embeddings; `--lista` shows it
-- [ ] 3.5 Re-running the same command prints "bez zmian, pominięto" and changes no row (`updated_at` unchanged)
-- [ ] 3.6 Re-running with `--wymus` (or on an edited copy with the same name) replaces the entries: same single registry row, entry ids all new, total `erp_doc` count equals the new fragment count
-- [ ] 3.7 Signing in as `alfa@klient-alfa.local` stops with "To konto nie jest kontem serwisanta" before any file is read
-- [ ] 3.8 A wrong password, a wrong OpenAI key and a stopped Supabase each produce a single readable Polish message
-- [ ] 3.9 Killing the script mid-upload leaves `knowledge_base_entries` unchanged; the next successful run publishes cleanly
-- [ ] 3.10 `--usun <nazwa>` removes the document and its entries; the client view (as alfa) no longer returns them
+- [x] 3.4 Against local Supabase (`db reset`) signed in as `serwis@xemi.local`: ingesting a real ERP PDF creates one `erp_documents` row and N `erp_doc` entries with non-null embeddings; `--lista` shows it
+- [x] 3.5 Re-running the same command prints "bez zmian, pominięto" and changes no row (`updated_at` unchanged)
+- [x] 3.6 Re-running with `--wymus` (or on an edited copy with the same name) replaces the entries: same single registry row, entry ids all new, total `erp_doc` count equals the new fragment count
+- [x] 3.7 Signing in as `alfa@klient-alfa.local` stops with "To konto nie jest kontem serwisanta" before any file is read
+- [x] 3.8 A wrong password, a wrong OpenAI key and a stopped Supabase each produce a single readable Polish message
+- [x] 3.9 Killing the script mid-upload leaves `knowledge_base_entries` unchanged; the next successful run publishes cleanly
+- [x] 3.10 `--usun <nazwa>` removes the document and its entries; the client view (as alfa) no longer returns them
 
 ### Phase 4: Staff runbook and production rollout
 
