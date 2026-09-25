@@ -181,7 +181,7 @@ Wire the Worker side: OpenAI configuration and client, the resolution service, `
 
 **Contract**: `resolveError(supabase, { userId, companyId }, rawText): Promise<ErrorResolutionResponse>`; exports `MATCH_THRESHOLD = 0.5` and `MATCH_COUNT = 3` (the single calibration knob, with a comment that 0.5 is a starting point to calibrate on real queries).
 1. `trimmed = rawText.trim()`; empty → `empty-text`; `trimmed.length > ERROR_TEXT_MAX_LENGTH` → `too-long`.
-2. Search: `embedText(trimmed)` → `supabase.rpc("match_knowledge_base", { p_query_embedding: JSON.stringify(vector), p_match_threshold: 0, p_match_count: MATCH_COUNT })`, then keep only rows with `similarity >= MATCH_THRESHOLD` in TypeScript. The threshold is applied here, not in SQL, so near misses stay observable: `console.log` the best similarity of every search (matched or not) — this is what the calibration checks read, and changing the threshold needs no migration. Not configured, `OpenAIRequestError`, timeout/network error, or an RPC error → "unavailable" (`console.error` the cause). ≥ 1 row left after filtering → return `matched` with those rows mapped to `KnowledgeMatch`; **no ticket**.
+2. Search: `embedText(trimmed)` → `supabase.rpc("match_knowledge_base", { p_query_embedding: JSON.stringify(vector), p_match_threshold: 0, p_match_count: MATCH_COUNT })`, then keep only rows with `similarity >= MATCH_THRESHOLD` in TypeScript. The threshold is applied here, not in SQL, so near misses stay observable: `console.log` the best similarity of every search (matched or not) — this is what the calibration checks read, and changing the threshold needs no migration. Not configured, `OpenAIRequestError`, timeout/network error, or an RPC error → "unavailable" (`console.error` the cause). ≥ 1 row left after filtering → return `matched` with those rows mapped to `KnowledgeMatch`; **no ticket**. The generated RPC row type declares `cause`/`steps` as `string`, but `supabase gen types` marks every `returns table` column non-null; both are nullable (`cause` is always null for `erp_doc`), so the mapper types them `string | null` itself rather than trusting `src/database.types.ts`.
 3. No match or unavailable → look up the user's own open ticket: `tickets` where `created_by = userId`, `status = 'todo'`, `error_text = trimmed`, newest first, limit 1. Found → `already-reported`. A lookup error is logged and treated as "not found" (a duplicate beats a lost report).
 4. Insert `{ company_id: companyId, created_by: userId, error_text: trimmed }` returning `id, company_id, status, error_text, created_at` → `ticket-created`. Insert error → `error`.
 5. `searchUnavailable` is `true` on both ticket outcomes when step 2 was unavailable.
@@ -347,7 +347,7 @@ One request does at most: one OpenAI embeddings call (I/O, 8 s timeout), one RPC
 
 ## Migration Notes
 
-- The new migration must be applied to the hosted project **before** merging to `master` (`npx supabase db push --dry-run`, then `npx supabase db push`), per CLAUDE.md *Database migrations*.
+- The new migration must be applied to the hosted project **before** merging to `master` — or, since this change is committed directly on `master`, **before the next `git push`**, because every push deploys the Worker (`npx supabase db push --dry-run`, then `npx supabase db push`), per CLAUDE.md *Database migrations*.
 - `OPENAI_API_KEY` must be set on the production Worker (`npx wrangler secret put OPENAI_API_KEY`) before merge; without it production silently degrades to "every paste becomes a ticket".
 - Rollback: the function is additive; an older Worker never calls it, so rolling the Worker back needs no schema change.
 
@@ -367,11 +367,11 @@ One request does at most: one OpenAI embeddings call (I/O, 8 s timeout), one RPC
 
 #### Automated
 
-- [x] 1.1 Migrations apply cleanly on a fresh database: `npx supabase db reset`
-- [x] 1.2 RLS and function checks pass: `psql … -f supabase/tests/rls.sql`
-- [x] 1.3 `src/database.types.ts` contains `match_knowledge_base` after regeneration
-- [x] 1.4 Type-check passes: `npx astro sync && npx astro check`
-- [x] 1.5 Lint passes: `npm run lint`
+- [x] 1.1 Migrations apply cleanly on a fresh database: `npx supabase db reset` — 38ab5f3
+- [x] 1.2 RLS and function checks pass: `psql … -f supabase/tests/rls.sql` — 38ab5f3
+- [x] 1.3 `src/database.types.ts` contains `match_knowledge_base` after regeneration — 38ab5f3
+- [x] 1.4 Type-check passes: `npx astro sync && npx astro check` — 38ab5f3
+- [x] 1.5 Lint passes: `npm run lint` — 38ab5f3
 
 ### Phase 2: Server path — embeddings, resolution service, endpoints, smoke
 
