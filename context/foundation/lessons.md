@@ -22,3 +22,10 @@
 - **Problem**: Domyślne uprawnienia Supabase dają `anon`/`authenticated` ALL (w tym `TRUNCATE`, który omija RLS) i EXECUTE na funkcjach; migracje 1 i 2 zawęziły INSERT/UPDATE ręcznie, ale pominęły `TRUNCATE`/`TRIGGER`/`REFERENCES` i granty `anon` — znalezione dopiero w przeglądzie 2.12.
 - **Rule**: Każdy nowy obiekt w `public` musi w tej samej migracji jawnie odebrać domyślne uprawnienia Supabase — `TRUNCATE`, `TRIGGER`, `REFERENCES` i wszystko dla `anon` na tabelach, EXECUTE od `public`/`anon` na funkcjach — a potem nadać z powrotem tylko to, czego wymaga polityka; weryfikuj przez `information_schema.role_table_grants`, nie przez czytanie SQL.
 - **Applies to**: plan, implement, impl-review
+
+## Backfill istniejących wierszy w migracji, która dodaje tabelę utrzymywaną triggerem
+
+- **Context**: Każda migracja Supabase, która tworzy tabelę wypełnianą triggerem na `auth.users` albo innej istniejącej tabeli — np. `public.profiles` z `on_auth_user_created`.
+- **Problem**: Trigger `AFTER INSERT` tworzy wiersz tylko dla nowych kont; konta już istniejące na hostowanej bazie zostają bez profilu. Na produkcji konto sprzed migracji `20260922120000` nie miało profilu, więc `is_service_staff()` było false, a `update` roli zmienił 0 wierszy (znalezione w `erp-doc-ingestion-pipeline`, krok 4.6, 2026-09-25). `db reset` + seed tego nie pokaże, bo seed wstawia `auth.users` po migracjach.
+- **Rule**: Migracja, która dodaje tabelę lub kolumnę utrzymywaną triggerem na istniejącej tabeli, musi w tym samym pliku zrobić backfill dla istniejących wierszy (np. `insert … select from auth.users … on conflict do nothing`) i to sprawdzić — lokalnie przez wiersz w `auth.users` wstawiony przed migracją, nie przez seed.
+- **Applies to**: plan, implement, impl-review
