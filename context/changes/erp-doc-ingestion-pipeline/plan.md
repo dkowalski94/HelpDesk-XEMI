@@ -593,12 +593,12 @@ runbook.
 
 #### Automated
 
-- [ ] 4.1 `npm run lint` passes
-- [ ] 4.2 `git check-ignore .env.ingest` reports it ignored and `git check-ignore .env.ingest.example` reports it not ignored
+- [x] 4.1 `npm run lint` passes
+- [x] 4.2 `git check-ignore .env.ingest` reports it ignored and `git check-ignore .env.ingest.example` reports it not ignored
 - [ ] 4.3 CI (`ci` and `smoke` jobs) is green on the PR
 
 #### Manual
 
-- [ ] 4.4 A service-staff member (not the developer) completes the setup and one ingestion using only the runbook, and reports where they got stuck
-- [ ] 4.5 `npx supabase db push --dry-run` against the hosted project lists only `20260924120000_erp_document_ingestion.sql`, and `db push` applies it before the PR is merged
+- [x] 4.4 A service-staff member (not the developer) completes the setup and one ingestion using only the runbook, and reports where they got stuck
+- [x] 4.5 `npx supabase db push --dry-run` against the hosted project lists only `20260924120000_erp_document_ingestion.sql`, and `db push` applies it before the PR is merged
 - [ ] 4.6 After the first production run, `--lista` shows all current ERP PDFs and a client account sees `erp_doc` entries through `knowledge_base_public`

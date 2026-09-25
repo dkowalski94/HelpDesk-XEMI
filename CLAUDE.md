@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run smoke` — dependency-free auth-flow and tenant-isolation smoke test (`scripts/smoke.mjs`) against a running server, `BASE_URL` env (default `http://localhost:4321`). Needs the demo personas from `supabase/seed.sql` (`npx supabase db reset`). Run after dependency upgrades; CI runs it against the production preview with a local Supabase.
 - `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql` — policy-level negative checks (denied writes and escalations as each seeded persona), run in one rolled-back transaction; non-zero exit means a check failed. Without a local `psql`: `docker exec -i supabase_db_10x-astro-starter psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql`.
 - `npx astro check` — type-checks `.astro` files (run in CI after `npx astro sync`, not wired to an npm script).
+- `npm run ingest -- [--dry-run | --lista | --usun <plik.pdf> | --wymus | --pomoc] <plik.pdf | folder> ...` — offline ERP documentation ingestion (`scripts/ingest-erp-docs.mjs`), run by service staff from a repo clone; see *ERP documentation ingestion*. `--dry-run` needs no config or network; everything else reads `.env.ingest` and prompts for a staff password (locally: `serwis@xemi.local` from the seed).
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
 
@@ -41,6 +42,15 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - `src/pages/api/web-search.ts` — `POST`, signed-in users only (each call spends Exa credits). Returns the `WebSearchResponse` discriminated union from `src/types.ts`; the route maps `WebSearchFailureReason` to a status code.
 - UI: `src/pages/search.astro` (in `PROTECTED_ROUTES`) mounting the `src/components/search/WebSearchPanel.tsx` island.
 
+### ERP documentation ingestion
+
+- `scripts/ingest-erp-docs.mjs` + `scripts/ingest/*.mjs` — plain Node script that loads ERP PDFs into `knowledge_base_entries` (`source = 'erp_doc'`). **Offline only**: nothing in `src/` imports it and there is no Worker route or in-app upload. Run by a non-developer: every user-facing string is Polish and lives in `scripts/ingest/messages.mjs`; the staff runbook is `docs/wgrywanie-dokumentacji-erp.md` — update it when flags or messages change.
+- Signs in as the staff member (`signInWithPassword`, password always prompted, never in env) with the **publishable/anon key only**; `loadConfig()` in `scripts/ingest/upload.mjs` rejects a `service_role`/`sb_secret_` key. Config comes from `.env.ingest` (template `.env.ingest.example`), read by the script's own loader resolved against the repo root rather than `node --env-file` (which prints an English notice when the file is absent): UTF-8 BOM stripped, UTF-16 (PowerShell 5.1 `>`) rejected with a Polish message, variables already in the environment win. `OPENAI_API_KEY` is required only for loading, not `--lista`/`--usun`; `SUPABASE_URL` must be `https:` except for localhost.
+- **Writes go solely through the three `SECURITY DEFINER` functions** of `supabase/migrations/20260924120000_erp_document_ingestion.sql`: `stage_erp_document_chunks` (batches into a staging table with RLS on and no policies), `publish_erp_document` (one transaction: replace the document, clear staging), `remove_erp_document`. Each raises 42501 unless `is_service_staff()`. `authenticated` has only staff-filtered SELECT on `erp_documents` — do not add direct write grants or policies. The script's Polish mapping keys on these errors (`databaseError()` in `messages.mjs`, incl. `UPLOAD_INTERRUPTED_MESSAGES` matched against the functions' `raise` texts), so changing a function's error text means updating that list.
+- **Every `erp_doc` entry must have a document**: check `knowledge_base_entries_erp_doc_has_document` ties `source = 'erp_doc'` to a non-null `erp_document_id` (FK `on delete cascade` — the entries *are* the document). Any other writer (seed, tests) creates the `erp_documents` row first. Document identity is the base file name in NFC, case-insensitive (unique index on `lower(file_name)`).
+- **Embedding model and dimension are shared with S-01's query side**: `text-embedding-3-small`, 1536 (`scripts/ingest/embeddings.mjs`, column `extensions.vector(1536)`). Changing either on one side makes every stored vector unmatchable; it means a new migration plus re-ingesting everything with `--wymus`.
+- `unpdf` stays a **devDependency**, imported only from `scripts/`, so it never enters the Worker bundle; staff get it through a plain `npm ci` (never `--omit=dev`). The embeddings client is plain `fetch`, no OpenAI SDK.
+
 ### Key conventions
 
 - **Path alias**: `@/*` maps to `./src/*` (tsconfig paths).
@@ -58,6 +68,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 - Node.js v22.14.0 (see `.nvmrc`)
 - Env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `EXA_API_KEY` (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
+- Ingestion script env vars (`.env.ingest`, template `.env.ingest.example`, gitignored): `SUPABASE_URL`, `SUPABASE_KEY` (same publishable/anon key as the app), `OPENAI_API_KEY`, optional `HELPDESK_EMAIL`. `DEBUG=1` adds stack traces to its output.
 - Local Supabase: `npx supabase start` (requires Docker)
 - Cloudflare local dev: secrets go in `.dev.vars` (gitignored)
 - Deploy: `npx wrangler deploy` (requires Cloudflare account + `wrangler` auth)

@@ -16,9 +16,10 @@ pnpm-debug.log*
 # environment variables
 # Ignored by pattern, not by enumeration: the next variant (.env.local,
 # .env.hosted) is created mid-debugging by someone who will not stop to update
-# this file. The template is the one file unblocked explicitly.
+# this file. The templates are the only files unblocked explicitly.
 .env*
 !.env.example
+!.env.ingest.example
 
 # cloudflare
 .dev.vars*
