@@ -332,6 +332,21 @@ export interface Database {
         Returns: Database["public"]["Enums"]["company_kind"];
       };
       is_service_staff: { Args: never; Returns: boolean };
+      match_knowledge_base: {
+        Args: {
+          p_match_count: number;
+          p_match_threshold: number;
+          p_query_embedding: string;
+        };
+        Returns: {
+          cause: string;
+          error_text: string;
+          id: string;
+          similarity: number;
+          source: Database["public"]["Enums"]["kb_source"];
+          steps: string;
+        }[];
+      };
       publish_erp_document: {
         Args: { p_page_count: number; p_upload_id: string };
         Returns: {

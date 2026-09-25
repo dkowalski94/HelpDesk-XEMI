@@ -163,6 +163,15 @@ as $$
     'embedding', (select jsonb_agg(0.001) from generate_series(1, p_dims)));
 $$;
 
+-- A 1536-dim vector whose leading coordinates are p_head and the rest zero, so the
+-- match_knowledge_base() checks work with exact similarities: kb_vector('{1}') is e1,
+-- kb_vector('{0,1}') is e2, kb_vector('{0.8,0.6}') is 0.8·e1 + 0.6·e2.
+create function pg_temp.kb_vector(p_head double precision[]) returns extensions.vector
+  language sql
+as $$
+  select (p_head || array_fill(0::double precision, array[1536 - cardinality(p_head)]))::extensions.vector(1536);
+$$;
+
 -- The helpers are called after `set local role authenticated` (or `anon`), so those
 -- roles need EXECUTE on them; a temporary function is invisible outside this session anyway.
 grant execute on all functions in schema pg_temp to authenticated, anon;
@@ -176,6 +185,9 @@ grant execute on all functions in schema pg_temp to authenticated, anon;
 --   tickets    e101 Alfa's   e102 Beta's
 --   kb         f101 source=ticket (Alfa provenance)   f102 source=erp_doc (document d101)
 --   erp docs   d101 Dokumentacja-demo.pdf
+--   kb match   match_knowledge_base(): the seed has no embeddings, so its section sets
+--              f101 = e1 and f102 = e2 and plants f201 (no embedding) plus 12 ticket
+--              entries at e1, all under a savepoint that is rolled back
 
 do $$
 begin
@@ -269,7 +281,8 @@ insert into rls_expected_grants values
   ('is_service_staff()',     'authenticated', 'EXECUTE'),
   ('stage_erp_document_chunks()', 'authenticated', 'EXECUTE'),
   ('publish_erp_document()',      'authenticated', 'EXECUTE'),
-  ('remove_erp_document()',       'authenticated', 'EXECUTE');
+  ('remove_erp_document()',       'authenticated', 'EXECUTE'),
+  ('match_knowledge_base()',      'authenticated', 'EXECUTE');
 
 do $$
 declare
@@ -732,6 +745,96 @@ rollback to savepoint erp_function_path;
 release savepoint erp_function_path;
 
 -- ---------------------------------------------------------------------------
+-- Similarity search: match_knowledge_base()
+-- ---------------------------------------------------------------------------
+-- The seed carries no embeddings, so the owner plants them with fixed vectors and every
+-- similarity below is exact. The whole section runs under a savepoint that is rolled
+-- back at its end; the fingerprint at the bottom then proves nothing leaked out of it.
+-- Similarities are compared rounded, because pgvector computes in single precision.
+
+savepoint kb_match_path;
+
+update public.knowledge_base_entries set embedding = pg_temp.kb_vector('{1}')
+where id = '00000000-0000-0000-0000-00000000f101';
+update public.knowledge_base_entries set embedding = pg_temp.kb_vector('{0,1}')
+where id = '00000000-0000-0000-0000-00000000f102';
+
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a2');
+
+select pg_temp.expect_equal('alfa: query 0.8·e1 + 0.6·e2 at threshold 0.5 returns f101 then f102',
+  $q$select string_agg(id || ' ' || round(similarity::numeric, 6), ', ' order by ord)
+     from public.match_knowledge_base(pg_temp.kb_vector('{0.8,0.6}'), 0.5, 3) with ordinality as m (id, source, error_text, cause, steps, similarity, ord)$q$,
+  '00000000-0000-0000-0000-00000000f101 0.800000, 00000000-0000-0000-0000-00000000f102 0.600000');
+select pg_temp.expect_equal('alfa: threshold 0.7 keeps f101 only',
+  $q$select string_agg(id::text, ', ')
+     from public.match_knowledge_base(pg_temp.kb_vector('{0.8,0.6}'), 0.7, 3)$q$,
+  '00000000-0000-0000-0000-00000000f101');
+select pg_temp.expect_count('alfa: a query orthogonal to every entry returns nothing',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{0,0,1}'), 0.5, 3)$q$, 0);
+
+-- An entry without an embedding is never a match, not even at the lowest threshold.
+reset role;
+insert into public.knowledge_base_entries (id, source, error_text)
+values ('00000000-0000-0000-0000-00000000f201', 'ticket', 'rls match: no embedding');
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a2');
+
+select pg_temp.expect_count('alfa: at threshold -1 only the two embedded entries match',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), -1, 10)$q$, 2);
+select pg_temp.expect_count('alfa: the entry without an embedding is never returned',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), -1, 10)
+     where id = '00000000-0000-0000-0000-00000000f201'$q$, 0);
+
+-- 12 more entries at e1 make 13 exact matches, enough to see the count clamp. They are
+-- ticket entries: an erp_doc one would need a document (knowledge_base_entries_erp_doc_has_document).
+reset role;
+insert into public.knowledge_base_entries (source, error_text, embedding)
+select 'ticket', 'rls match ' || g, pg_temp.kb_vector('{1}')
+from generate_series(1, 12) g;
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a2');
+
+select pg_temp.expect_count('alfa: count 3 returns 3 rows',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 3)$q$, 3);
+select pg_temp.expect_equal('alfa: the closest match comes first, at similarity 1',
+  $q$select round(similarity::numeric, 6)
+     from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 3) limit 1$q$,
+  '1.000000');
+select pg_temp.expect_count('alfa: count 1000 is clamped to 10 rows',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 1000)$q$, 10);
+select pg_temp.expect_count('alfa: count 0 is clamped to 1 row',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 0)$q$, 1);
+select pg_temp.expect_count('alfa: the entry without an embedding is still never returned',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), -1, 10)
+     where id = '00000000-0000-0000-0000-00000000f201'$q$, 0);
+
+-- Same gate as knowledge_base_public: an unassigned account gets nothing, not an error.
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a4');
+select pg_temp.expect_count('unassigned: match_knowledge_base() returns nothing',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 3)$q$, 0);
+
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+select pg_temp.expect_count('staff: match_knowledge_base() returns matches (control)',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 3)$q$, 3);
+
+reset role;
+
+-- The result exposes what knowledge_base_public exposes plus the similarity: no embedding,
+-- no provenance, no document link.
+select pg_temp.expect_equal('owner: match_knowledge_base() result signature',
+  $q$select pg_get_function_result('public.match_knowledge_base(extensions.vector, double precision, integer)'::regprocedure)$q$,
+  'TABLE(id uuid, source kb_source, error_text text, cause text, steps text, similarity double precision)');
+select pg_temp.expect_equal('owner: match_knowledge_base() is stable, security definer, owned by postgres',
+  $q$select p.provolatile::text || ' ' || p.prosecdef || ' ' || p.proowner::regrole
+     from pg_proc p
+     where p.oid = 'public.match_knowledge_base(extensions.vector, double precision, integer)'::regprocedure$q$,
+  's true postgres');
+
+rollback to savepoint kb_match_path;
+release savepoint kb_match_path;
+
+-- ---------------------------------------------------------------------------
 -- Owner-side: the erp_doc / document invariant holds below RLS too
 -- ---------------------------------------------------------------------------
 -- The owner bypasses RLS and every grant, so only the CHECK constraint stands here.
@@ -768,6 +871,8 @@ select pg_temp.expect_denied('anon: calling publish_erp_document()',
   $q$select * from public.publish_erp_document(gen_random_uuid(), 1)$q$);
 select pg_temp.expect_denied('anon: calling remove_erp_document()',
   $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
+select pg_temp.expect_denied('anon: calling match_knowledge_base()',
+  $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 3)$q$);
 
 reset role;
 
