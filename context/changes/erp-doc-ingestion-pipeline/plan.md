@@ -198,6 +198,15 @@ style of migrations 1–3 (Purpose / Affected / Notes).
 - Privileges (lessons.md): `revoke all` on both new tables from `public, anon, authenticated`;
   `grant select on public.erp_documents to authenticated`. `revoke execute` on the three functions
   from `public, anon`; `grant execute … to authenticated`.
+- *Addendum (impl review, phase 1):*
+  - `publish_erp_document` clears this upload's staging rows plus **anyone's** staging rows older
+    than 24 h (not only the caller's), so an abandoned upload never outlives a day of normal use.
+  - `authenticated`'s table-level INSERT/UPDATE on `knowledge_base_entries` is replaced by
+    column-scoped grants without `erp_document_id` (and without `source` for UPDATE), so staff
+    cannot attach an entry to a document outside the function path; `rls.sql` pins the columns.
+  - Further hardening (per-file advisory lock, mixed-upload and inserted-count checks, `seq`
+    validation, path rejection in `file_name`, `page_count >= 1`, `owner to postgres`,
+    `#variable_conflict use_column`): see `reviews/impl-review-phase-1.md` F3–F7.
 
 #### 2. Seed
 
@@ -275,8 +284,9 @@ point staff will type.
 
 **Contract**: `unpdf` in **devDependencies** (never imported from `src/`, so it never enters the
 Worker bundle; `npm ci` still installs it for staff). Script
-`"ingest": "node --env-file-if-exists=.env.ingest scripts/ingest-erp-docs.mjs"` (flag available
-since Node 22.9; `.nvmrc` pins 22.14).
+`"ingest": "node scripts/ingest-erp-docs.mjs"`; `.env.ingest` is read by the script's own loader
+(Phase 3 addendum), not `--env-file-if-exists`, which printed an English notice when the file was
+absent.
 
 #### 2. Script entry and CLI
 

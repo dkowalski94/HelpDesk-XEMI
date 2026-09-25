@@ -44,11 +44,100 @@ export interface Database {
         };
         Relationships: [];
       };
+      erp_document_upload_chunks: {
+        Row: {
+          content_hash: string;
+          created_at: string;
+          embedding: string;
+          error_text: string;
+          file_name: string;
+          seq: number;
+          steps: string;
+          upload_id: string;
+          uploaded_by: string;
+        };
+        Insert: {
+          content_hash: string;
+          created_at?: string;
+          embedding: string;
+          error_text: string;
+          file_name: string;
+          seq: number;
+          steps: string;
+          upload_id: string;
+          uploaded_by: string;
+        };
+        Update: {
+          content_hash?: string;
+          created_at?: string;
+          embedding?: string;
+          error_text?: string;
+          file_name?: string;
+          seq?: number;
+          steps?: string;
+          upload_id?: string;
+          uploaded_by?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "erp_document_upload_chunks_uploaded_by_fkey";
+            columns: ["uploaded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      erp_documents: {
+        Row: {
+          chunk_count: number;
+          content_hash: string;
+          created_at: string;
+          file_name: string;
+          id: string;
+          ingested_at: string;
+          ingested_by: string | null;
+          page_count: number;
+          updated_at: string;
+        };
+        Insert: {
+          chunk_count: number;
+          content_hash: string;
+          created_at?: string;
+          file_name: string;
+          id?: string;
+          ingested_at?: string;
+          ingested_by?: string | null;
+          page_count: number;
+          updated_at?: string;
+        };
+        Update: {
+          chunk_count?: number;
+          content_hash?: string;
+          created_at?: string;
+          file_name?: string;
+          id?: string;
+          ingested_at?: string;
+          ingested_by?: string | null;
+          page_count?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "erp_documents_ingested_by_fkey";
+            columns: ["ingested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       knowledge_base_entries: {
         Row: {
           cause: string | null;
           created_at: string;
           embedding: string | null;
+          erp_document_id: string | null;
           error_text: string;
           id: string;
           source: Database["public"]["Enums"]["kb_source"];
@@ -61,6 +150,7 @@ export interface Database {
           cause?: string | null;
           created_at?: string;
           embedding?: string | null;
+          erp_document_id?: string | null;
           error_text: string;
           id?: string;
           source: Database["public"]["Enums"]["kb_source"];
@@ -73,6 +163,7 @@ export interface Database {
           cause?: string | null;
           created_at?: string;
           embedding?: string | null;
+          erp_document_id?: string | null;
           error_text?: string;
           id?: string;
           source?: Database["public"]["Enums"]["kb_source"];
@@ -82,6 +173,13 @@ export interface Database {
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "knowledge_base_entries_erp_document_id_fkey";
+            columns: ["erp_document_id"];
+            isOneToOne: false;
+            referencedRelation: "erp_documents";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "knowledge_base_entries_source_company_id_fkey";
             columns: ["source_company_id"];
@@ -234,6 +332,23 @@ export interface Database {
         Returns: Database["public"]["Enums"]["company_kind"];
       };
       is_service_staff: { Args: never; Returns: boolean };
+      publish_erp_document: {
+        Args: { p_page_count: number; p_upload_id: string };
+        Returns: {
+          chunk_count: number;
+          document_id: string;
+        }[];
+      };
+      remove_erp_document: { Args: { p_file_name: string }; Returns: boolean };
+      stage_erp_document_chunks: {
+        Args: {
+          p_chunks: Json;
+          p_content_hash: string;
+          p_file_name: string;
+          p_upload_id: string;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       company_kind: "client" | "internal" | "unassigned";

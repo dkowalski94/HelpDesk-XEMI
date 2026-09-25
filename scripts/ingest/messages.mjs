@@ -141,7 +141,7 @@ const ERROR_MESSAGES = {
   // Prompting
   NO_TERMINAL: () =>
     "Nie można bezpiecznie zapytać o hasło, bo skrypt nie działa w zwykłym oknie terminala. " +
-    "Uruchom go w PowerShellu, Wierszu polecenia albo Windows Terminal (w samym Git Bash wpisz: winpty npm.cmd run ingest -- ...).",
+    "Uruchom go w PowerShellu, Wierszu polecenia albo Windows Terminal.",
   CANCELLED: () => "Anulowano.",
   EMPTY_INPUT: () => "Nie podano e-maila albo hasła.",
 

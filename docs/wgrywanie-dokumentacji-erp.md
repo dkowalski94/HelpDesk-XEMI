@@ -265,9 +265,11 @@ Wyświetla krótką listę opcji i przykładów.
 
 ## 3. Komunikaty i co z nimi zrobić
 
-Komunikaty o błędach zaczynają się od `BŁĄD:`. Jeśli dotyczą jednego pliku, skrypt przechodzi do
-następnego; błędy dotyczące klucza, konta lub połączenia zatrzymują całe wgrywanie
-(`Przerwano — pozostałe pliki (…) nie zostały przetworzone.`).
+Komunikaty o błędach zaczynają się od `BŁĄD:`. Pliku ustawień i konta skrypt sprawdza, zanim
+otworzy jakikolwiek plik — taki błąd kończy pracę od razu. Jeśli błąd dotyczy jednego pliku (także
+chwilowy brak połączenia z OpenAI), skrypt przechodzi do następnego. Nieprawidłowy klucz OpenAI,
+wyczerpany limit OpenAI oraz brak połączenia z bazą, odmowa dostępu lub brak migracji zatrzymują
+całe wgrywanie (`Przerwano — pozostałe pliki (…) nie zostały przetworzone.`).
 
 ### Plik ustawień `.env.ingest`
 
