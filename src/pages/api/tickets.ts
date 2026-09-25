@@ -5,6 +5,10 @@ import type { TicketListFailureReason, TicketListResponse } from "@/types";
 
 // Read-only for now: the smallest HTTP surface over which tenant isolation can be
 // asserted. S-01 and S-02 extend this route rather than replacing it.
+//
+// The default listing stays unfiltered on purpose — it is the smoke test's RLS probe.
+// `?mine=1` narrows it to the caller's own tickets for the client page: a view filter
+// inside what RLS returns, not a security boundary. Any other value is ignored.
 
 const FAILURE_STATUS: Record<TicketListFailureReason, number> = {
   unauthorized: 401,
@@ -45,6 +49,7 @@ export const GET: APIRoute = async (context) => {
   const page = await listVisibleTickets(supabase, {
     limit: intParam(params.get("limit"), TICKET_PAGE_DEFAULT, 1, TICKET_PAGE_MAX),
     offset: intParam(params.get("offset"), 0, 0, Number.MAX_SAFE_INTEGER),
+    createdBy: params.get("mine") === "1" ? context.locals.user.id : undefined,
   });
   if (page === null) {
     return json({ ok: false, reason: "error", error: "Could not load tickets." }, FAILURE_STATUS.error);

@@ -2,10 +2,20 @@
 // and that one company's data never reaches another company's users.
 // Zero dependencies on purpose. Run against a live server: BASE_URL=http://localhost:4321 node scripts/smoke.mjs
 // The isolation steps expect the demo personas from supabase/seed.sql (`npx supabase db reset`).
+//
+// Each run files one Klient Alfa ticket (through POST /api/resolve-error, as the throwaway
+// account) that nothing deletes — tickets have no DELETE policy. After ~49 runs against the
+// same database the seeded ticket e101 falls off the first page of GET /api/tickets, and the
+// staff check and the three onlyTicketsOf(COMPANY.alfa, TICKET.alfa) steps fail: run
+// `npx supabase db reset` every few dozen local runs.
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
-const email = `smoke-${Date.now()}@example.com`;
+const runId = Date.now();
+const email = `smoke-${runId}@example.com`;
 const password = "Smoke-Test-Passw0rd!";
+// Unique per run, and nonsense words so a developer's locally ingested ERP docs do not
+// match it — the resolve-error steps expect the no-match path that files a ticket.
+const errorText = `smoke-${runId} ERR-SMOKE kwarblifon zdrumpel wyzgotnik plomboryt`;
 
 // Fixed ids and credentials from supabase/seed.sql. The seeded personas are only ever
 // signed in as and attacked — never successfully changed — so a second run against the
@@ -92,6 +102,10 @@ function assignCompany(as, form) {
   return request("/api/admin/assign-company", { method: "POST", form, as });
 }
 
+function resolveError(as, text) {
+  return request("/api/resolve-error", { method: "POST", form: { errorText: text }, as });
+}
+
 /** True when the ticket list is non-empty, belongs entirely to one company, and holds that company's seeded ticket. */
 function onlyTicketsOf(companyId, ticketId) {
   return ({ json }) =>
@@ -115,6 +129,10 @@ function waitingUserId(html, userEmail) {
 
 // Filled in by the step that reads the waiting list, used by the assignment attempts.
 let smokeUserId = null;
+// Filled in by the step that files the ticket, used by the steps that look for it.
+let smokeTicketId = null;
+
+const hasTicket = (json, id) => id !== null && json.tickets.some((ticket) => ticket.id === id);
 
 // "Is the throwaway account still waiting?" is the re-read for every attempt aimed at
 // it: the waiting list is exactly the profiles in the unassigned company, so the account
@@ -129,6 +147,11 @@ const steps = [
   // from STAFF_ROUTES before the handler runs.
   ["admin api rejects anonymous user", () => request("/api/admin/assign-company", { method: "POST" }), { status: 401 }],
   ["tickets api rejects anonymous user", () => request("/api/tickets", { as: "anonymous" }), { status: 401 }],
+  [
+    "resolve-error api rejects anonymous user",
+    () => resolveError("anonymous", errorText),
+    { status: 401, check: ({ json }) => json?.reason === "unauthorized" },
+  ],
   [
     "signup creates account",
     () => request("/api/auth/signup", { method: "POST", form: { email, password } }),
@@ -174,6 +197,11 @@ const steps = [
     },
   ],
   [
+    "staff cannot file an error through resolve-error",
+    () => resolveError("staff", errorText),
+    { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
+  ],
+  [
     "new account signs in again",
     () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
     { status: 302, location: "/" },
@@ -182,6 +210,11 @@ const steps = [
     "unassigned account sees no tickets",
     () => request("/api/tickets"),
     { status: 200, check: ({ json }) => json?.ok === true && json.tickets.length === 0 },
+  ],
+  [
+    "unassigned account cannot file an error through resolve-error",
+    () => resolveError("smoke", errorText),
+    { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
   ],
 
   // --- Write and escalation attempts: each is rejected, then state is re-read --------
@@ -274,6 +307,81 @@ const steps = [
     "...and it is still turned away from /admin/users",
     () => request("/admin/users"),
     { status: 302, location: "/dashboard" },
+  ],
+
+  // --- Error resolution: the assigned throwaway account files one Alfa ticket ---------
+  // CI has no OPENAI_API_KEY, so the search is unavailable and every paste falls back to a
+  // ticket; locally, the nonsense text is meant to match nothing either way.
+  [
+    "resolve-error rejects a blank text",
+    () => resolveError("smoke", "   "),
+    { status: 400, check: ({ json }) => json?.reason === "empty-text" },
+  ],
+  [
+    "resolve-error rejects a text over 2000 characters",
+    () => resolveError("smoke", "x".repeat(2001)),
+    { status: 400, check: ({ json }) => json?.reason === "too-long" },
+  ],
+  [
+    "resolve-error files a Klient Alfa ticket for an unmatched error",
+    async () => {
+      const actual = await resolveError("smoke", errorText);
+      smokeTicketId = actual.json?.ticket?.id ?? null;
+      return actual;
+    },
+    {
+      status: 200,
+      check: ({ json }) =>
+        json?.ok === true &&
+        json.outcome === "ticket-created" &&
+        json.ticket.companyId === COMPANY.alfa &&
+        json.ticket.errorText === errorText,
+    },
+  ],
+  [
+    "...and the same error again is already reported, as the same ticket",
+    () => resolveError("smoke", errorText),
+    {
+      status: 200,
+      check: ({ json }) =>
+        json?.ok === true &&
+        json.outcome === "already-reported" &&
+        smokeTicketId !== null &&
+        json.ticket.id === smokeTicketId,
+    },
+  ],
+  [
+    "...and ?mine=1 lists exactly that ticket for the new account",
+    () => request("/api/tickets?mine=1"),
+    {
+      status: 200,
+      check: ({ json }) => json?.ok === true && json.tickets.length === 1 && hasTicket(json, smokeTicketId),
+    },
+  ],
+  [
+    "...and the Klient Alfa user still sees only Alfa's tickets, the new one included",
+    () => request("/api/tickets", { as: "alfa" }),
+    {
+      status: 200,
+      check: (actual) => onlyTicketsOf(COMPANY.alfa, TICKET.alfa)(actual) && hasTicket(actual.json, smokeTicketId),
+    },
+  ],
+  [
+    "...and ?mine=1 for the Klient Alfa user lists its own ticket, not the new one",
+    () => request("/api/tickets?mine=1", { as: "alfa" }),
+    {
+      status: 200,
+      check: ({ json }) =>
+        json?.ok === true && hasTicket(json, TICKET.alfa) && smokeTicketId !== null && !hasTicket(json, smokeTicketId),
+    },
+  ],
+  [
+    "...and the Klient Beta user does not see it",
+    () => request("/api/tickets", { as: "beta" }),
+    {
+      status: 200,
+      check: ({ json }) => json?.ok === true && smokeTicketId !== null && !hasTicket(json, smokeTicketId),
+    },
   ],
 ];
 

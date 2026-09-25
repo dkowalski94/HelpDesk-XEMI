@@ -377,16 +377,16 @@ One request does at most: one OpenAI embeddings call (I/O, 8 s timeout), one RPC
 
 #### Automated
 
-- [ ] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 RLS and function checks still pass: `psql … -f supabase/tests/rls.sql`
-- [ ] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 RLS and function checks still pass: `psql … -f supabase/tests/rls.sql`
+- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual
 
-- [ ] 2.6 2–3 real ERP error messages explained in a locally ingested PDF return `matched` with its fragment first; logged similarities recorded
-- [ ] 2.7 With the key present, an unrelated sentence returns `ticket-created` with `searchUnavailable: false`
+- [x] 2.6 2–3 real ERP error messages explained in a locally ingested PDF return `matched` with its fragment first; logged similarities recorded
+- [x] 2.7 With the key present, an unrelated sentence returns `ticket-created` with `searchUnavailable: false`
 
 ### Phase 3: Client page
 

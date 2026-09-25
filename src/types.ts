@@ -174,3 +174,45 @@ export interface TicketListFailure {
 }
 
 export type TicketListResponse = TicketListSuccess | TicketListFailure;
+
+/* -------------------------------------------------------------------------- */
+/* Error resolution (S-01)                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A knowledge base entry `match_knowledge_base` ranked against a pasted error.
+ *
+ * `cause` and `steps` are nullable although the generated RPC row type says
+ * otherwise: `supabase gen types` marks every `returns table` column non-null.
+ */
+export interface KnowledgeMatch {
+  id: string;
+  source: KbSource;
+  errorText: string;
+  cause: string | null;
+  steps: string | null;
+  /** Cosine similarity, 1 = identical. */
+  similarity: number;
+}
+
+/**
+ * What `POST /api/resolve-error` did with a paste: showed matching entries, or —
+ * only when nothing matched — filed a ticket or found the caller's open one.
+ * `searchUnavailable` says the search itself could not run, so the ticket was filed
+ * without one.
+ */
+export type ErrorResolutionSuccess =
+  | { ok: true; outcome: "matched"; matches: KnowledgeMatch[] }
+  | { ok: true; outcome: "ticket-created" | "already-reported"; ticket: TicketSummary; searchUnavailable: boolean };
+
+/** Why a paste could not be resolved — the API route maps this to a status code. */
+export type ErrorResolutionFailureReason =
+  "unauthorized" | "not-a-client" | "empty-text" | "too-long" | "not-configured" | "error";
+
+export interface ErrorResolutionFailure {
+  ok: false;
+  reason: ErrorResolutionFailureReason;
+  error: string;
+}
+
+export type ErrorResolutionResponse = ErrorResolutionSuccess | ErrorResolutionFailure;

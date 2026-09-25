@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` — ESLint with type-checked rules
 - `npm run lint:fix` — auto-fix lint issues
 - `npm run format` — Prettier (includes prettier-plugin-astro + prettier-plugin-tailwindcss)
-- `npm run smoke` — dependency-free auth-flow and tenant-isolation smoke test (`scripts/smoke.mjs`) against a running server, `BASE_URL` env (default `http://localhost:4321`). Needs the demo personas from `supabase/seed.sql` (`npx supabase db reset`). Run after dependency upgrades; CI runs it against the production preview with a local Supabase.
+- `npm run smoke` — dependency-free auth-flow and tenant-isolation smoke test (`scripts/smoke.mjs`) against a running server, `BASE_URL` env (default `http://localhost:4321`). Needs the demo personas from `supabase/seed.sql` (`npx supabase db reset`). Run after dependency upgrades; CI runs it against the production preview with a local Supabase. Each run files one Klient Alfa ticket that nothing deletes, so after a few dozen runs against the same local database the seeded ticket falls off the first page and the isolation steps fail — run `npx supabase db reset` every few dozen runs.
 - `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql` — policy-level negative checks (denied writes and escalations as each seeded persona), run in one rolled-back transaction; non-zero exit means a check failed. Without a local `psql`: `docker exec -i supabase_db_10x-astro-starter psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql`.
 - `npx astro check` — type-checks `.astro` files (run in CI after `npx astro sync`, not wired to an npm script).
 - `npm run ingest -- [--dry-run | --lista | --usun <plik.pdf> | --wymus | --pomoc] <plik.pdf | folder> ...` — offline ERP documentation ingestion (`scripts/ingest-erp-docs.mjs`), run by service staff from a repo clone; see *ERP documentation ingestion*. `--dry-run` needs no config or network; everything else reads `.env.ingest` and prompts for a staff password (locally: `serwis@xemi.local` from the seed).
@@ -42,6 +42,14 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - `src/pages/api/web-search.ts` — `POST`, signed-in users only (each call spends Exa credits). Returns the `WebSearchResponse` discriminated union from `src/types.ts`; the route maps `WebSearchFailureReason` to a status code.
 - UI: `src/pages/search.astro` (in `PROTECTED_ROUTES`) mounting the `src/components/search/WebSearchPanel.tsx` island.
 
+### Error resolution (S-01)
+
+- `src/pages/api/resolve-error.ts` — `POST`, FormData field `errorText`. Client users of a client company only: anonymous → 401, profile lookup failure → 500, anyone else (staff, unassigned) → 403 `not-a-client` before any OpenAI call. Not in `PROTECTED_ROUTES` — like `/api/tickets`, it answers 401 itself. Returns the `ErrorResolutionResponse` union from `src/types.ts`.
+- `src/lib/services/error-resolution.ts` — `resolveError()` never throws to the route: trims and validates (limit `ERROR_TEXT_MAX_LENGTH` in the dependency-free `src/lib/error-text.ts`, which the island may import — never import `src/lib/openai.ts` or the service from client code, they read `astro:env/server`), embeds the text, calls `match_knowledge_base` (migration `20260925120000`, `SECURITY DEFINER`, same gate as `knowledge_base_public`) with the vector as `JSON.stringify(vector)`, and filters by `MATCH_THRESHOLD` in TypeScript — the single calibration knob, applied outside SQL so the best similarity of every search is logged and changing it needs no migration.
+- **Fallback-to-ticket rule**: a match returns the entries and files **no** ticket. No match, or search unavailable (no key, OpenAI error/timeout, RPC error), returns the caller's own open (`todo`) ticket with the same trimmed text (`already-reported`) or files a new one (`ticket-created`); `searchUnavailable` flags the second case. A failed duplicate lookup files anyway — a duplicate beats a lost report.
+- `src/lib/openai.ts` — plain-`fetch` embeddings client, keyed by `OPENAI_API_KEY`; `embedText()` returns `null` without a key, no retries, 8 s timeout. **`EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS` must equal `scripts/ingest/embeddings.mjs`** (`text-embedding-3-small`, 1536) — change both or neither, see *ERP documentation ingestion*.
+- `GET /api/tickets?mine=1` narrows the list to `created_by = caller` for the client page. It is a view filter inside what RLS returns, not a security boundary; the default listing stays unfiltered because it is the smoke test's RLS probe.
+
 ### ERP documentation ingestion
 
 - `scripts/ingest-erp-docs.mjs` + `scripts/ingest/*.mjs` — plain Node script that loads ERP PDFs into `knowledge_base_entries` (`source = 'erp_doc'`). **Offline only**: nothing in `src/` imports it and there is no Worker route or in-app upload. Run by a non-developer: every user-facing string is Polish and lives in `scripts/ingest/messages.mjs`; the staff runbook is `docs/wgrywanie-dokumentacji-erp.md` — update it when flags or messages change.
@@ -68,11 +76,11 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)
-- Env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `EXA_API_KEY` (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
+- Env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `EXA_API_KEY`, `OPENAI_API_KEY` (all optional; without `OPENAI_API_KEY` every pasted error falls back to a ticket) (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
 - Ingestion script env vars (`.env.ingest`, template `.env.ingest.example`, gitignored): `SUPABASE_URL`, `SUPABASE_KEY` (same publishable/anon key as the app), `OPENAI_API_KEY`, optional `HELPDESK_EMAIL`. `DEBUG=1` adds stack traces to its output.
 - Local Supabase: `npx supabase start` (requires Docker)
 - Cloudflare local dev: secrets go in `.dev.vars` (gitignored)
-- Deploy: `npx wrangler deploy` (requires Cloudflare account + `wrangler` auth)
+- Deploy: `npx wrangler deploy` (requires Cloudflare account + `wrangler` auth). Production secrets are set once per key with `npx wrangler secret put <NAME>` — including `OPENAI_API_KEY`.
 
 ### Database migrations
 
