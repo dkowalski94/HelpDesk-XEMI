@@ -1,10 +1,10 @@
 ---
 change_id: erp-doc-ingestion-pipeline
 title: ERP documentation ingestion pipeline
-status: impl_reviewed
+status: archived
 created: 2026-09-24
 updated: 2026-09-25
-archived_at: null
+archived_at: 2026-09-25T09:07:37Z
 ---
 
 ## Notes
