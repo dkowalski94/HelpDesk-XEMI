@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/database.types";
 import { ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
 import { embedText, OpenAIRequestError } from "@/lib/openai";
-import type { ErrorResolutionResponse, KnowledgeMatch, TicketSummary } from "@/types";
+import { TICKET_COLUMNS, toTicketSummary } from "@/lib/services/tickets";
+import type { ErrorResolutionResponse, KnowledgeMatch } from "@/types";
 
 /**
  * The single calibration knob: a knowledge base entry counts as a match at this
@@ -19,8 +20,6 @@ export const MATCH_THRESHOLD = 0.5;
 
 /** How many entries a search ranks and, at most, shows. */
 export const MATCH_COUNT = 3;
-
-const TICKET_COLUMNS = "id, company_id, status, error_text, created_at";
 
 type MatchRow = Omit<Database["public"]["Functions"]["match_knowledge_base"]["Returns"][number], "cause" | "steps"> & {
   cause: string | null;
@@ -82,22 +81,6 @@ async function searchKnowledgeBase(supabase: SupabaseClient<Database>, text: str
         steps: row.steps,
         similarity: row.similarity,
       })),
-  };
-}
-
-function toTicketSummary(row: {
-  id: string;
-  company_id: string;
-  status: TicketSummary["status"];
-  error_text: string;
-  created_at: string;
-}): TicketSummary {
-  return {
-    id: row.id,
-    companyId: row.company_id,
-    status: row.status,
-    errorText: row.error_text,
-    createdAt: row.created_at,
   };
 }
 

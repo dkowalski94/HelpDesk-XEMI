@@ -115,8 +115,11 @@ export default function ErrorResolutionPanel() {
 
     try {
       const response = await fetch("/api/resolve-error", { method: "POST", body });
-      const payload = (await response.json()) as ErrorResolutionResponse;
-      if (payload.ok) {
+      // A non-JSON body (e.g. an HTML 502 page) means the server was reached but failed.
+      const payload = (await response.json().catch(() => null)) as ErrorResolutionResponse | null;
+      if (!payload) {
+        setError("Wystąpił błąd serwera. Spróbuj ponownie za chwilę.");
+      } else if (payload.ok) {
         setResult(payload);
         if (payload.outcome !== "matched") reload();
       } else {

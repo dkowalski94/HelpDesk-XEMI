@@ -7,8 +7,9 @@ export type MyTicketsState =
 async function fetchMyTickets(): Promise<MyTicketsState> {
   try {
     const response = await fetch("/api/tickets?mine=1");
-    const payload = (await response.json()) as TicketListResponse;
-    return payload.ok
+    // A non-JSON body (e.g. an HTML 502 page) means the server was reached but failed.
+    const payload = (await response.json().catch(() => null)) as TicketListResponse | null;
+    return payload?.ok
       ? { status: "ok", tickets: payload.tickets }
       : { status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." };
   } catch {

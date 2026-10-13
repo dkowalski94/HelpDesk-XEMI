@@ -1,9 +1,28 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/database.types";
-import type { TicketPage } from "@/types";
+import type { TicketPage, TicketSummary } from "@/types";
 
 export const TICKET_PAGE_DEFAULT = 50;
 export const TICKET_PAGE_MAX = 100;
+
+/** The `tickets` columns behind a `TicketSummary`; select these and map with `toTicketSummary`. */
+export const TICKET_COLUMNS = "id, company_id, status, error_text, created_at";
+
+export function toTicketSummary(row: {
+  id: string;
+  company_id: string;
+  status: TicketSummary["status"];
+  error_text: string;
+  created_at: string;
+}): TicketSummary {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    status: row.status,
+    errorText: row.error_text,
+    createdAt: row.created_at,
+  };
+}
 
 /**
  * Lists one page of the tickets the caller is allowed to see.
@@ -29,7 +48,7 @@ export async function listVisibleTickets(
   supabase: SupabaseClient<Database>,
   { limit, offset, createdBy }: { limit: number; offset: number; createdBy?: string },
 ): Promise<TicketPage | null> {
-  let query = supabase.from("tickets").select("id, company_id, status, error_text, created_at");
+  let query = supabase.from("tickets").select(TICKET_COLUMNS);
   if (createdBy !== undefined) {
     query = query.eq("created_by", createdBy);
   }
@@ -45,13 +64,7 @@ export async function listVisibleTickets(
   }
 
   return {
-    tickets: data.slice(0, limit).map((row) => ({
-      id: row.id,
-      companyId: row.company_id,
-      status: row.status,
-      errorText: row.error_text,
-      createdAt: row.created_at,
-    })),
+    tickets: data.slice(0, limit).map(toTicketSummary),
     nextOffset: data.length > limit ? offset + limit : null,
   };
 }
