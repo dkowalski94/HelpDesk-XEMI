@@ -9,6 +9,11 @@ import type { ErrorResolutionResponse, KnowledgeMatch, TicketSummary } from "@/t
  * cosine similarity or above. 0.5 is a starting point, to be calibrated on real
  * queries against the logged best similarity of each search — it is applied here,
  * not in SQL, so changing it needs no migration.
+ *
+ * Recorded 2026-10-13 against Instrukcja-xemi-sprzedaz.pdf: matched 0.6449, 0.5818,
+ * 0.5391, 0.5328; a real error explained in the PDF missed at 0.4629; unrelated text
+ * 0.4368, 0.4123. Too few samples and too thin a gap to move the knob — calibration
+ * deferred until better documentation is ingested.
  */
 export const MATCH_THRESHOLD = 0.5;
 

@@ -1,0 +1,58 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import ErrorResolutionPanel from "@/components/error-resolution/ErrorResolutionPanel";
+
+const { profile, profileLookupFailed } = Astro.locals;
+
+// Same states as /dashboard, decided here on the server: the island is mounted only for
+// the one audience POST /api/resolve-error accepts (client users of a client company).
+// A missing profile reads as "waiting for assignment", as on the dashboard.
+const isStaff = profile?.role === "service_staff";
+const isClient = profile?.role === "client_user" && profile.companyKind === "client";
+---
+
+<Layout title="Zgłoś błąd ERP">
+  <div class="bg-cosmic min-h-screen p-4">
+    <div class="mx-auto w-full max-w-3xl">
+      <Topbar />
+      <div lang="pl" class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl sm:p-8">
+        {profileLookupFailed ? (
+          <>
+            <h1 class="mb-2 text-2xl font-bold text-rose-200">Nie udało się wczytać Twojego konta</h1>
+            <p class="text-sm text-blue-100/60">
+              Wystąpił błąd podczas odczytu Twojej firmy i roli. To problem po naszej stronie — odśwież stronę za
+              chwilę.
+            </p>
+          </>
+        ) : isStaff ? (
+          <>
+            <h1 class="mb-2 text-2xl font-bold text-amber-200">Zgłaszanie błędów</h1>
+            <p class="text-sm text-blue-100/60">
+              Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów.
+            </p>
+          </>
+        ) : isClient ? (
+          <>
+            <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+              Zgłoś błąd z systemu ERP
+            </h1>
+            <p class="mb-6 text-sm text-blue-100/60">
+              Wklej komunikat błędu. Najpierw poszukamy rozwiązania w bazie wiedzy i dokumentacji, a jeśli go nie
+              znajdziemy, przekażemy zgłoszenie do zespołu serwisowego XEMI.
+            </p>
+            <ErrorResolutionPanel client:load />
+          </>
+        ) : (
+          <>
+            <h1 class="mb-2 text-2xl font-bold text-amber-200">Zgłaszanie błędów</h1>
+            <p class="text-sm text-blue-100/60">
+              Twoje konto czeka na przypisanie do firmy. Zespół serwisowy XEMI przypisuje nowe konta — po przypisaniu
+              zgłaszanie błędów będzie dostępne na tej stronie.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+</Layout>

@@ -16,6 +16,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
 // confident lie triggered by a transient error.
 const assignedProfile = profile !== null && profile.companyKind !== "unassigned" ? profile : null;
 const isStaff = profile?.role === "service_staff";
+// Same audience as /report-error and POST /api/resolve-error: client users of a client company.
+const isClient = assignedProfile?.role === "client_user" && assignedProfile.companyKind === "client";
 ---
 
 <Layout title="Dashboard">
@@ -56,6 +58,14 @@ const isStaff = profile?.role === "service_staff";
               class="mt-4 inline-block text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
             >
               Manage users
+            </a>
+          )}
+          {isClient && (
+            <a
+              href="/report-error"
+              class="mt-4 inline-block text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+            >
+              Report an ERP error
             </a>
           )}
         </>

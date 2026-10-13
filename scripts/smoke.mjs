@@ -132,6 +132,15 @@ let smokeUserId = null;
 // Filled in by the step that files the ticket, used by the steps that look for it.
 let smokeTicketId = null;
 
+// Distinctive substrings of /report-error, one per server-rendered state. The form's
+// instruction is part of the island, which client:load also renders on the server.
+const REPORT_PAGE = {
+  heading: "Zgłoś błąd z systemu ERP",
+  instruction: "tylko treść komunikatu błędu",
+  staff: "Ta strona jest przeznaczona dla użytkowników klienta",
+  waiting: "Twoje konto czeka na przypisanie do firmy",
+};
+
 const hasTicket = (json, id) => id !== null && json.tickets.some((ticket) => ticket.id === id);
 
 // "Is the throwaway account still waiting?" is the re-read for every attempt aimed at
@@ -146,6 +155,11 @@ const steps = [
   // Asserts the middleware gate, not the endpoint's own role check: the 401 comes
   // from STAFF_ROUTES before the handler runs.
   ["admin api rejects anonymous user", () => request("/api/admin/assign-company", { method: "POST" }), { status: 401 }],
+  [
+    "report-error page redirects anonymous user",
+    () => request("/report-error", { as: "anonymous" }),
+    { status: 302, location: "/auth/signin" },
+  ],
   ["tickets api rejects anonymous user", () => request("/api/tickets", { as: "anonymous" }), { status: 401 }],
   [
     "resolve-error api rejects anonymous user",
@@ -178,6 +192,14 @@ const steps = [
     () => request("/api/tickets", { as: "alfa" }),
     { status: 200, check: onlyTicketsOf(COMPANY.alfa, TICKET.alfa) },
   ],
+  [
+    "Klient Alfa user gets the report-error form",
+    () => request("/report-error", { as: "alfa" }),
+    {
+      status: 200,
+      check: ({ text }) => text.includes(REPORT_PAGE.heading) && text.includes(REPORT_PAGE.instruction),
+    },
+  ],
   ["Klient Beta user signs in", () => signIn("beta"), { status: 302, location: "/" }],
   [
     "Klient Beta user sees only Beta's tickets",
@@ -202,6 +224,14 @@ const steps = [
     { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
   ],
   [
+    "staff gets the staff message on /report-error, not the form",
+    () => request("/report-error", { as: "staff" }),
+    {
+      status: 200,
+      check: ({ text }) => text.includes(REPORT_PAGE.staff) && !text.includes(REPORT_PAGE.instruction),
+    },
+  ],
+  [
     "new account signs in again",
     () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
     { status: 302, location: "/" },
@@ -215,6 +245,14 @@ const steps = [
     "unassigned account cannot file an error through resolve-error",
     () => resolveError("smoke", errorText),
     { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
+  ],
+  [
+    "unassigned account gets the waiting message on /report-error, not the form",
+    () => request("/report-error"),
+    {
+      status: 200,
+      check: ({ text }) => text.includes(REPORT_PAGE.waiting) && !text.includes(REPORT_PAGE.instruction),
+    },
   ],
 
   // --- Write and escalation attempts: each is rejected, then state is re-read --------

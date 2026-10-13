@@ -392,19 +392,19 @@ One request does at most: one OpenAI embeddings call (I/O, 8 s timeout), one RPC
 
 #### Automated
 
-- [ ] 3.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 3.2 Lint passes: `npm run lint`
-- [ ] 3.3 Production build passes: `npm run build`
-- [ ] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 3.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 3.2 Lint passes: `npm run lint`
+- [x] 3.3 Production build passes: `npm run build`
+- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual
 
-- [ ] 3.5 Matched view shows 1–3 cards incl. documentation label and fragment; no ticket in "my tickets"
-- [ ] 3.6 Unrelated error creates a ticket shown as "Do zrobienia"
-- [ ] 3.7 Same text again shows "already reported" and no second ticket
-- [ ] 3.8 Without the key, a paste creates a ticket and mentions the search was unavailable
-- [ ] 3.9 Counter turns red above 2000 characters; blank and over-limit input cannot be submitted
-- [ ] 3.10 The throwaway Alfa account's list shows only its own tickets
-- [ ] 3.11 Staff and unassigned see messages instead of the form; dashboard link only for client users
+- [x] 3.5 Matched view shows 1–3 cards incl. documentation label and fragment; no ticket in "my tickets"
+- [x] 3.6 Unrelated error creates a ticket shown as "Do zrobienia"
+- [x] 3.7 Same text again shows "already reported" and no second ticket
+- [x] 3.8 Without the key, a paste creates a ticket and mentions the search was unavailable
+- [x] 3.9 Counter turns red above 2000 characters; blank and over-limit input cannot be submitted
+- [x] 3.10 The throwaway Alfa account's list shows only its own tickets
+- [x] 3.11 Staff and unassigned see messages instead of the form; dashboard link only for client users
 - [ ] 3.12 Calibration: logged similarities of real vs unrelated errors are separated by `MATCH_THRESHOLD`; adjusted and noted if not
-- [ ] 3.13 Polish diacritics render correctly; page usable at phone width
+- [x] 3.13 Polish diacritics render correctly; page usable at phone width
