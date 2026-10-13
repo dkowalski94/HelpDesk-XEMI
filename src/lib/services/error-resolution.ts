@@ -40,7 +40,7 @@ async function searchKnowledgeBase(supabase: SupabaseClient<Database>, text: str
   }
 
   if (!vector) {
-    console.error("Error resolution: OPENAI_API_KEY is not configured, search skipped");
+    console.warn("Error resolution: OPENAI_API_KEY is not configured, search skipped");
     return { status: "unavailable" };
   }
 

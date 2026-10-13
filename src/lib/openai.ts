@@ -48,7 +48,7 @@ export async function embedText(text: string): Promise<number[] | null> {
   });
 
   if (!response.ok) {
-    throw new OpenAIRequestError(response.status, await response.text());
+    throw new OpenAIRequestError(response.status, await errorCode(response));
   }
 
   const body = (await response.json()) as OpenAIEmbeddingsResponse;
@@ -62,6 +62,20 @@ export async function embedText(text: string): Promise<number[] | null> {
   }
 
   return embedding as number[];
+}
+
+/**
+ * Only OpenAI's error `code`/`type`, never the message: a 401 message echoes a masked
+ * fragment of the key, and `detail` ends up in Worker logs.
+ */
+async function errorCode(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: { code?: unknown; type?: unknown } };
+    const code = body.error?.code ?? body.error?.type;
+    return typeof code === "string" ? code : "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 export class OpenAIRequestError extends Error {

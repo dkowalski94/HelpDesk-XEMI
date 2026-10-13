@@ -53,13 +53,18 @@ export const POST: APIRoute = async (context) => {
     );
   }
 
-  const form = await context.request.formData();
-  const errorText = form.get("errorText") as string | null;
+  let errorText = "";
+  try {
+    const value = (await context.request.formData()).get("errorText");
+    errorText = typeof value === "string" ? value : "";
+  } catch {
+    // Not a form body — treated like an empty paste (400 empty-text).
+  }
 
   const result = await resolveError(
     supabase,
     { userId: context.locals.user.id, companyId: profile.companyId },
-    errorText ?? "",
+    errorText,
   );
 
   return json(result, result.ok ? 200 : FAILURE_STATUS[result.reason]);
