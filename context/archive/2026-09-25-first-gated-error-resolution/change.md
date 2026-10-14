@@ -1,9 +1,10 @@
 ---
 change_id: first-gated-error-resolution
 title: First gated error resolution
-status: impl_reviewed
+status: archived
 created: 2026-09-25
-updated: 2026-10-13
+updated: 2026-10-14
+archived_at: 2026-10-14T06:45:08Z
 ---
 
 ## Notes
