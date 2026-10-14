@@ -242,6 +242,7 @@ export interface Database {
           error_text: string;
           id: string;
           resolution: string | null;
+          resolution_cause: string | null;
           resolved_at: string | null;
           resolved_by: string | null;
           status: Database["public"]["Enums"]["ticket_status"];
@@ -255,6 +256,7 @@ export interface Database {
           error_text: string;
           id?: string;
           resolution?: string | null;
+          resolution_cause?: string | null;
           resolved_at?: string | null;
           resolved_by?: string | null;
           status?: Database["public"]["Enums"]["ticket_status"];
@@ -268,6 +270,7 @@ export interface Database {
           error_text?: string;
           id?: string;
           resolution?: string | null;
+          resolution_cause?: string | null;
           resolved_at?: string | null;
           resolved_by?: string | null;
           status?: Database["public"]["Enums"]["ticket_status"];
@@ -355,6 +358,16 @@ export interface Database {
         }[];
       };
       remove_erp_document: { Args: { p_file_name: string }; Returns: boolean };
+      resolve_ticket: {
+        Args: {
+          p_cause?: string;
+          p_embedding?: string;
+          p_kb_error_text: string;
+          p_steps: string;
+          p_ticket_id: string;
+        };
+        Returns: string;
+      };
       stage_erp_document_chunks: {
         Args: {
           p_chunks: Json;

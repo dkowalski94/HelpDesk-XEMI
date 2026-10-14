@@ -245,16 +245,6 @@ insert into rls_expected_grants values
   ('companies',              'authenticated', 'SELECT'),
   ('erp_documents',          'authenticated', 'SELECT'),
   ('knowledge_base_entries', 'authenticated', 'SELECT'),
-  ('knowledge_base_entries.cause',             'authenticated', 'INSERT'),
-  ('knowledge_base_entries.created_at',        'authenticated', 'INSERT'),
-  ('knowledge_base_entries.embedding',         'authenticated', 'INSERT'),
-  ('knowledge_base_entries.error_text',        'authenticated', 'INSERT'),
-  ('knowledge_base_entries.id',                'authenticated', 'INSERT'),
-  ('knowledge_base_entries.source',            'authenticated', 'INSERT'),
-  ('knowledge_base_entries.source_company_id', 'authenticated', 'INSERT'),
-  ('knowledge_base_entries.source_ticket_id',  'authenticated', 'INSERT'),
-  ('knowledge_base_entries.steps',             'authenticated', 'INSERT'),
-  ('knowledge_base_entries.updated_at',        'authenticated', 'INSERT'),
   ('knowledge_base_entries.cause',             'authenticated', 'UPDATE'),
   ('knowledge_base_entries.created_at',        'authenticated', 'UPDATE'),
   ('knowledge_base_entries.embedding',         'authenticated', 'UPDATE'),
@@ -272,17 +262,14 @@ insert into rls_expected_grants values
   ('tickets.created_by',     'authenticated', 'INSERT'),
   ('tickets.error_text',     'authenticated', 'INSERT'),
   ('tickets.user_comment',   'authenticated', 'INSERT'),
-  ('tickets.resolution',     'authenticated', 'UPDATE'),
-  ('tickets.resolved_at',    'authenticated', 'UPDATE'),
-  ('tickets.resolved_by',    'authenticated', 'UPDATE'),
-  ('tickets.status',         'authenticated', 'UPDATE'),
   ('current_company_id()',   'authenticated', 'EXECUTE'),
   ('current_company_kind()', 'authenticated', 'EXECUTE'),
   ('is_service_staff()',     'authenticated', 'EXECUTE'),
   ('stage_erp_document_chunks()', 'authenticated', 'EXECUTE'),
   ('publish_erp_document()',      'authenticated', 'EXECUTE'),
   ('remove_erp_document()',       'authenticated', 'EXECUTE'),
-  ('match_knowledge_base()',      'authenticated', 'EXECUTE');
+  ('match_knowledge_base()',      'authenticated', 'EXECUTE'),
+  ('resolve_ticket()',            'authenticated', 'EXECUTE');
 
 do $$
 declare
@@ -327,6 +314,16 @@ begin
   raise notice 'ok    grant inventory matches (no TRUNCATE/TRIGGER/REFERENCES, nothing for anon)';
 end;
 $$;
+
+-- The inventory above reads EXECUTE through has_function_privilege() for anon and
+-- authenticated; PUBLIC is named here explicitly, from the catalog's own grant list, for the
+-- one function that writes tickets and the knowledge base as the owner.
+select pg_temp.expect_equal('resolve_ticket() is executable by authenticated only (routine_privileges)',
+  $q$select string_agg(distinct grantee, ',' order by grantee)
+     from information_schema.routine_privileges
+     where routine_schema = 'public' and routine_name = 'resolve_ticket' and privilege_type = 'EXECUTE'
+       and grantee in ('PUBLIC', 'anon', 'authenticated')$q$,
+  'authenticated');
 
 -- ---------------------------------------------------------------------------
 -- Persona: Klient Alfa client user (a2)
@@ -373,10 +370,11 @@ select pg_temp.expect_denied('alfa: truncating knowledge_base_entries', $q$trunc
 select pg_temp.expect_denied('alfa: truncating profiles', $q$truncate public.profiles$q$);
 select pg_temp.expect_denied('alfa: truncating companies', $q$truncate public.companies$q$);
 
--- Ticket updates and deletes: resolving is staff-only, deleting is nobody's.
-select pg_temp.expect_rows('alfa: resolving its own ticket touches no row',
+-- Ticket updates and deletes: resolving goes through resolve_ticket() only, deleting is
+-- nobody's. authenticated holds no UPDATE on tickets, so the grant layer stops it.
+select pg_temp.expect_denied('alfa: resolving its own ticket directly',
   $q$update public.tickets set status = 'resolved', resolution = 'self-answered', resolved_at = now()
-     where id = '00000000-0000-0000-0000-00000000e101'$q$, 0);
+     where id = '00000000-0000-0000-0000-00000000e101'$q$);
 select pg_temp.expect_denied('alfa: rewriting a ticket''s company',
   $q$update public.tickets set company_id = '00000000-0000-0000-0000-00000000c102'
      where id = '00000000-0000-0000-0000-00000000e101'$q$);
@@ -452,6 +450,13 @@ select pg_temp.expect_sqlstate('alfa: calling publish_erp_document()',
 select pg_temp.expect_sqlstate('alfa: calling remove_erp_document()',
   $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$, '42501');
 
+-- Ticket resolution: refused with 42501 before anything is written, even on its own ticket.
+select pg_temp.expect_sqlstate('alfa: calling resolve_ticket() on its own ticket',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e101', 'rls steps', 'rls error')$q$, '42501');
+select pg_temp.expect_count('alfa: its ticket is still todo after the refused call',
+  $q$select 1 from public.tickets
+     where id = '00000000-0000-0000-0000-00000000e101' and status = 'todo' and resolved_by is null$q$, 1);
+
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -520,7 +525,14 @@ select pg_temp.expect_sqlstate('unassigned: calling publish_erp_document()',
 select pg_temp.expect_sqlstate('unassigned: calling remove_erp_document()',
   $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$, '42501');
 
+select pg_temp.expect_sqlstate('unassigned: calling resolve_ticket()',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e101', 'rls steps', 'rls error')$q$, '42501');
+
 reset role;
+-- The unassigned account reads no tickets, so the owner proves the refused call wrote nothing.
+select pg_temp.expect_count('owner: Alfa''s ticket is still todo after the unassigned call',
+  $q$select 1 from public.tickets
+     where id = '00000000-0000-0000-0000-00000000e101' and status = 'todo' and resolved_by is null$q$, 1);
 
 -- ---------------------------------------------------------------------------
 -- Persona: service staff (a1)
@@ -583,7 +595,26 @@ select pg_temp.expect_denied('staff: inserting into erp_document_upload_chunks d
              (pg_temp.erp_chunk(0, 'rls test') ->> 'embedding')::extensions.vector(1536),
              '00000000-0000-0000-0000-0000000000a1')$q$);
 
--- erp_doc entries: staff keeps its other knowledge-base writes, but erp_document_id (and source
+-- Resolving goes through resolve_ticket() only: no UPDATE grant on tickets, so a direct write
+-- -- one naming a resolver other than the caller included (F2) -- fails at the grant layer.
+select pg_temp.expect_denied('staff: resolving a ticket directly, attributed to someone else',
+  $q$update public.tickets set status = 'resolved', resolution = 'rls test', resolved_at = now(),
+       resolved_by = '00000000-0000-0000-0000-0000000000a2'
+     where id = '00000000-0000-0000-0000-00000000e101'$q$);
+select pg_temp.expect_denied('staff: inserting a ticket entry into knowledge_base_entries directly',
+  $q$insert into public.knowledge_base_entries (source, error_text, steps, source_ticket_id)
+     values ('ticket', 'rls test', 'rls test', '00000000-0000-0000-0000-00000000e101')$q$);
+
+-- Staff keep only UPDATE of ticket-derived entries (the embedding backfill); an erp_doc
+-- fragment changes only through publish_erp_document() (F9).
+select pg_temp.expect_rows('staff: updating an erp_doc entry touches no row',
+  $q$update public.knowledge_base_entries set steps = 'rls test'
+     where id = '00000000-0000-0000-0000-00000000f102'$q$, 0);
+select pg_temp.expect_rows('staff: updating a ticket entry is allowed (control)',
+  $q$update public.knowledge_base_entries set steps = 'rls test'
+     where id = '00000000-0000-0000-0000-00000000f101'$q$, 1);
+
+-- erp_doc entries: staff keeps only UPDATE of ticket entries, and erp_document_id (and source
 -- on UPDATE) has no grant, so no direct write can attach an entry to a document -- whose publish
 -- or remove would then cascade-delete it.
 select pg_temp.expect_sqlstate('staff: attaching a ticket entry to an erp document',
@@ -596,7 +627,9 @@ select pg_temp.expect_sqlstate('staff: changing an entry''s source',
 select pg_temp.expect_sqlstate('staff: inserting an entry that names an erp document',
   $q$insert into public.knowledge_base_entries (source, error_text, steps, erp_document_id)
      values ('erp_doc', 'rls test', 'rls test', '00000000-0000-0000-0000-00000000d101')$q$, '42501');
-select pg_temp.expect_check_violation('staff: inserting an erp_doc entry without a document',
+-- No INSERT grant at all now, so the grant layer stops this before the CHECK; the CHECK itself
+-- stays covered as the owner below.
+select pg_temp.expect_denied('staff: inserting an erp_doc entry without a document',
   $q$insert into public.knowledge_base_entries (source, error_text, steps)
      values ('erp_doc', 'rls test', 'rls test')$q$);
 
@@ -835,6 +868,105 @@ rollback to savepoint kb_match_path;
 release savepoint kb_match_path;
 
 -- ---------------------------------------------------------------------------
+-- Ticket resolution: staff through resolve_ticket()
+-- ---------------------------------------------------------------------------
+-- The positive control resolves a real ticket and creates a real entry, so the whole section
+-- runs under a savepoint that is rolled back at its end; the fingerprint at the bottom then
+-- proves nothing leaked out of it. It resolves Beta's e102: the seeded ticket entry f101
+-- already names e101 as its source, which would blur the "exactly one entry" count.
+
+savepoint resolve_ticket_path;
+
+set local role authenticated;
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+
+-- Input validation: blank steps or blank knowledge base text is refused before any write.
+select pg_temp.expect_sqlstate('staff: resolving with blank steps',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e102', E'  \n ', 'rls error')$q$, '22023');
+select pg_temp.expect_sqlstate('staff: resolving with no steps',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e102', null, 'rls error')$q$, '22023');
+select pg_temp.expect_sqlstate('staff: resolving with blank knowledge base text',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e102', 'rls steps', '   ')$q$, '22023');
+select pg_temp.expect_count('staff: the refused calls left the ticket todo',
+  $q$select 1 from public.tickets
+     where id = '00000000-0000-0000-0000-00000000e102' and status = 'todo' and resolution is null$q$, 1);
+select pg_temp.expect_count('staff: the refused calls created no entry',
+  $q$select 1 from public.knowledge_base_entries
+     where source_ticket_id = '00000000-0000-0000-0000-00000000e102'$q$, 0);
+
+-- Positive control: values are stored trimmed, the resolver is the caller.
+select pg_temp.expect_equal('staff: resolving a todo ticket',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e102', '  rls steps  ', ' rls sanitized error ',
+       p_cause => ' rls cause ')$q$,
+  'resolved');
+select pg_temp.expect_equal('staff: the ticket records status, steps, cause and the real resolver',
+  $q$select status || ' | ' || resolution || ' | ' || resolution_cause || ' | ' || resolved_by
+            || ' | ' || (resolved_at is not null)
+     from public.tickets where id = '00000000-0000-0000-0000-00000000e102'$q$,
+  'resolved | rls steps | rls cause | 00000000-0000-0000-0000-0000000000a1 | true');
+select pg_temp.expect_count('staff: exactly one ticket entry for it',
+  $q$select 1 from public.knowledge_base_entries
+     where source = 'ticket' and source_ticket_id = '00000000-0000-0000-0000-00000000e102'$q$, 1);
+select pg_temp.expect_equal('staff: the entry carries the sanitized text, cause, steps and the ticket''s company',
+  $q$select error_text || ' | ' || cause || ' | ' || steps || ' | ' || source_company_id
+            || ' | ' || (embedding is null) || ' | ' || (erp_document_id is null)
+     from public.knowledge_base_entries
+     where source_ticket_id = '00000000-0000-0000-0000-00000000e102'$q$,
+  'rls sanitized error | rls cause | rls steps | 00000000-0000-0000-0000-00000000c102 | true | true');
+
+-- A second call changes nothing and says so; an unknown id is reported as such.
+select pg_temp.expect_equal('staff: resolving it again',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e102', 'rls other steps', 'rls other error')$q$,
+  'already-resolved');
+select pg_temp.expect_count('staff: still exactly one ticket entry for it',
+  $q$select 1 from public.knowledge_base_entries
+     where source_ticket_id = '00000000-0000-0000-0000-00000000e102'$q$, 1);
+select pg_temp.expect_count('staff: the first resolution is kept',
+  $q$select 1 from public.tickets
+     where id = '00000000-0000-0000-0000-00000000e102' and resolution = 'rls steps'$q$, 1);
+select pg_temp.expect_equal('staff: resolving a ticket that does not exist',
+  $q$select public.resolve_ticket(gen_random_uuid(), 'rls steps', 'rls error')$q$,
+  'not-found');
+
+-- A blank cause is stored as null, and an embedding is stored when given.
+select pg_temp.expect_equal('staff: resolving Alfa''s ticket with a blank cause and an embedding',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e101', 'rls steps 2', 'rls error 2',
+       '   ', pg_temp.kb_vector('{1}'))$q$,
+  'resolved');
+select pg_temp.expect_equal('staff: the blank cause is null on the ticket and the entry, the embedding is kept',
+  $q$select (t.resolution_cause is null) || ' ' || (e.cause is null) || ' ' || (e.embedding is not null)
+     from public.tickets t
+     join public.knowledge_base_entries e on e.source_ticket_id = t.id and e.steps = 'rls steps 2'
+     where t.id = '00000000-0000-0000-0000-00000000e101'$q$,
+  'true true true');
+
+-- The resolution reaches the filing client: Beta reads its resolved ticket, cause included.
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a3');
+select pg_temp.expect_count('beta: sees its ticket resolved with cause and steps',
+  $q$select 1 from public.tickets
+     where id = '00000000-0000-0000-0000-00000000e102' and status = 'resolved'
+       and resolution = 'rls steps' and resolution_cause = 'rls cause'$q$, 1);
+
+reset role;
+
+select pg_temp.expect_equal('owner: resolve_ticket() is volatile, security definer, owned by postgres',
+  $q$select p.provolatile::text || ' ' || p.prosecdef || ' ' || p.proowner::regrole
+     from pg_proc p
+     where p.oid = 'public.resolve_ticket(uuid, text, text, text, extensions.vector)'::regprocedure$q$,
+  'v true postgres');
+
+rollback to savepoint resolve_ticket_path;
+release savepoint resolve_ticket_path;
+
+-- ---------------------------------------------------------------------------
+-- Owner-side: a todo ticket carries no resolution cause
+-- ---------------------------------------------------------------------------
+
+select pg_temp.expect_check_violation('owner: setting resolution_cause on a todo ticket',
+  $q$update public.tickets set resolution_cause = 'rls test'
+     where id = '00000000-0000-0000-0000-00000000e101'$q$);
+
+-- ---------------------------------------------------------------------------
 -- Owner-side: the erp_doc / document invariant holds below RLS too
 -- ---------------------------------------------------------------------------
 -- The owner bypasses RLS and every grant, so only the CHECK constraint stands here.
@@ -873,6 +1005,8 @@ select pg_temp.expect_denied('anon: calling remove_erp_document()',
   $q$select public.remove_erp_document('Dokumentacja-demo.pdf')$q$);
 select pg_temp.expect_denied('anon: calling match_knowledge_base()',
   $q$select 1 from public.match_knowledge_base(pg_temp.kb_vector('{1}'), 0.5, 3)$q$);
+select pg_temp.expect_denied('anon: calling resolve_ticket()',
+  $q$select public.resolve_ticket('00000000-0000-0000-0000-00000000e101', 'rls steps', 'rls error')$q$);
 
 reset role;
 
