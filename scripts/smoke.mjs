@@ -4,7 +4,8 @@
 // The isolation steps expect the demo personas from supabase/seed.sql (`npx supabase db reset`).
 //
 // Each run files one Klient Alfa ticket (through POST /api/resolve-error, as the throwaway
-// account) that nothing deletes — tickets have no DELETE policy. After ~49 runs against the
+// account) and resolves it as staff, which adds one ticket knowledge base entry; nothing
+// deletes either — tickets have no DELETE policy. After ~49 runs against the
 // same database the seeded ticket e101 falls off the first page of GET /api/tickets, and the
 // staff check and the three onlyTicketsOf(COMPANY.alfa, TICKET.alfa) steps fail: run
 // `npx supabase db reset` every few dozen local runs.
@@ -15,6 +16,9 @@ const email = `smoke-${runId}@example.com`;
 const password = "Smoke-Test-Passw0rd!";
 // Unique per run, and nonsense words so a developer's locally ingested ERP docs do not
 // match it — the resolve-error steps expect the no-match path that files a ticket.
+// Each run also resolves its ticket into a knowledge base entry. Without OPENAI_API_KEY
+// (CI) that entry has no embedding and matches nothing; with the key it is embedded, and
+// the next run's text matches it — run `npx supabase db reset` before every such run.
 const errorText = `smoke-${runId} ERR-SMOKE kwarblifon zdrumpel wyzgotnik plomboryt`;
 
 // Fixed ids and credentials from supabase/seed.sql. The seeded personas are only ever
@@ -106,6 +110,10 @@ function resolveError(as, text) {
   return request("/api/resolve-error", { method: "POST", form: { errorText: text }, as });
 }
 
+function resolveTicket(as, { ticketId, cause = "", steps }) {
+  return request("/api/admin/resolve-ticket", { method: "POST", form: { ticketId: ticketId ?? "", cause, steps }, as });
+}
+
 /** True when the ticket list is non-empty, belongs entirely to one company, and holds that company's seeded ticket. */
 function onlyTicketsOf(companyId, ticketId) {
   return ({ json }) =>
@@ -142,6 +150,12 @@ const REPORT_PAGE = {
 };
 
 const hasTicket = (json, id) => id !== null && json.tickets.some((ticket) => ticket.id === id);
+const ticketOf = (json, id) =>
+  json?.ok === true && id !== null ? json.tickets.find((ticket) => ticket.id === id) : undefined;
+
+// What staff records on the smoke ticket; read back by the filing account.
+const resolutionCause = `smoke-${runId} przyczyna`;
+const resolutionSteps = `smoke-${runId} kroki: 1. Zamknij okno. 2. Otwórz je ponownie.`;
 
 // "Is the throwaway account still waiting?" is the re-read for every attempt aimed at
 // it: the waiting list is exactly the profiles in the unassigned company, so the account
@@ -419,6 +433,75 @@ const steps = [
     {
       status: 200,
       check: ({ json }) => json?.ok === true && smokeTicketId !== null && !hasTicket(json, smokeTicketId),
+    },
+  ],
+
+  // --- Ticket resolution (S-02): staff resolves the ticket filed above ---------------
+  // Both endpoints are rejected for anonymous and client callers first, then the ticket is
+  // re-read as still open. CI has no OPENAI_API_KEY, so the resolution is saved without an
+  // embedding there (status=resolved-no-embedding); with a key it is status=resolved.
+  [
+    "resolve-ticket api rejects anonymous user",
+    () => resolveTicket("anonymous", { ticketId: smokeTicketId, steps: resolutionSteps }),
+    { status: 401 },
+  ],
+  [
+    "client user cannot resolve a ticket",
+    () => resolveTicket("alfa", { ticketId: smokeTicketId, cause: "smoke", steps: resolutionSteps }),
+    { status: 403 },
+  ],
+  [
+    "the filing account cannot resolve its own ticket",
+    () => resolveTicket("smoke", { ticketId: smokeTicketId, steps: resolutionSteps }),
+    { status: 403 },
+  ],
+  [
+    "...and the ticket is still open",
+    () => request("/api/tickets?mine=1"),
+    { status: 200, check: ({ json }) => ticketOf(json, smokeTicketId)?.status === "todo" },
+  ],
+  [
+    "backfill-embeddings api rejects anonymous user",
+    () => request("/api/admin/backfill-embeddings", { method: "POST", as: "anonymous" }),
+    { status: 401 },
+  ],
+  [
+    "client user cannot run the embedding backfill",
+    () => request("/api/admin/backfill-embeddings", { method: "POST", as: "alfa" }),
+    { status: 403 },
+  ],
+  [
+    "staff cannot resolve with blank steps",
+    () => resolveTicket("staff", { ticketId: smokeTicketId, steps: "   " }),
+    { status: 302, location: "/admin/tickets?error=invalid" },
+  ],
+  [
+    "staff resolves the ticket",
+    () => resolveTicket("staff", { ticketId: smokeTicketId, cause: resolutionCause, steps: resolutionSteps }),
+    {
+      status: 302,
+      check: ({ location }) => /^\/admin\/tickets\?status=resolved(-no-embedding)?$/.test(location),
+    },
+  ],
+  [
+    "...and resolving it again reports it already resolved",
+    () => resolveTicket("staff", { ticketId: smokeTicketId, cause: resolutionCause, steps: resolutionSteps }),
+    { status: 302, location: "/admin/tickets?error=already-resolved" },
+  ],
+  [
+    "...and the filing account sees it resolved, with the cause and steps",
+    () => request("/api/tickets?mine=1"),
+    {
+      status: 200,
+      check: ({ json }) => {
+        const ticket = ticketOf(json, smokeTicketId);
+        return (
+          ticket?.status === "resolved" &&
+          ticket.resolution === resolutionSteps &&
+          ticket.resolutionCause === resolutionCause &&
+          ticket.resolvedAt !== null
+        );
+      },
     },
   ],
 ];

@@ -6,7 +6,8 @@ export const TICKET_PAGE_DEFAULT = 50;
 export const TICKET_PAGE_MAX = 100;
 
 /** The `tickets` columns behind a `TicketSummary`; select these and map with `toTicketSummary`. */
-export const TICKET_COLUMNS = "id, company_id, status, error_text, created_at";
+export const TICKET_COLUMNS =
+  "id, company_id, status, error_text, created_at, resolution, resolution_cause, resolved_at";
 
 export function toTicketSummary(row: {
   id: string;
@@ -14,6 +15,9 @@ export function toTicketSummary(row: {
   status: TicketSummary["status"];
   error_text: string;
   created_at: string;
+  resolution: string | null;
+  resolution_cause: string | null;
+  resolved_at: string | null;
 }): TicketSummary {
   return {
     id: row.id,
@@ -21,6 +25,9 @@ export function toTicketSummary(row: {
     status: row.status,
     errorText: row.error_text,
     createdAt: row.created_at,
+    resolution: row.resolution,
+    resolutionCause: row.resolution_cause,
+    resolvedAt: row.resolved_at,
   };
 }
 

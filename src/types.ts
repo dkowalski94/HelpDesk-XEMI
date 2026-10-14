@@ -145,13 +145,22 @@ export type AssignCompanyStatus = "assigned" | "invalid-company" | "not-updated"
 /* Tickets                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** A ticket as `GET /api/tickets` returns it: the fields S-01 and S-02 list. */
+/**
+ * A ticket as `GET /api/tickets` returns it: the fields S-01 and S-02 list.
+ *
+ * The resolution fields are `null` while the ticket is `todo`; once resolved,
+ * `resolution` holds the steps and `resolutionCause` the optional cause. They are the
+ * filing company's own data, readable only within it under RLS, so they are unsanitized.
+ */
 export interface TicketSummary {
   id: string;
   companyId: string;
   status: TicketStatus;
   errorText: string;
   createdAt: string;
+  resolution: string | null;
+  resolutionCause: string | null;
+  resolvedAt: string | null;
 }
 
 /** One page of the ticket list. `nextOffset` is `null` on the last page. */
@@ -216,3 +225,39 @@ export interface ErrorResolutionFailure {
 }
 
 export type ErrorResolutionResponse = ErrorResolutionSuccess | ErrorResolutionFailure;
+
+/* -------------------------------------------------------------------------- */
+/* Ticket resolution (S-02, staff)                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A `todo` ticket in the staff queue on `/admin/tickets`. `kbPreview` is the sanitized
+ * error text the knowledge base entry will carry once the ticket is resolved.
+ */
+export interface StaffQueueTicket extends TicketSummary {
+  companyName: string | null;
+  userComment: string | null;
+  kbPreview: string;
+}
+
+export type StaffQueueResult =
+  { status: "ok"; tickets: StaffQueueTicket[]; nextOffset: number | null } | { status: "error" };
+
+/**
+ * What resolving a ticket did — the endpoint forwards it to `/admin/tickets` as a
+ * query parameter, and the page maps it to a fixed message.
+ *
+ * `resolved-no-embedding` saved the resolution and its knowledge base entry without a
+ * vector (no key, or OpenAI failed): the entry matches nothing until a backfill fills it.
+ * `invalid` is input rejected before any OpenAI call.
+ */
+export type ResolveTicketOutcome =
+  "resolved" | "resolved-no-embedding" | "already-resolved" | "not-found" | "invalid" | "error";
+
+/**
+ * What one "Przelicz" click did. `unavailable` means not a single embedding could be
+ * computed (no key, or OpenAI failed on the first row). `remaining` is `null` when the
+ * recount failed after the batch was written.
+ */
+export type BackfillEmbeddingsResult =
+  { status: "ok"; filled: number; remaining: number | null } | { status: "unavailable" } | { status: "error" };

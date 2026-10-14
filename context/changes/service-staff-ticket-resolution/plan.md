@@ -414,30 +414,30 @@ There is no unit-test runner yet (Module 3 introduces one). Coverage comes from 
 
 #### Automated
 
-- [x] 1.1 Migrations apply cleanly on a fresh database: `npx supabase db reset`
-- [x] 1.2 RLS and function checks pass: `psql … -f supabase/tests/rls.sql`
-- [x] 1.3 `src/database.types.ts` contains `resolve_ticket` and `resolution_cause` after regeneration
-- [x] 1.4 Type-check passes: `npx astro sync && npx astro check`
-- [x] 1.5 Lint passes: `npm run lint`
+- [x] 1.1 Migrations apply cleanly on a fresh database: `npx supabase db reset` — 19d69a2
+- [x] 1.2 RLS and function checks pass: `psql … -f supabase/tests/rls.sql` — 19d69a2
+- [x] 1.3 `src/database.types.ts` contains `resolve_ticket` and `resolution_cause` after regeneration — 19d69a2
+- [x] 1.4 Type-check passes: `npx astro sync && npx astro check` — 19d69a2
+- [x] 1.5 Lint passes: `npm run lint` — 19d69a2
 
 #### Manual
 
-- [x] 1.6 Supabase Studio's Advisors list shows no new warnings beyond the expected definer-function one for `resolve_ticket`
+- [x] 1.6 Supabase Studio's Advisors list shows no new warnings beyond the expected definer-function one for `resolve_ticket` — 19d69a2
 
 ### Phase 2: Server path — sanitizer, services, endpoints, smoke
 
 #### Automated
 
-- [ ] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 RLS and function checks still pass: `psql … -f supabase/tests/rls.sql`
-- [ ] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 RLS and function checks still pass: `psql … -f supabase/tests/rls.sql`
+- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual
 
-- [ ] 2.6 With the key, a resolved ticket redirects `status=resolved` and a similar client paste matches it with sanitized text, cause and steps
-- [ ] 2.7 Without the key, resolving redirects `status=resolved-no-embedding`; backfill with the key restored makes the same paste match
+- [x] 2.6 With the key, a resolved ticket redirects `status=resolved` and a similar client paste matches it with sanitized text, cause and steps
+- [x] 2.7 Without the key, resolving redirects `status=resolved-no-embedding`; backfill with the key restored makes the same paste match
 - [ ] 2.8 `sanitizeErrorText` on 3–5 real XEMI messages masks company data and keeps the error code; samples recorded in `change.md`
 
 ### Phase 3: UI — staff queue page and the client's resolution view
