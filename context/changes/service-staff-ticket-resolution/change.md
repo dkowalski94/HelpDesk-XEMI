@@ -1,7 +1,7 @@
 ---
 change_id: service-staff-ticket-resolution
 title: Service staff ticket resolution
-status: implementing
+status: implemented
 created: 2026-10-14
 updated: 2026-10-19
 ---

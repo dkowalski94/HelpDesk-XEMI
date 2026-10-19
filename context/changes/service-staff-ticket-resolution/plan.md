@@ -445,16 +445,16 @@ There is no unit-test runner yet (Module 3 introduces one). Coverage comes from 
 
 #### Automated
 
-- [x] 3.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 3.2 Lint passes: `npm run lint`
-- [x] 3.3 Production build passes: `npm run build`
-- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 3.1 Type-check passes: `npx astro sync && npx astro check` — f3c43b2
+- [x] 3.2 Lint passes: `npm run lint` — f3c43b2
+- [x] 3.3 Production build passes: `npm run build` — f3c43b2
+- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase — f3c43b2
 
 #### Manual
 
-- [x] 3.5 Staff see todo tickets from both client companies, oldest first, with company names; resolved ones leave the queue
-- [x] 3.6 Preview shows masked company data; empty "Kroki" cannot be submitted
-- [x] 3.7 Counter shows tickets without embedding and "Przelicz" clears it
-- [x] 3.8 Client user is redirected away from `/admin/tickets`; queue link shown to staff only
-- [x] 3.9 Filing client sees "Rozwiązane" with cause and steps; the other company never sees the ticket
-- [x] 3.10 Polish diacritics render correctly; queue usable at phone width
+- [x] 3.5 Staff see todo tickets from both client companies, oldest first, with company names; resolved ones leave the queue — f3c43b2
+- [x] 3.6 Preview shows masked company data; empty "Kroki" cannot be submitted — f3c43b2
+- [x] 3.7 Counter shows tickets without embedding and "Przelicz" clears it — f3c43b2
+- [x] 3.8 Client user is redirected away from `/admin/tickets`; queue link shown to staff only — f3c43b2
+- [x] 3.9 Filing client sees "Rozwiązane" with cause and steps; the other company never sees the ticket — f3c43b2
+- [x] 3.10 Polish diacritics render correctly; queue usable at phone width — f3c43b2
