@@ -139,7 +139,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** S-02 (both depend only on S-01, neither depends on the other)
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Small, self-contained refinement of the north star's suggestion display; safe to build alongside S-02 since neither touches the other's surface. Carries one inherited constraint from S-02: `authenticated` has no UPDATE on `tickets` at all (migration `20261014120000` revoked it; tickets are resolved only through `resolve_ticket()`), and there is no client-scoped UPDATE policy — so the write path FR-011 needs does not exist yet. S-03 must grant `update (user_comment)` together with its own policy scoped to the client's own ticket, never re-granting the staff columns. See `context/changes/service-staff-ticket-resolution/plan.md`, *Migration Notes*.
+- **Risk:** Small, self-contained refinement of the north star's suggestion display; safe to build alongside S-02 since neither touches the other's surface. A match creates no ticket, so there is no existing ticket to attach a comment to: S-03 files a new ticket through the existing column-scoped `tickets` INSERT (which already includes `user_comment`). No UPDATE grant or policy on `tickets` is added — `authenticated` keeps no UPDATE there (migration `20261014120000` revoked it; tickets are resolved only through `resolve_ticket()`). See the S-02 plan at `context/archive/2026-10-14-service-staff-ticket-resolution/plan.md`, *Migration Notes*.
 - **Status:** in-progress
 
 ## Backlog Handoff

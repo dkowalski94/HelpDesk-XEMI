@@ -236,32 +236,32 @@ None: escalation is one indexed lookup and one insert, with no OpenAI call.
 
 #### Automated
 
-- [x] 1.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 1.2 Lint passes: `npm run lint`
-- [x] 1.3 Production build passes: `npm run build`
-- [x] 1.4 RLS and function checks pass, including the new denied `user_comment` update: `psql … -f supabase/tests/rls.sql` on a freshly reset database
-- [x] 1.5 Smoke passes against the production preview on a freshly reset local Supabase, including the new escalation steps
+- [x] 1.1 Type-check passes: `npx astro sync && npx astro check` — 153585e
+- [x] 1.2 Lint passes: `npm run lint` — 153585e
+- [x] 1.3 Production build passes: `npm run build` — 153585e
+- [x] 1.4 RLS and function checks pass, including the new denied `user_comment` update: `psql … -f supabase/tests/rls.sql` on a freshly reset database — 153585e
+- [x] 1.5 Smoke passes against the production preview on a freshly reset local Supabase, including the new escalation steps — 153585e
 
 #### Manual
 
-- [x] 1.6 With `OPENAI_API_KEY` set, a paste that previously returned `ticket-created` still does, and a matched paste still files nothing (no regression from the extraction)
-- [x] 1.7 `POST /api/escalate-error` as a client with a comment creates a ticket whose comment is visible to staff in `/admin/tickets`
+- [x] 1.6 With `OPENAI_API_KEY` set, a paste that previously returned `ticket-created` still does, and a matched paste still files nothing (no regression from the extraction) — 153585e
+- [x] 1.7 `POST /api/escalate-error` as a client with a comment creates a ticket whose comment is visible to staff in `/admin/tickets` — 153585e
 
 ### Phase 2: UI — escalation from the matched view, roadmap fix
 
 #### Automated
 
-- [ ] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual
 
-- [ ] 2.5 After a matched paste, "Żadna z sugestii nie pomogła" opens the comment form; sending with a comment shows the confirmation and the ticket appears under "Twoje zgłoszenia" as "Do zrobienia"
-- [ ] 2.6 Sending without a comment works and staff see the ticket without a comment
-- [ ] 2.7 Escalating the same text again (from a new paste) shows "already reported" and creates no second ticket
-- [ ] 2.8 Editing the textarea after the match does not change the text that is escalated
-- [ ] 2.9 Counter turns red above 1000 characters and the submit is disabled
-- [ ] 2.10 Staff see the comment in `/admin/tickets`; a Klient Beta user does not see the ticket
-- [ ] 2.11 Polish diacritics render correctly; the form is usable at phone width
+- [x] 2.5 After a matched paste, "Żadna z sugestii nie pomogła" opens the comment form; sending with a comment shows the confirmation and the ticket appears under "Twoje zgłoszenia" as "Do zrobienia"
+- [x] 2.6 Sending without a comment works and staff see the ticket without a comment
+- [x] 2.7 Escalating the same text again (from a new paste) shows "already reported" and creates no second ticket
+- [x] 2.8 Editing the textarea after the match does not change the text that is escalated
+- [x] 2.9 Counter turns red above 1000 characters and the submit is disabled
+- [x] 2.10 Staff see the comment in `/admin/tickets`; a Klient Beta user does not see the ticket
+- [x] 2.11 Polish diacritics render correctly; the form is usable at phone width

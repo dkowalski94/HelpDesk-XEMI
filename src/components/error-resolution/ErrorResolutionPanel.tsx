@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import { BookOpen, Loader2, Send, Wrench } from "lucide-react";
+import { BookOpen, Loader2, Send, ThumbsDown, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
+import { COMMENT_MAX_LENGTH, ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
 import { useMyTickets } from "@/hooks/useMyTickets";
-import type { ErrorResolutionResponse, ErrorResolutionSuccess, KnowledgeMatch, TicketStatus } from "@/types";
+import type {
+  ErrorResolutionResponse,
+  ErrorResolutionSuccess,
+  EscalationResponse,
+  EscalationSuccess,
+  KnowledgeMatch,
+  TicketStatus,
+} from "@/types";
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   todo: "Do zrobienia",
@@ -49,19 +56,163 @@ function MatchCard({ match }: { match: KnowledgeMatch }) {
   );
 }
 
-function Outcome({ result }: { result: ErrorResolutionSuccess }) {
+/**
+ * "None of the suggestions helped" under a match (S-03): files a ticket for the text that
+ * produced the match, with an optional comment. State lives here, so a new paste — which
+ * unmounts the matched view — starts it afresh.
+ */
+function Escalation({ errorText, onEscalated }: { errorText: string; onEscalated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [comment, setComment] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ escalation: EscalationSuccess; withComment: boolean } | null>(null);
+
+  const length = comment.trim().length;
+  const tooLong = length > COMMENT_MAX_LENGTH;
+  const blocked = pending || tooLong;
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (blocked) return;
+
+    setPending(true);
+    setError(null);
+
+    const body = new FormData();
+    body.set("errorText", errorText);
+    body.set("comment", comment);
+
+    try {
+      const response = await fetch("/api/escalate-error", { method: "POST", body });
+      // A non-JSON body (e.g. an HTML 502 page) means the server was reached but failed.
+      const payload = (await response.json().catch(() => null)) as EscalationResponse | null;
+      if (!payload) {
+        setError("Wystąpił błąd serwera. Spróbuj ponownie za chwilę.");
+      } else if (payload.ok) {
+        setResult({ escalation: payload, withComment: length > 0 });
+        onEscalated();
+      } else {
+        setError(payload.error);
+      }
+    } catch {
+      setError("Nie udało się połączyć z serwerem. Spróbuj ponownie.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // After success the control is gone, so the same match cannot be escalated twice.
+  if (result) {
+    if (result.escalation.outcome === "ticket-created") {
+      return (
+        <div role="status" className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm text-blue-100/80">
+            {result.withComment
+              ? "Przekazaliśmy błąd do zespołu serwisowego XEMI razem z Twoim komentarzem."
+              : "Przekazaliśmy błąd do zespołu serwisowego XEMI."}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div role="status" className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <p className="text-sm font-semibold text-amber-200">Ten błąd został już zgłoszony</p>
+        <p className="mt-1 text-sm text-blue-100/80">
+          Zgłoszenie z {formatDate(result.escalation.ticket.createdAt)} czeka na zespół serwisowy.
+        </p>
+        {result.withComment && (
+          <p className="mt-1 text-sm text-blue-100/60">Nowy komentarz nie został dodany do tego zgłoszenia.</p>
+        )}
+      </div>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+        className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
+      >
+        <ThumbsDown className="size-4" />
+        Żadna z sugestii nie pomogła
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-4">
+      <label htmlFor="escalationComment" className="block text-sm font-semibold text-white">
+        Komentarz (opcjonalnie)
+      </label>
+      <p id="escalationComment-hint" className="text-sm text-blue-100/60">
+        Opisz, co zostało już wypróbowane — pomoże to zespołowi serwisowemu.
+      </p>
+      <textarea
+        id="escalationComment"
+        name="comment"
+        rows={4}
+        value={comment}
+        aria-describedby="escalationComment-hint escalationComment-counter"
+        onChange={(e) => {
+          setComment(e.target.value);
+        }}
+        className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-blue-100/40 focus:border-purple-300/60 focus:outline-none"
+      />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p
+          id="escalationComment-counter"
+          aria-live="polite"
+          className={cn("text-xs", tooLong ? "font-semibold text-red-300" : "text-blue-100/50")}
+        >
+          {length} / {COMMENT_MAX_LENGTH}
+          {tooLong && " — komentarz jest za długi"}
+        </p>
+        <button
+          type="submit"
+          disabled={blocked}
+          className={cn(
+            "flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors",
+            blocked ? "cursor-not-allowed opacity-50" : "hover:bg-white/20",
+          )}
+        >
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+          {pending ? "Przekazuję..." : "Przekaż do serwisu"}
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function Outcome({
+  result,
+  submittedText,
+  onEscalated,
+}: {
+  result: ErrorResolutionSuccess;
+  submittedText: string;
+  onEscalated: () => void;
+}) {
   if (result.outcome === "matched") {
     return (
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-emerald-200">Znaleźliśmy możliwe rozwiązanie</h2>
-        <p className="text-sm text-blue-100/60">
-          Nie utworzyliśmy zgłoszenia. Jeśli poniższe wskazówki nie pomogą, skontaktuj się z zespołem serwisowym.
-        </p>
+        <p className="text-sm text-blue-100/60">Nie utworzyliśmy zgłoszenia.</p>
         <ul className="space-y-4">
           {result.matches.map((match) => (
             <MatchCard key={match.id} match={match} />
           ))}
         </ul>
+        <Escalation errorText={submittedText} onEscalated={onEscalated} />
       </section>
     );
   }
@@ -95,6 +246,9 @@ export default function ErrorResolutionPanel() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ErrorResolutionSuccess | null>(null);
+  // The text that produced `result`, kept apart from the textarea so editing it after a
+  // match does not change what an escalation sends.
+  const [submittedText, setSubmittedText] = useState("");
   const { state: myTickets, reload } = useMyTickets();
 
   const length = errorText.trim().length;
@@ -110,8 +264,9 @@ export default function ErrorResolutionPanel() {
     setResult(null);
 
     // FormData, not JSON: the endpoint reads a form body and treats anything else as empty.
+    const sentText = errorText;
     const body = new FormData();
-    body.set("errorText", errorText);
+    body.set("errorText", sentText);
 
     try {
       const response = await fetch("/api/resolve-error", { method: "POST", body });
@@ -120,6 +275,7 @@ export default function ErrorResolutionPanel() {
       if (!payload) {
         setError("Wystąpił błąd serwera. Spróbuj ponownie za chwilę.");
       } else if (payload.ok) {
+        setSubmittedText(sentText);
         setResult(payload);
         if (payload.outcome !== "matched") reload();
       } else {
@@ -181,7 +337,7 @@ export default function ErrorResolutionPanel() {
         </p>
       )}
 
-      {result && <Outcome result={result} />}
+      {result && <Outcome result={result} submittedText={submittedText} onEscalated={reload} />}
 
       <section className="space-y-3 border-t border-white/10 pt-6">
         <h2 className="text-lg font-semibold text-white">Twoje zgłoszenia</h2>
