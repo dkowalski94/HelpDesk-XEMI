@@ -45,7 +45,7 @@ An ERP (XEMI) end user — purchasing, sales, accounting, or warehouse staff at 
 | F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | done        |
 | S-01 | first-gated-error-resolution     | paste an error and see a matched cause/steps, or have it auto-escalated to a ticket | F-01, F-02     | US-01, FR-001, FR-002, FR-003, FR-007, FR-012 | done |
 | S-02 | service-staff-ticket-resolution  | (service staff) see to-do tickets from all client companies and record a resolution that feeds the knowledge base | F-01, S-01     | FR-004, FR-005, FR-006, FR-008    | done |
-| S-03 | mark-suggestion-unhelpful        | mark a suggested resolution as not helpful, escalating it to a ticket with a comment | S-01           | FR-011                            | proposed |
+| S-03 | mark-suggestion-unhelpful        | mark a suggested resolution as not helpful, escalating it to a ticket with a comment | S-01           | FR-011                            | in-progress |
 
 ## Streams
 
@@ -140,7 +140,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Small, self-contained refinement of the north star's suggestion display; safe to build alongside S-02 since neither touches the other's surface. Carries one inherited constraint from S-02: `authenticated` has no UPDATE on `tickets` at all (migration `20261014120000` revoked it; tickets are resolved only through `resolve_ticket()`), and there is no client-scoped UPDATE policy — so the write path FR-011 needs does not exist yet. S-03 must grant `update (user_comment)` together with its own policy scoped to the client's own ticket, never re-granting the staff columns. See `context/changes/service-staff-ticket-resolution/plan.md`, *Migration Notes*.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Backlog Handoff
 

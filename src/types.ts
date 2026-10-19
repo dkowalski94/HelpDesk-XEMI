@@ -227,6 +227,31 @@ export interface ErrorResolutionFailure {
 export type ErrorResolutionResponse = ErrorResolutionSuccess | ErrorResolutionFailure;
 
 /* -------------------------------------------------------------------------- */
+/* Suggestion escalation (S-03)                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * What `POST /api/escalate-error` did with a suggestion the client found unhelpful:
+ * filed a ticket with the optional comment, or found the caller's open one for the same text.
+ */
+export interface EscalationSuccess {
+  ok: true;
+  outcome: "ticket-created" | "already-reported";
+  ticket: TicketSummary;
+}
+
+/** Why an escalation failed — the API route maps this to a status code. */
+export type EscalationFailureReason = ErrorResolutionFailureReason | "comment-too-long";
+
+export interface EscalationFailure {
+  ok: false;
+  reason: EscalationFailureReason;
+  error: string;
+}
+
+export type EscalationResponse = EscalationSuccess | EscalationFailure;
+
+/* -------------------------------------------------------------------------- */
 /* Ticket resolution (S-02, staff)                                            */
 /* -------------------------------------------------------------------------- */
 

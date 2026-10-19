@@ -370,6 +370,10 @@ select pg_temp.expect_denied('alfa: resolving its own ticket directly',
 select pg_temp.expect_denied('alfa: rewriting a ticket''s company',
   $q$update public.tickets set company_id = '00000000-0000-0000-0000-00000000c102'
      where id = '00000000-0000-0000-0000-00000000e101'$q$);
+-- The comment is written at insert time only (POST /api/escalate-error); nothing edits it later.
+select pg_temp.expect_denied('alfa: rewriting the comment on its own ticket',
+  $q$update public.tickets set user_comment = 'rewritten'
+     where id = '00000000-0000-0000-0000-00000000e101'$q$);
 select pg_temp.expect_denied('alfa: deleting its own ticket',
   $q$delete from public.tickets where id = '00000000-0000-0000-0000-00000000e101'$q$);
 

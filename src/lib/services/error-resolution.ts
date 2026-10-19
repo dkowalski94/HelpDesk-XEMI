@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/database.types";
-import { ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
+import { COMMENT_MAX_LENGTH, ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
 import { embedText, OpenAIRequestError } from "@/lib/openai";
 import { TICKET_COLUMNS, toTicketSummary } from "@/lib/services/tickets";
-import type { ErrorResolutionResponse, KnowledgeMatch } from "@/types";
+import type { ErrorResolutionResponse, EscalationResponse, KnowledgeMatch, TicketSummary } from "@/types";
 
 /**
  * The single calibration knob: a knowledge base entry counts as a match at this
@@ -84,16 +84,15 @@ async function searchKnowledgeBase(supabase: SupabaseClient<Database>, text: str
   };
 }
 
-/**
- * Resolves one pasted error end to end: validate, search the knowledge base, and
- * only when nothing matches, return the caller's open ticket for the same text or
- * file a new one. Never throws — every outcome is a response the route can send.
- */
-export async function resolveError(
-  supabase: SupabaseClient<Database>,
-  { userId, companyId }: { userId: string; companyId: string },
-  rawText: string,
-): Promise<ErrorResolutionResponse> {
+interface Caller {
+  userId: string;
+  companyId: string;
+}
+
+type TextCheck = { ok: true; trimmed: string } | { ok: false; reason: "empty-text" | "too-long"; error: string };
+
+/** Trims and validates a pasted error text — shared so both entry points answer alike. */
+function checkErrorText(rawText: string): TextCheck {
   const trimmed = rawText.trim();
   if (!trimmed) {
     return { ok: false, reason: "empty-text", error: "Wklej treść błędu." };
@@ -105,40 +104,107 @@ export async function resolveError(
       error: `Treść błędu może mieć najwyżej ${ERROR_TEXT_MAX_LENGTH} znaków.`,
     };
   }
+  return { ok: true, trimmed };
+}
 
-  const search = await searchKnowledgeBase(supabase, trimmed);
-  if (search.status === "ok" && search.matches.length > 0) {
-    return { ok: true, outcome: "matched", matches: search.matches };
-  }
-  const searchUnavailable = search.status === "unavailable";
-
+/**
+ * Returns the caller's open ticket for the same text, or files a new one carrying the
+ * comment. The duplicate lookup ignores the comment: the same error stays one report.
+ * `null` means the insert failed.
+ */
+async function fileTicket(
+  supabase: SupabaseClient<Database>,
+  { userId, companyId }: Caller,
+  trimmedText: string,
+  comment: string | null,
+): Promise<{ outcome: "ticket-created" | "already-reported"; ticket: TicketSummary } | null> {
   // A lookup error is treated as "not found": a duplicate ticket beats a lost report.
   const { data: existing, error: lookupError } = await supabase
     .from("tickets")
     .select(TICKET_COLUMNS)
     .eq("created_by", userId)
     .eq("status", "todo")
-    .eq("error_text", trimmed)
+    .eq("error_text", trimmedText)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (lookupError) {
-    console.error("Error resolution: open ticket lookup failed", lookupError);
+    console.error("Ticket filing: open ticket lookup failed", lookupError);
   } else if (existing) {
-    return { ok: true, outcome: "already-reported", ticket: toTicketSummary(existing), searchUnavailable };
+    return { outcome: "already-reported", ticket: toTicketSummary(existing) };
   }
 
   const { data: created, error: insertError } = await supabase
     .from("tickets")
-    .insert({ company_id: companyId, created_by: userId, error_text: trimmed })
+    .insert({ company_id: companyId, created_by: userId, error_text: trimmedText, user_comment: comment })
     .select(TICKET_COLUMNS)
     .single();
 
   if (insertError) {
-    console.error("Error resolution: ticket insert failed", insertError);
-    return { ok: false, reason: "error", error: "Nie udało się zgłosić błędu. Spróbuj ponownie." };
+    console.error("Ticket filing: ticket insert failed", insertError);
+    return null;
   }
 
-  return { ok: true, outcome: "ticket-created", ticket: toTicketSummary(created), searchUnavailable };
+  return { outcome: "ticket-created", ticket: toTicketSummary(created) };
+}
+
+/**
+ * Resolves one pasted error end to end: validate, search the knowledge base, and
+ * only when nothing matches, return the caller's open ticket for the same text or
+ * file a new one. Never throws — every outcome is a response the route can send.
+ */
+export async function resolveError(
+  supabase: SupabaseClient<Database>,
+  caller: Caller,
+  rawText: string,
+): Promise<ErrorResolutionResponse> {
+  const text = checkErrorText(rawText);
+  if (!text.ok) {
+    return text;
+  }
+
+  const search = await searchKnowledgeBase(supabase, text.trimmed);
+  if (search.status === "ok" && search.matches.length > 0) {
+    return { ok: true, outcome: "matched", matches: search.matches };
+  }
+  const searchUnavailable = search.status === "unavailable";
+
+  const filed = await fileTicket(supabase, caller, text.trimmed, null);
+  if (!filed) {
+    return { ok: false, reason: "error", error: "Nie udało się zgłosić błędu. Spróbuj ponownie." };
+  }
+  return { ok: true, ...filed, searchUnavailable };
+}
+
+/**
+ * Escalates a suggestion the client found unhelpful (FR-011): files a ticket for the
+ * same text with the optional comment, or returns the caller's open one — the same
+ * duplicate rule as `resolveError`, with no search. Never throws.
+ */
+export async function escalateUnhelpful(
+  supabase: SupabaseClient<Database>,
+  caller: Caller,
+  rawText: string,
+  rawComment: string,
+): Promise<EscalationResponse> {
+  const text = checkErrorText(rawText);
+  if (!text.ok) {
+    return text;
+  }
+
+  const comment = rawComment.trim();
+  if (comment.length > COMMENT_MAX_LENGTH) {
+    return {
+      ok: false,
+      reason: "comment-too-long",
+      error: `Komentarz może mieć najwyżej ${COMMENT_MAX_LENGTH} znaków.`,
+    };
+  }
+
+  const filed = await fileTicket(supabase, caller, text.trimmed, comment || null);
+  if (!filed) {
+    return { ok: false, reason: "error", error: "Nie udało się przekazać zgłoszenia. Spróbuj ponownie." };
+  }
+  return { ok: true, ...filed };
 }

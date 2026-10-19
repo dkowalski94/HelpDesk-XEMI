@@ -3,12 +3,14 @@
 // Zero dependencies on purpose. Run against a live server: BASE_URL=http://localhost:4321 node scripts/smoke.mjs
 // The isolation steps expect the demo personas from supabase/seed.sql (`npx supabase db reset`).
 //
-// Each run files one Klient Alfa ticket (through POST /api/resolve-error, as the throwaway
-// account) and resolves it as staff, which adds one ticket knowledge base entry; nothing
-// deletes either — tickets have no DELETE policy. After ~49 runs against the
+// Each run files two Klient Alfa tickets as the throwaway account — one through
+// POST /api/resolve-error, which staff then resolves (adding one ticket knowledge base
+// entry), and one through POST /api/escalate-error, which stays open; nothing deletes
+// any of them — tickets have no DELETE policy. After ~24 runs against the
 // same database the seeded ticket e101 falls off the first page of GET /api/tickets, and the
-// staff check and the three onlyTicketsOf(COMPANY.alfa, TICKET.alfa) steps fail: run
-// `npx supabase db reset` every few dozen local runs.
+// staff check and the three onlyTicketsOf(COMPANY.alfa, TICKET.alfa) steps fail (the open
+// escalation tickets also fill the oldest-first staff queue, after ~49 runs): run
+// `npx supabase db reset` every couple of dozen local runs.
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
 const runId = Date.now();
@@ -20,6 +22,11 @@ const password = "Smoke-Test-Passw0rd!";
 // (CI) that entry has no embedding and matches nothing; with the key it is embedded, and
 // the next run's text matches it — run `npx supabase db reset` before every such run.
 const errorText = `smoke-${runId} ERR-SMOKE kwarblifon zdrumpel wyzgotnik plomboryt`;
+// A distinct text for the escalation, so its ticket is not the resolve-error one the S-02
+// steps resolve. The comments are plain ASCII so Astro's HTML escaping leaves them intact.
+const escalationText = `${errorText} eskalacja`;
+const escalationComment = `smoke-${runId} first comment suggestion did not help`;
+const escalationSecondComment = `smoke-${runId} second comment still broken`;
 
 // Fixed ids and credentials from supabase/seed.sql. The seeded personas are only ever
 // signed in as and attacked — never successfully changed — so a second run against the
@@ -110,6 +117,10 @@ function resolveError(as, text) {
   return request("/api/resolve-error", { method: "POST", form: { errorText: text }, as });
 }
 
+function escalateError(as, text, comment) {
+  return request("/api/escalate-error", { method: "POST", form: { errorText: text, comment }, as });
+}
+
 function resolveTicket(as, { ticketId, cause = "", steps }) {
   return request("/api/admin/resolve-ticket", { method: "POST", form: { ticketId: ticketId ?? "", cause, steps }, as });
 }
@@ -139,6 +150,8 @@ function waitingUserId(html, userEmail) {
 let smokeUserId = null;
 // Filled in by the step that files the ticket, used by the steps that look for it.
 let smokeTicketId = null;
+// Filled in by the step that escalates, used by the duplicate check.
+let escalationTicketId = null;
 
 // Distinctive substrings of /report-error, one per server-rendered state. The form's
 // instruction is part of the island, which client:load also renders on the server.
@@ -180,6 +193,11 @@ const steps = [
   [
     "resolve-error api rejects anonymous user",
     () => resolveError("anonymous", errorText),
+    { status: 401, check: ({ json }) => json?.reason === "unauthorized" },
+  ],
+  [
+    "escalate-error api rejects anonymous user",
+    () => escalateError("anonymous", escalationText, escalationComment),
     { status: 401, check: ({ json }) => json?.reason === "unauthorized" },
   ],
   [
@@ -240,6 +258,11 @@ const steps = [
     { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
   ],
   [
+    "staff cannot escalate through escalate-error",
+    () => escalateError("staff", escalationText, escalationComment),
+    { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
+  ],
+  [
     "staff gets the staff message on /report-error, not the form",
     () => request("/report-error", { as: "staff" }),
     {
@@ -260,6 +283,11 @@ const steps = [
   [
     "unassigned account cannot file an error through resolve-error",
     () => resolveError("smoke", errorText),
+    { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
+  ],
+  [
+    "unassigned account cannot escalate through escalate-error",
+    () => escalateError("smoke", escalationText, escalationComment),
     { status: 403, check: ({ json }) => json?.reason === "not-a-client" },
   ],
   [
@@ -435,6 +463,56 @@ const steps = [
     {
       status: 200,
       check: ({ json }) => json?.ok === true && smokeTicketId !== null && !hasTicket(json, smokeTicketId),
+    },
+  ],
+
+  // --- Suggestion escalation (S-03): the same account escalates a distinct text -------
+  // Gate checks for anonymous, staff and unassigned callers sit next to resolve-error's above.
+  [
+    "escalate-error rejects a blank text",
+    () => escalateError("smoke", "   ", escalationComment),
+    { status: 400, check: ({ json }) => json?.reason === "empty-text" },
+  ],
+  [
+    "escalate-error rejects a comment over 1000 characters",
+    () => escalateError("smoke", escalationText, "x".repeat(1001)),
+    { status: 400, check: ({ json }) => json?.reason === "comment-too-long" },
+  ],
+  [
+    "escalate-error files a Klient Alfa ticket with the comment",
+    async () => {
+      const actual = await escalateError("smoke", escalationText, escalationComment);
+      escalationTicketId = actual.json?.ticket?.id ?? null;
+      return actual;
+    },
+    {
+      status: 200,
+      check: ({ json }) =>
+        json?.ok === true &&
+        json.outcome === "ticket-created" &&
+        json.ticket.companyId === COMPANY.alfa &&
+        json.ticket.errorText === escalationText,
+    },
+  ],
+  [
+    "...and escalating the same text with another comment is already reported, as the same ticket",
+    () => escalateError("smoke", escalationText, escalationSecondComment),
+    {
+      status: 200,
+      check: ({ json }) =>
+        json?.ok === true &&
+        json.outcome === "already-reported" &&
+        escalationTicketId !== null &&
+        json.ticket.id === escalationTicketId,
+    },
+  ],
+  // Assumes the escalation ticket is on the queue's first, oldest-first page; see the header.
+  [
+    "...and staff sees the first comment on /admin/tickets, not the second",
+    () => request("/admin/tickets", { as: "staff" }),
+    {
+      status: 200,
+      check: ({ text }) => text.includes(escalationComment) && !text.includes(escalationSecondComment),
     },
   ],
 
