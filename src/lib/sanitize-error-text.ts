@@ -48,14 +48,21 @@ const RULES: { pattern: RegExp; placeholder: string; requireDigit?: boolean }[] 
   { pattern: /(?<!\d)\d{5,}(?!\d)/gu, placeholder: "[liczba]" },
 ];
 
+/**
+ * XEMI prints a person as "NAZWISKO IMIĘ" in capitals: two or more all-caps words
+ * (hyphenated surnames included). A single capitalised word such as `ERR` is kept;
+ * an all-caps phrase that is not a person is masked too, which is the accepted cost.
+ */
+const PERSON_NAME = /(?<![\p{L}\d])\p{Lu}{2,}(?:-\p{Lu}{2,})*(?:[ \u00a0]+\p{Lu}{2,}(?:-\p{Lu}{2,})*)+(?![\p{L}\d])/gu;
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
  * Masks e-mails, account numbers, NIPs, phone numbers, document numbers, amounts,
- * any other run of 5+ digits and — when given — the reporting company's name, then
- * collapses whitespace. Runs of 1–4 digits (ERP error codes, years) are kept.
+ * any other run of 5+ digits, — when given — the reporting company's name and
+ * all-caps person names, then collapses whitespace. Runs of 1–4 digits (ERP error codes, years) are kept.
  */
 export function sanitizeErrorText(text: string, companyName: string | null): string {
   let result = text;
@@ -67,6 +74,9 @@ export function sanitizeErrorText(text: string, companyName: string | null): str
   if (name) {
     result = result.replace(new RegExp(escapeRegExp(name), "giu"), "[firma]");
   }
+
+  // After the company name, which an upper-case name would otherwise turn into `[osoba]`.
+  result = result.replace(PERSON_NAME, "[osoba]");
 
   return result.replace(/\s+/g, " ").trim();
 }

@@ -192,6 +192,7 @@ The pure sanitizer, the staff services (queue, resolve, backfill), two staff end
 6. amount (`\d[\d  ]*,\d{2}` with an optional `zł`/`PLN`) → `[kwota]`
 7. any remaining run of 5 or more digits → `[liczba]`
 8. the reporting company's name, case-insensitive literal match, when given → `[firma]`
+9. a person name as XEMI prints it — two or more consecutive all-caps words, hyphenated surnames included, e.g. `KOWALSKI DAWID` → `[osoba]`. Runs after rule 8 so an all-caps company name stays `[firma]`. Added after manual step 2.8; see `change.md`.
 
 Whitespace is collapsed and trimmed afterwards. Digit runs of 1–4 digits (ERP error codes, years, short counts) are kept. The function is exported along with a short comment stating that a deterministic, incomplete filter is the accepted design.
 
@@ -428,17 +429,17 @@ There is no unit-test runner yet (Module 3 introduces one). Coverage comes from 
 
 #### Automated
 
-- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Production build passes: `npm run build`
-- [x] 2.4 RLS and function checks still pass: `psql … -f supabase/tests/rls.sql`
-- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check` — d0b38f2
+- [x] 2.2 Lint passes: `npm run lint` — d0b38f2
+- [x] 2.3 Production build passes: `npm run build` — d0b38f2
+- [x] 2.4 RLS and function checks still pass: `psql … -f supabase/tests/rls.sql` — d0b38f2
+- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase — d0b38f2
 
 #### Manual
 
-- [x] 2.6 With the key, a resolved ticket redirects `status=resolved` and a similar client paste matches it with sanitized text, cause and steps
-- [x] 2.7 Without the key, resolving redirects `status=resolved-no-embedding`; backfill with the key restored makes the same paste match
-- [ ] 2.8 `sanitizeErrorText` on 3–5 real XEMI messages masks company data and keeps the error code; samples recorded in `change.md`
+- [x] 2.6 With the key, a resolved ticket redirects `status=resolved` and a similar client paste matches it with sanitized text, cause and steps — d0b38f2
+- [x] 2.7 Without the key, resolving redirects `status=resolved-no-embedding`; backfill with the key restored makes the same paste match — d0b38f2
+- [x] 2.8 `sanitizeErrorText` on 3–5 real XEMI messages masks company data and keeps the error code; samples recorded in `change.md`
 
 ### Phase 3: UI — staff queue page and the client's resolution view
 
