@@ -91,9 +91,14 @@ interface Caller {
 
 type TextCheck = { ok: true; trimmed: string } | { ok: false; reason: "empty-text" | "too-long"; error: string };
 
+/** A multipart FormData body sends textarea line breaks as CRLF; the island counts LF. */
+function normalizeLineBreaks(value: string) {
+  return value.replace(/\r\n?/g, "\n");
+}
+
 /** Trims and validates a pasted error text — shared so both entry points answer alike. */
 function checkErrorText(rawText: string): TextCheck {
-  const trimmed = rawText.trim();
+  const trimmed = normalizeLineBreaks(rawText).trim();
   if (!trimmed) {
     return { ok: false, reason: "empty-text", error: "Wklej treść błędu." };
   }
@@ -193,7 +198,7 @@ export async function escalateUnhelpful(
     return text;
   }
 
-  const comment = rawComment.trim();
+  const comment = normalizeLineBreaks(rawComment).trim();
   if (comment.length > COMMENT_MAX_LENGTH) {
     return {
       ok: false,
