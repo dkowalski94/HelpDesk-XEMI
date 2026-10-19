@@ -149,6 +149,8 @@ const REPORT_PAGE = {
   waiting: "Twoje konto czeka na przypisanie do firmy",
 };
 
+/** True when the staff queue page renders a resolve form for the ticket. */
+const inQueue = (html, id) => id !== null && html.includes(`name="ticketId" value="${id}"`);
 const hasTicket = (json, id) => id !== null && json.tickets.some((ticket) => ticket.id === id);
 const ticketOf = (json, id) =>
   json?.ok === true && id !== null ? json.tickets.find((ticket) => ticket.id === id) : undefined;
@@ -471,6 +473,17 @@ const steps = [
     { status: 403 },
   ],
   [
+    "client user is turned away from /admin/tickets",
+    () => request("/admin/tickets", { as: "alfa" }),
+    { status: 302, location: "/dashboard" },
+  ],
+  // Assumes the smoke ticket is on the queue's first, oldest-first page; see the header.
+  [
+    "staff queue at /admin/tickets lists the ticket",
+    () => request("/admin/tickets", { as: "staff" }),
+    { status: 200, check: ({ text }) => inQueue(text, smokeTicketId) },
+  ],
+  [
     "staff cannot resolve with blank steps",
     () => resolveTicket("staff", { ticketId: smokeTicketId, steps: "   " }),
     { status: 302, location: "/admin/tickets?error=invalid" },
@@ -487,6 +500,11 @@ const steps = [
     "...and resolving it again reports it already resolved",
     () => resolveTicket("staff", { ticketId: smokeTicketId, cause: resolutionCause, steps: resolutionSteps }),
     { status: 302, location: "/admin/tickets?error=already-resolved" },
+  ],
+  [
+    "...and it has left the staff queue",
+    () => request("/admin/tickets", { as: "staff" }),
+    { status: 200, check: ({ text }) => smokeTicketId !== null && !inQueue(text, smokeTicketId) },
   ],
   [
     "...and the filing account sees it resolved, with the cause and steps",

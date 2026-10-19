@@ -439,22 +439,22 @@ There is no unit-test runner yet (Module 3 introduces one). Coverage comes from 
 
 - [x] 2.6 With the key, a resolved ticket redirects `status=resolved` and a similar client paste matches it with sanitized text, cause and steps — d0b38f2
 - [x] 2.7 Without the key, resolving redirects `status=resolved-no-embedding`; backfill with the key restored makes the same paste match — d0b38f2
-- [x] 2.8 `sanitizeErrorText` on 3–5 real XEMI messages masks company data and keeps the error code; samples recorded in `change.md`
+- [x] 2.8 `sanitizeErrorText` on 3–5 real XEMI messages masks company data and keeps the error code; samples recorded in `change.md` — 9a0880c
 
 ### Phase 3: UI — staff queue page and the client's resolution view
 
 #### Automated
 
-- [ ] 3.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 3.2 Lint passes: `npm run lint`
-- [ ] 3.3 Production build passes: `npm run build`
-- [ ] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 3.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 3.2 Lint passes: `npm run lint`
+- [x] 3.3 Production build passes: `npm run build`
+- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual
 
-- [ ] 3.5 Staff see todo tickets from both client companies, oldest first, with company names; resolved ones leave the queue
-- [ ] 3.6 Preview shows masked company data; empty "Kroki" cannot be submitted
-- [ ] 3.7 Counter shows tickets without embedding and "Przelicz" clears it
-- [ ] 3.8 Client user is redirected away from `/admin/tickets`; queue link shown to staff only
-- [ ] 3.9 Filing client sees "Rozwiązane" with cause and steps; the other company never sees the ticket
-- [ ] 3.10 Polish diacritics render correctly; queue usable at phone width
+- [x] 3.5 Staff see todo tickets from both client companies, oldest first, with company names; resolved ones leave the queue
+- [x] 3.6 Preview shows masked company data; empty "Kroki" cannot be submitted
+- [x] 3.7 Counter shows tickets without embedding and "Przelicz" clears it
+- [x] 3.8 Client user is redirected away from `/admin/tickets`; queue link shown to staff only
+- [x] 3.9 Filing client sees "Rozwiązane" with cause and steps; the other company never sees the ticket
+- [x] 3.10 Polish diacritics render correctly; queue usable at phone width

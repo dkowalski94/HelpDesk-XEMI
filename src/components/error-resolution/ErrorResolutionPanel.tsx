@@ -197,22 +197,33 @@ export default function ErrorResolutionPanel() {
         {myTickets.status === "ok" && myTickets.tickets.length > 0 && (
           <ul className="space-y-2">
             {myTickets.tickets.map((ticket) => (
-              <li
-                key={ticket.id}
-                className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 sm:flex-row sm:items-center sm:gap-3"
-              >
-                <span className="min-w-0 flex-1 truncate text-sm text-blue-100/80" title={ticket.errorText}>
-                  {ticket.errorText}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 text-xs font-semibold",
-                    ticket.status === "resolved" ? "text-emerald-200" : "text-amber-200",
-                  )}
-                >
-                  {STATUS_LABELS[ticket.status]}
-                </span>
-                <span className="shrink-0 text-xs text-blue-100/50">{formatDate(ticket.createdAt)}</span>
+              <li key={ticket.id} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <span className="min-w-0 flex-1 truncate text-sm text-blue-100/80" title={ticket.errorText}>
+                    {ticket.errorText}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 text-xs font-semibold",
+                      ticket.status === "resolved" ? "text-emerald-200" : "text-amber-200",
+                    )}
+                  >
+                    {STATUS_LABELS[ticket.status]}
+                  </span>
+                  <span className="shrink-0 text-xs text-blue-100/50">{formatDate(ticket.createdAt)}</span>
+                </div>
+                {ticket.status === "resolved" && ticket.resolutionCause && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-white">Przyczyna</p>
+                    <p className="mt-1 text-sm whitespace-pre-line text-blue-100/80">{ticket.resolutionCause}</p>
+                  </div>
+                )}
+                {ticket.status === "resolved" && ticket.resolution && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-white">Kroki</p>
+                    <p className="mt-1 text-sm whitespace-pre-line text-blue-100/80">{ticket.resolution}</p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

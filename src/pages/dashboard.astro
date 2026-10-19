@@ -60,6 +60,15 @@ const isClient = assignedProfile?.role === "client_user" && assignedProfile.comp
               Manage users
             </a>
           )}
+          {isStaff && (
+            <a
+              href="/admin/tickets"
+              lang="pl"
+              class="mt-4 ml-4 inline-block text-sm text-purple-300 transition-colors hover:text-purple-100 hover:underline"
+            >
+              Zgłoszenia do rozwiązania
+            </a>
+          )}
           {isClient && (
             <a
               href="/report-error"
