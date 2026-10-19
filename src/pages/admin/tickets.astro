@@ -41,6 +41,9 @@ const supabase = createClient(Astro.request.headers, Astro.cookies);
 const queue: StaffQueueResult = supabase ? await listTodoQueue(supabase, { offset }) : { status: "error" };
 const missingEmbeddings = supabase ? await countMissingEmbeddings(supabase) : null;
 
+const RESOLUTION_PREVIEW_HINT =
+  "Dane firmy, nazwiska i numery zostaną zamaskowane. Zgłaszający zobaczy przyczynę i kroki bez zmian.";
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" });
 }
@@ -101,7 +104,12 @@ function formatDate(iso: string) {
                   <p class="text-xs font-semibold text-white">Do bazy wiedzy trafi:</p>
                   <p class="mt-1 text-sm break-words whitespace-pre-line text-blue-100/60">{ticket.kbPreview}</p>
                 </div>
-                <form method="POST" action="/api/admin/resolve-ticket" class="mt-4 space-y-3">
+                <form
+                  method="POST"
+                  action="/api/admin/resolve-ticket"
+                  class="mt-4 space-y-3"
+                  data-company-name={ticket.companyName ?? ""}
+                >
                   <input type="hidden" name="ticketId" value={ticket.id} />
                   <div>
                     <label for={`cause-${ticket.id}`} class="block text-xs font-semibold text-white">
@@ -128,6 +136,12 @@ function formatDate(iso: string) {
                       class="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-blue-100/40 focus:border-purple-300/60 focus:outline-none"
                     ></textarea>
                   </div>
+                  <div class="rounded-lg border border-white/10 bg-black/10 p-3">
+                    <p class="text-xs font-semibold text-white">Inne firmy zobaczą przyczynę i kroki tak:</p>
+                    <p class="mt-1 text-sm break-words whitespace-pre-line text-blue-100/60" data-kb-resolution-preview>
+                      {RESOLUTION_PREVIEW_HINT}
+                    </p>
+                  </div>
                   <button
                     type="submit"
                     class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
@@ -152,3 +166,25 @@ function formatDate(iso: string) {
     </div>
   </div>
 </Layout>
+
+<script>
+  import { sanitizeResolutionText } from "@/lib/sanitize-error-text";
+
+  // Same function the server applies to the knowledge base copy, so the preview is what other
+  // companies will read. Without JavaScript the server-rendered hint stays in place.
+  for (const form of document.querySelectorAll<HTMLFormElement>("form[data-company-name]")) {
+    const preview = form.querySelector<HTMLElement>("[data-kb-resolution-preview]");
+    const cause = form.elements.namedItem("cause");
+    const steps = form.elements.namedItem("steps");
+    if (!preview || !(cause instanceof HTMLTextAreaElement) || !(steps instanceof HTMLTextAreaElement)) continue;
+
+    const hint = (preview.textContent ?? "").trim();
+    const companyName = form.dataset.companyName || null;
+    form.addEventListener("input", () => {
+      const maskedCause = sanitizeResolutionText(cause.value, companyName);
+      const maskedSteps = sanitizeResolutionText(steps.value, companyName);
+      const parts = [maskedCause && `Przyczyna: ${maskedCause}`, maskedSteps && `Kroki:\n${maskedSteps}`];
+      preview.textContent = parts.filter(Boolean).join("\n\n") || hint;
+    });
+  }
+</script>

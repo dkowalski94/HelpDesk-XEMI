@@ -1,6 +1,7 @@
 /*
- * Strips company-identifying data from an error text before it becomes a shared
- * knowledge base entry, which `match_knowledge_base` shows to every client company.
+ * Strips company-identifying data from an error text, and from the cause and steps
+ * staff write for it, before they become a shared knowledge base entry, which
+ * `match_knowledge_base` shows to every client company.
  *
  * Dependency-free on purpose: the staff page renders the same preview the server
  * stores, so this module must never import `astro:env` or `@/lib/openai`.
@@ -59,24 +60,41 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * Masks e-mails, account numbers, NIPs, phone numbers, document numbers, amounts,
- * any other run of 5+ digits, — when given — the reporting company's name and
- * all-caps person names, then collapses whitespace. Runs of 1–4 digits (ERP error codes, years) are kept.
- */
-export function sanitizeErrorText(text: string, companyName: string | null): string {
+function maskCompanyData(text: string, companyName: string | null): string {
   let result = text;
+
+  // First, while the name is intact: a later rule would turn digits or a `/` inside it into
+  // a placeholder, and an upper-case name into `[osoba]`. Any whitespace run may separate its words.
+  const words = companyName?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (words.length > 0) {
+    result = result.replace(new RegExp(words.map(escapeRegExp).join(String.raw`\s+`), "giu"), "[firma]");
+  }
+
   for (const { pattern, placeholder, requireDigit } of RULES) {
     result = result.replace(pattern, (match) => (requireDigit && !/\d/.test(match) ? match : placeholder));
   }
 
-  const name = companyName?.trim();
-  if (name) {
-    result = result.replace(new RegExp(escapeRegExp(name), "giu"), "[firma]");
-  }
+  return result.replace(PERSON_NAME, "[osoba]");
+}
 
-  // After the company name, which an upper-case name would otherwise turn into `[osoba]`.
-  result = result.replace(PERSON_NAME, "[osoba]");
+/**
+ * Masks the reporting company's name (when given), e-mails, account numbers, NIPs, phone
+ * numbers, document numbers, amounts, any other run of 5+ digits and all-caps person names,
+ * then collapses whitespace. Runs of 1–4 digits (ERP error codes, years) are kept.
+ */
+export function sanitizeErrorText(text: string, companyName: string | null): string {
+  return maskCompanyData(text, companyName).replace(/\s+/g, " ").trim();
+}
 
-  return result.replace(/\s+/g, " ").trim();
+/**
+ * Same masking for the cause and steps staff write, which the knowledge base also shows to
+ * other companies. Line breaks are kept, because numbered steps read one per line.
+ */
+export function sanitizeResolutionText(text: string, companyName: string | null): string {
+  return maskCompanyData(text, companyName)
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[^\S\n]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }

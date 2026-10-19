@@ -362,7 +362,9 @@ export interface Database {
         Args: {
           p_cause?: string;
           p_embedding?: string;
+          p_kb_cause?: string;
           p_kb_error_text: string;
+          p_kb_steps: string;
           p_steps: string;
           p_ticket_id: string;
         };
