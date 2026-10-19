@@ -9,7 +9,7 @@ main_goal: speed
 top_blocker: decisions
 milestone_id: first-end-to-end-support-loop
 milestone_seq: 1
-milestone_status: open
+milestone_status: done
 ---
 
 # Roadmap: HelpDesk XEMI
@@ -20,7 +20,7 @@ milestone_status: open
 
 ## Milestone
 
-**M-1: First end-to-end support loop** — Status: open
+**M-1: First end-to-end support loop** — Status: done
 
 - **Intent:** Prove the core hypothesis end to end — a client user can paste an ERP error and get either a matched suggestion or an escalated ticket, and a service-staff member can resolve that ticket and feed the resolution back into the shared knowledge base — across both knowledge-base sources (ticket history and ingested ERP documentation).
 - **Source materials:** `context/foundation/prd.md` (v1)
@@ -170,7 +170,7 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 
 ## Milestone History
 
-(Empty — this is the first milestone.)
+- **M-1: First end-to-end support loop** (`first-end-to-end-support-loop`) — closed 2026-10-19. A client user pastes an ERP error and gets a matched suggestion (ERP docs or resolved tickets) or an escalated ticket, can escalate an unhelpful suggestion with a comment, and staff resolve tickets back into the shared knowledge base; F-01, F-02, S-01–S-03 done.
 
 ## Done
 
