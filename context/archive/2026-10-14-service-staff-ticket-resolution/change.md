@@ -1,9 +1,10 @@
 ---
 change_id: service-staff-ticket-resolution
 title: Service staff ticket resolution
-status: impl_reviewed
+status: archived
 created: 2026-10-14
 updated: 2026-10-19
+archived_at: 2026-10-19T11:04:46Z
 ---
 
 ## Notes
