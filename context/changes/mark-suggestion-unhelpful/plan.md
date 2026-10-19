@@ -251,17 +251,17 @@ None: escalation is one indexed lookup and one insert, with no OpenAI call.
 
 #### Automated
 
-- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Production build passes: `npm run build`
-- [x] 2.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check` — 1b5795d
+- [x] 2.2 Lint passes: `npm run lint` — 1b5795d
+- [x] 2.3 Production build passes: `npm run build` — 1b5795d
+- [x] 2.4 Smoke passes against the production preview on a freshly reset local Supabase — 1b5795d
 
 #### Manual
 
-- [x] 2.5 After a matched paste, "Żadna z sugestii nie pomogła" opens the comment form; sending with a comment shows the confirmation and the ticket appears under "Twoje zgłoszenia" as "Do zrobienia"
-- [x] 2.6 Sending without a comment works and staff see the ticket without a comment
-- [x] 2.7 Escalating the same text again (from a new paste) shows "already reported" and creates no second ticket
-- [x] 2.8 Editing the textarea after the match does not change the text that is escalated
-- [x] 2.9 Counter turns red above 1000 characters and the submit is disabled
-- [x] 2.10 Staff see the comment in `/admin/tickets`; a Klient Beta user does not see the ticket
-- [x] 2.11 Polish diacritics render correctly; the form is usable at phone width
+- [x] 2.5 After a matched paste, "Żadna z sugestii nie pomogła" opens the comment form; sending with a comment shows the confirmation and the ticket appears under "Twoje zgłoszenia" as "Do zrobienia" — 1b5795d
+- [x] 2.6 Sending without a comment works and staff see the ticket without a comment — 1b5795d
+- [x] 2.7 Escalating the same text again (from a new paste) shows "already reported" and creates no second ticket — 1b5795d
+- [x] 2.8 Editing the textarea after the match does not change the text that is escalated — 1b5795d
+- [x] 2.9 Counter turns red above 1000 characters and the submit is disabled — 1b5795d
+- [x] 2.10 Staff see the comment in `/admin/tickets`; a Klient Beta user does not see the ticket — 1b5795d
+- [x] 2.11 Polish diacritics render correctly; the form is usable at phone width — 1b5795d
