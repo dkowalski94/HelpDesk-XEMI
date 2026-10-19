@@ -45,7 +45,7 @@ An ERP (XEMI) end user — purchasing, sales, accounting, or warehouse staff at 
 | F-02 | erp-doc-ingestion-pipeline       | (foundation) ERP documentation (PDF/Word/Excel) ingested into the shared knowledge base | F-01           | FR-012, Business Logic            | done        |
 | S-01 | first-gated-error-resolution     | paste an error and see a matched cause/steps, or have it auto-escalated to a ticket | F-01, F-02     | US-01, FR-001, FR-002, FR-003, FR-007, FR-012 | done |
 | S-02 | service-staff-ticket-resolution  | (service staff) see to-do tickets from all client companies and record a resolution that feeds the knowledge base | F-01, S-01     | FR-004, FR-005, FR-006, FR-008    | done |
-| S-03 | mark-suggestion-unhelpful        | mark a suggested resolution as not helpful, escalating it to a ticket with a comment | S-01           | FR-011                            | in-progress |
+| S-03 | mark-suggestion-unhelpful        | mark a suggested resolution as not helpful, escalating it to a ticket with a comment | S-01           | FR-011                            | done |
 
 ## Streams
 
@@ -140,7 +140,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Small, self-contained refinement of the north star's suggestion display; safe to build alongside S-02 since neither touches the other's surface. A match creates no ticket, so there is no existing ticket to attach a comment to: S-03 files a new ticket through the existing column-scoped `tickets` INSERT (which already includes `user_comment`). No UPDATE grant or policy on `tickets` is added — `authenticated` keeps no UPDATE there (migration `20261014120000` revoked it; tickets are resolved only through `resolve_ticket()`). See the S-02 plan at `context/archive/2026-10-14-service-staff-ticket-resolution/plan.md`, *Migration Notes*.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -178,3 +178,4 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 - **F-02: (foundation) existing ERP (XEMI) documentation (PDF/Word/Excel describing known errors and fixes) is parsed, chunked, and embedded into the shared knowledge base established by F-01, running as an offline process outside the deployed Worker's request path (per `infrastructure.md`'s CPU-time-ceiling finding).** — Archived 2026-09-25 → `context/archive/2026-09-24-erp-doc-ingestion-pipeline/`. Lesson: —.
 - **S-01: a client user can paste the text of an ERP error message and see a suggested cause/steps when a match exists in the knowledge base, or have it turned into a service ticket when no match is found.** — Archived 2026-10-14 → `context/archive/2026-09-25-first-gated-error-resolution/`. Lesson: —.
 - **S-02: a service-staff member can see to-do tickets from all client companies on their dashboard and record a resolution once handled, which feeds the shared knowledge base for future matches.** — Archived 2026-10-19 → `context/archive/2026-10-14-service-staff-ticket-resolution/`. Lesson: —.
+- **S-03: a client user can mark a suggested resolution as not helpful, which creates a service ticket carrying their comment.** — Archived 2026-10-19 → `context/archive/2026-10-19-mark-suggestion-unhelpful/`. Lesson: —.

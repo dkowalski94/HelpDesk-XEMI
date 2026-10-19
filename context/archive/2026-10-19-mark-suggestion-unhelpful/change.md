@@ -1,10 +1,10 @@
 ---
 change_id: mark-suggestion-unhelpful
 title: Mark suggestion unhelpful
-status: impl_reviewed
+status: archived
 created: 2026-10-19
 updated: 2026-10-19
-archived_at: null
+archived_at: 2026-10-19T12:34:53Z
 ---
 
 ## Notes
