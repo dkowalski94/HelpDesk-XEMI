@@ -383,34 +383,34 @@ None: CSS variables and the same component tree; the panel split adds no request
 
 #### Automated
 
-- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Production build passes: `npm run build`
-- [x] 2.4 `global.css` contains no hex colour: `grep -nE '#[0-9a-fA-F]{3,8}' src/styles/global.css` returns nothing
-- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check` — 1e9dbc0
+- [x] 2.2 Lint passes: `npm run lint` — 1e9dbc0
+- [x] 2.3 Production build passes: `npm run build` — 1e9dbc0
+- [x] 2.4 `global.css` contains no hex colour: `grep -nE '#[0-9a-fA-F]{3,8}' src/styles/global.css` returns nothing — 1e9dbc0
+- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase — 1e9dbc0
 
 #### Manual
 
-- [x] 2.6 `tokens.md` lists every role with its xemi.pl source and a contrast meeting AA for text pairs and 3:1 for ring/input border
-- [x] 2.7 `/dashboard`, `/search`, `/admin/tickets` and `/auth/signin` still look as before (dark `bg-cosmic`, readable text)
-- [x] 2.8 Body text renders in Lato
+- [x] 2.6 `tokens.md` lists every role with its xemi.pl source and a contrast meeting AA for text pairs and 3:1 for ring/input border — 1e9dbc0
+- [x] 2.7 `/dashboard`, `/search`, `/admin/tickets` and `/auth/signin` still look as before (dark `bg-cosmic`, readable text) — 1e9dbc0
+- [x] 2.8 Body text renders in Lato — 1e9dbc0
 
 ### Phase 3: One view on tokens and components
 
 #### Automated
 
-- [ ] 3.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 3.2 Lint passes: `npm run lint`
-- [ ] 3.3 Production build passes: `npm run build`
-- [ ] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [ ] 3.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/components/error-resolution/*.tsx` and `src/components/Topbar.astro` returns 0 matches
+- [x] 3.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 3.2 Lint passes: `npm run lint`
+- [x] 3.3 Production build passes: `npm run build`
+- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 3.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/components/error-resolution/*.tsx` and `src/components/Topbar.astro` returns 0 matches
 
 #### Manual
 
-- [ ] 3.6 `/report-error` as Klient Alfa: paste → matched, ticket-created, already-reported, escalation with comment all work as before (no behaviour change)
-- [ ] 3.7 Desktop and one mobile (≈390 px) screenshot of the client view: light XEMI look, logo in the header, brand-blue primary actions, Lato
-- [ ] 3.8 Staff, unassigned and profile-error branches render with the shared heading/hint pattern and the logo
-- [ ] 3.9 Topbar is readable on `/report-error` (light) and still dark on `/search` and `/admin/tickets`
+- [x] 3.6 `/report-error` as Klient Alfa: paste → matched, ticket-created, already-reported, escalation with comment all work as before (no behaviour change)
+- [x] 3.7 Desktop and one mobile (≈390 px) screenshot of the client view: light XEMI look, logo in the header, brand-blue primary actions, Lato
+- [x] 3.8 Staff, unassigned and profile-error branches render with the shared heading/hint pattern and the logo
+- [x] 3.9 Topbar is readable on `/report-error` (light) and still dark on `/search` and `/admin/tickets`
 
 ### Phase 4: States, visual gate and guardrail
 

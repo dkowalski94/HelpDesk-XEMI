@@ -1,72 +1,24 @@
 import React, { useState } from "react";
-import { BookOpen, Loader2, Send, ThumbsDown, Wrench } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { COMMENT_MAX_LENGTH, ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
 import { useMyTickets } from "@/hooks/useMyTickets";
-import type {
-  ErrorResolutionResponse,
-  ErrorResolutionSuccess,
-  EscalationResponse,
-  EscalationSuccess,
-  KnowledgeMatch,
-  TicketStatus,
-} from "@/types";
-
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  todo: "Do zrobienia",
-  resolved: "Rozwiązane",
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" });
-}
-
-function MatchCard({ match }: { match: KnowledgeMatch }) {
-  if (match.source === "erp_doc") {
-    return (
-      <li className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-purple-200 uppercase">
-          <BookOpen className="size-4" />Z dokumentacji ERP
-        </p>
-        <p className="mt-1 text-xs text-blue-100/50">Źródło: {match.errorText}</p>
-        {match.steps && <p className="mt-3 text-sm whitespace-pre-line text-blue-100/80">{match.steps}</p>}
-      </li>
-    );
-  }
-
-  return (
-    <li className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-purple-200 uppercase">
-        <Wrench className="size-4" />Z rozwiązanych zgłoszeń
-      </p>
-      <p className="mt-1 text-sm whitespace-pre-line text-blue-100/60">{match.errorText}</p>
-      {match.cause && (
-        <div className="mt-3">
-          <p className="text-xs font-semibold text-white">Przyczyna</p>
-          <p className="mt-1 text-sm whitespace-pre-line text-blue-100/80">{match.cause}</p>
-        </div>
-      )}
-      {match.steps && (
-        <div className="mt-3">
-          <p className="text-xs font-semibold text-white">Kroki</p>
-          <p className="mt-1 text-sm whitespace-pre-line text-blue-100/80">{match.steps}</p>
-        </div>
-      )}
-    </li>
-  );
-}
+import type { ErrorResolutionResponse, ErrorResolutionSuccess, EscalationResponse } from "@/types";
+import { ErrorAlert } from "./ErrorAlert";
+import { ErrorTextForm } from "./ErrorTextForm";
+import { EscalationControl, type EscalationResult } from "./EscalationControl";
+import { MyTicketsList } from "./MyTicketsList";
+import { ResolutionOutcome } from "./ResolutionOutcome";
 
 /**
  * "None of the suggestions helped" under a match (S-03): files a ticket for the text that
  * produced the match, with an optional comment. State lives here, so a new paste — which
- * unmounts the matched view — starts it afresh.
+ * unmounts the matched view — starts it afresh. Presentation is `EscalationControl`.
  */
 function Escalation({ errorText, onEscalated }: { errorText: string; onEscalated: () => void }) {
   const [open, setOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ escalation: EscalationSuccess; withComment: boolean } | null>(null);
+  const [result, setResult] = useState<EscalationResult | null>(null);
 
   const length = comment.trim().length;
   const tooLong = length > COMMENT_MAX_LENGTH;
@@ -102,142 +54,21 @@ function Escalation({ errorText, onEscalated }: { errorText: string; onEscalated
     }
   }
 
-  // After success the control is gone, so the same match cannot be escalated twice.
-  if (result) {
-    if (result.escalation.outcome === "ticket-created") {
-      return (
-        <div role="status" className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm text-blue-100/80">
-            {result.withComment
-              ? "Przekazaliśmy błąd do zespołu serwisowego XEMI razem z Twoim komentarzem."
-              : "Przekazaliśmy błąd do zespołu serwisowego XEMI."}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div role="status" className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <p className="text-sm font-semibold text-amber-200">Ten błąd został już zgłoszony</p>
-        <p className="mt-1 text-sm text-blue-100/80">
-          Zgłoszenie z {formatDate(result.escalation.ticket.createdAt)} czeka na zespół serwisowy.
-        </p>
-        {result.withComment && (
-          <p className="mt-1 text-sm text-blue-100/60">Nowy komentarz nie został dodany do tego zgłoszenia.</p>
-        )}
-      </div>
-    );
-  }
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-        className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
-      >
-        <ThumbsDown className="size-4" />
-        Żadna z sugestii nie pomogła
-      </button>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-4">
-      <label htmlFor="escalationComment" className="block text-sm font-semibold text-white">
-        Komentarz (opcjonalnie)
-      </label>
-      <p id="escalationComment-hint" className="text-sm text-blue-100/60">
-        Opisz, co zostało już wypróbowane — pomoże to zespołowi serwisowemu.
-      </p>
-      <textarea
-        id="escalationComment"
-        name="comment"
-        rows={4}
-        value={comment}
-        aria-describedby="escalationComment-hint escalationComment-counter"
-        onChange={(e) => {
-          setComment(e.target.value);
-        }}
-        className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-blue-100/40 focus:border-purple-300/60 focus:outline-none"
-      />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p
-          id="escalationComment-counter"
-          aria-live="polite"
-          className={cn("text-xs", tooLong ? "font-semibold text-red-300" : "text-blue-100/50")}
-        >
-          {length} / {COMMENT_MAX_LENGTH}
-          {tooLong && " — komentarz jest za długi"}
-        </p>
-        <button
-          type="submit"
-          disabled={blocked}
-          className={cn(
-            "flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors",
-            blocked ? "cursor-not-allowed opacity-50" : "hover:bg-white/20",
-          )}
-        >
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-          {pending ? "Przekazuję..." : "Przekaż do serwisu"}
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-          {error}
-        </p>
-      )}
-    </form>
-  );
-}
-
-function Outcome({
-  result,
-  submittedText,
-  onEscalated,
-}: {
-  result: ErrorResolutionSuccess;
-  submittedText: string;
-  onEscalated: () => void;
-}) {
-  if (result.outcome === "matched") {
-    return (
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-emerald-200">Znaleźliśmy możliwe rozwiązanie</h2>
-        <p className="text-sm text-blue-100/60">Nie utworzyliśmy zgłoszenia.</p>
-        <ul className="space-y-4">
-          {result.matches.map((match) => (
-            <MatchCard key={match.id} match={match} />
-          ))}
-        </ul>
-        <Escalation errorText={submittedText} onEscalated={onEscalated} />
-      </section>
-    );
-  }
-
-  if (result.outcome === "ticket-created") {
-    return (
-      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-lg font-semibold text-amber-200">Nie znaleźliśmy rozwiązania</h2>
-        <p className="mt-1 text-sm text-blue-100/80">Przekazaliśmy błąd do zespołu serwisowego XEMI.</p>
-        {result.searchUnavailable && (
-          <p className="mt-2 text-sm text-blue-100/60">
-            Wyszukiwanie rozwiązań było chwilowo niedostępne, dlatego zgłoszenie trafiło od razu do serwisu.
-          </p>
-        )}
-      </section>
-    );
-  }
-
-  return (
-    <section className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <h2 className="text-lg font-semibold text-amber-200">Ten błąd został już zgłoszony</h2>
-      <p className="mt-1 text-sm text-blue-100/80">
-        Zgłoszenie z {formatDate(result.ticket.createdAt)} czeka na zespół serwisowy.
-      </p>
-    </section>
+    <EscalationControl
+      open={open}
+      comment={comment}
+      length={length}
+      pending={pending}
+      blocked={blocked}
+      error={error}
+      result={result}
+      onOpen={() => {
+        setOpen(true);
+      }}
+      onCommentChange={setComment}
+      onSubmit={handleSubmit}
+    />
   );
 }
 
@@ -290,101 +121,22 @@ export default function ErrorResolutionPanel() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <label htmlFor="errorText" className="block text-sm font-semibold text-white">
-          Treść komunikatu błędu
-        </label>
-        <p id="errorText-hint" className="text-sm text-blue-100/60">
-          Skopiuj z okna błędu ERP tylko treść komunikatu błędu — bez całego logu ani zrzutu ekranu.
-        </p>
-        <textarea
-          id="errorText"
-          name="errorText"
-          rows={6}
-          value={errorText}
-          aria-describedby="errorText-hint errorText-counter"
-          onChange={(e) => {
-            setErrorText(e.target.value);
-          }}
-          className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-blue-100/40 focus:border-purple-300/60 focus:outline-none"
-        />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p
-            id="errorText-counter"
-            aria-live="polite"
-            className={cn("text-xs", tooLong ? "font-semibold text-red-300" : "text-blue-100/50")}
-          >
-            {length} / {ERROR_TEXT_MAX_LENGTH}
-            {tooLong && " — tekst jest za długi"}
-          </p>
-          <button
-            type="submit"
-            disabled={blocked}
-            className={cn(
-              "flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors",
-              blocked ? "cursor-not-allowed opacity-50" : "hover:bg-white/20",
-            )}
-          >
-            {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            {pending ? "Szukam rozwiązania..." : "Wyślij"}
-          </button>
-        </div>
-      </form>
+      <ErrorTextForm
+        value={errorText}
+        length={length}
+        pending={pending}
+        blocked={blocked}
+        onChange={setErrorText}
+        onSubmit={handleSubmit}
+      />
 
-      {error && (
-        <p role="alert" className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-          {error}
-        </p>
+      {error && <ErrorAlert message={error} />}
+
+      {result && (
+        <ResolutionOutcome result={result} escalation={<Escalation errorText={submittedText} onEscalated={reload} />} />
       )}
 
-      {result && <Outcome result={result} submittedText={submittedText} onEscalated={reload} />}
-
-      <section className="space-y-3 border-t border-white/10 pt-6">
-        <h2 className="text-lg font-semibold text-white">Twoje zgłoszenia</h2>
-        {myTickets.status === "loading" && <p className="text-sm text-blue-100/60">Wczytywanie...</p>}
-        {myTickets.status === "error" && (
-          <p role="alert" className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-            {myTickets.error}
-          </p>
-        )}
-        {myTickets.status === "ok" && myTickets.tickets.length === 0 && (
-          <p className="text-sm text-blue-100/60">Nie masz jeszcze żadnych zgłoszeń.</p>
-        )}
-        {myTickets.status === "ok" && myTickets.tickets.length > 0 && (
-          <ul className="space-y-2">
-            {myTickets.tickets.map((ticket) => (
-              <li key={ticket.id} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                  <span className="min-w-0 flex-1 truncate text-sm text-blue-100/80" title={ticket.errorText}>
-                    {ticket.errorText}
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 text-xs font-semibold",
-                      ticket.status === "resolved" ? "text-emerald-200" : "text-amber-200",
-                    )}
-                  >
-                    {STATUS_LABELS[ticket.status]}
-                  </span>
-                  <span className="shrink-0 text-xs text-blue-100/50">{formatDate(ticket.createdAt)}</span>
-                </div>
-                {ticket.status === "resolved" && ticket.resolutionCause && (
-                  <div className="mt-3">
-                    <p className="text-xs font-semibold text-white">Przyczyna</p>
-                    <p className="mt-1 text-sm whitespace-pre-line text-blue-100/80">{ticket.resolutionCause}</p>
-                  </div>
-                )}
-                {ticket.status === "resolved" && ticket.resolution && (
-                  <div className="mt-3">
-                    <p className="text-xs font-semibold text-white">Kroki</p>
-                    <p className="mt-1 text-sm whitespace-pre-line text-blue-100/80">{ticket.resolution}</p>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <MyTicketsList state={myTickets} />
     </div>
   );
 }
