@@ -416,17 +416,17 @@ None: CSS variables and the same component tree; the panel split adds no request
 
 #### Automated
 
-- [x] 4.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 4.2 Lint passes: `npm run lint`
-- [x] 4.3 Production build passes: `npm run build`
-- [x] 4.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [x] 4.5 Hard-coded-value scan on the view and kitchen-sink files returns 0 matches
-- [x] 4.6 Lint guardrail fires: adding `text-blue-200` to a class in `ErrorResolutionPanel.tsx` makes `npx eslint src/components/error-resolution` fail (reverted after)
-- [x] 4.7 `/dev/ui-kitchen-sink` returns 404 on the production preview
+- [x] 4.1 Type-check passes: `npx astro sync && npx astro check` — 525689b
+- [x] 4.2 Lint passes: `npm run lint` — 525689b
+- [x] 4.3 Production build passes: `npm run build` — 525689b
+- [x] 4.4 Smoke passes against the production preview on a freshly reset local Supabase — 525689b
+- [x] 4.5 Hard-coded-value scan on the view and kitchen-sink files returns 0 matches — 525689b
+- [x] 4.6 Lint guardrail fires: adding `text-blue-200` to a class in `ErrorResolutionPanel.tsx` makes `npx eslint src/components/error-resolution` fail (reverted after) — 525689b
+- [x] 4.7 `/dev/ui-kitchen-sink` returns 404 on the production preview — 525689b
 
 #### Manual
 
-- [x] 4.8 Kitchen sink in `npm run dev` shows every cell of the 7-state matrix for the error form, escalation control, outcomes and list, or an N/A with a reason; screenshots (desktop + ≈390 px) saved in the change folder
-- [x] 4.9 Keyboard-only pass on `/report-error`: every control reachable with a visible focus ring; disabled reason announced; result and errors announced by a screen reader (or verified via the accessibility tree)
-- [x] 4.10 No layout jump when the ticket list loads or a result arrives
-- [x] 4.11 Polish diacritics correct; the page usable at ≈390 px
+- [x] 4.8 Kitchen sink in `npm run dev` shows every cell of the 7-state matrix for the error form, escalation control, outcomes and list, or an N/A with a reason; screenshots (desktop + ≈390 px) saved in the change folder — 525689b
+- [x] 4.9 Keyboard-only pass on `/report-error`: every control reachable with a visible focus ring; disabled reason announced; result and errors announced by a screen reader (or verified via the accessibility tree) — 525689b
+- [x] 4.10 No layout jump when the ticket list loads or a result arrives — 525689b
+- [x] 4.11 Polish diacritics correct; the page usable at ≈390 px — 525689b
