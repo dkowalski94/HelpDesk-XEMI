@@ -15,13 +15,25 @@ From `research.md` (charges C1–C5):
 - **Language/entry drift (C5).** `lang="en"` around Polish content, English Topbar and dashboard link, logged-out deep link returns to `/`; inconsistent headings across the four page branches (`report-error.astro:22,30,37,48`).
 - **Tooling.** No screenshot tooling (`package.json`); ESLint runs in lint-staged on `*.{ts,tsx,astro}`.
 
+## Amendment (2026-10-19) — XEMI brand, light theme
+
+Decided with the user after analysing https://www.xemi.pl/ (white backgrounds, `#F4F4F4` sections, `#141414` text, brand blue `#009FE3`, light blue `#BFE5F5`, Lato 400/700/800, small radii 4–7 px, single-colour SVG logo `#009EE2`):
+
+- **Light theme is the active theme**: XEMI brand values go into `:root`; `class="dark"` added to `<html>` in phase 1 (229825b) is removed in phase 2. The cosmic values written into `.dark` stay as the dark variant.
+- **`bg-cosmic` becomes theme-independent** (own `--cosmic-*` variables with today's navy) so the 12 other views, which still use white literal text on `bg-cosmic`, are not turned white-on-white. `/report-error` stops using `bg-cosmic` and uses `bg-background`.
+- **Topbar moves into scope, minimally**: it switches to token classes; the dark pages that render it (`search.astro`, `admin/tickets.astro`) get `class="dark"` on their wrapper so it stays dark there, and renders light on `/report-error`. Topbar language and `<html lang>` stay deferred.
+- **Brand blue contrast**: `#009FE3` is ≈3.0:1 on white — kept as `--brand` for the logo and large accents; `--primary`/`--ring` use a darker brand blue meeting 4.5:1 / 3:1.
+- **Logo** `public/logo-xemi.svg` (official file from xemi.pl) in the view's page header; **font** Lato via `@fontsource/lato` as `--font-sans`.
+
+Sections below reflect the amendment; where an earlier sentence conflicts (e.g. "`<html>` carries `class=\"dark\"`"), this amendment wins.
+
 ## Desired End State
 
-- `<html>` carries `class="dark"`; the `.dark` token values reproduce today's look (navy background, translucent white glass surfaces, light text, purple accent/ring); `bg-cosmic` reads tokens; `--success` and `--warning` (+ `-foreground`) exist in `:root`, `.dark` and `@theme inline`. Values and their source are recorded in `context/changes/report-error-ui-contract/tokens.md`.
+- The light XEMI theme in `:root` is active (no `class="dark"` on `<html>`): white background, `#F4F4F4` surfaces, `#141414` text, brand blue accents, Lato. `.dark` holds the cosmic dark variant used by the Topbar on dark pages. `bg-cosmic` keeps today's navy via theme-independent variables. `--success`, `--warning`, `--brand` (+ `-foreground` where needed) exist in `:root`, `.dark` and `@theme inline`. Values, sources and contrast are recorded in `context/changes/report-error-ui-contract/tokens.md`.
 - `report-error.astro` and every component of the panel use token classes and `src/components/ui` components only; the hard-coded-value scan returns **0** matches on the view files.
 - Every control on the view covers default, hover, focus-visible, disabled, error, empty and loading — shown in a dev-only kitchen sink at `/dev/ui-kitchen-sink` or marked N/A with a reason; desktop and one mobile screenshot recorded.
 - CLAUDE.md has a UI block (outside the 10x-cli block) and `eslint.config.js` rejects palette/arbitrary colour classes in the view's files.
-- Visually, the page looks like it does today apart from: the client heading (no gradient), visible focus rings, consistent status colours.
+- Visually, `/report-error` follows xemi.pl: light page with the XEMI logo in its header, brand-blue primary actions, Lato; other views look as today (dark), with the Topbar dark on them.
 
 Verify with the automated criteria per phase plus the kitchen-sink screenshots.
 
@@ -36,9 +48,10 @@ Verify with the automated criteria per phase plus the kitchen-sink screenshots.
 ## What We're NOT Doing
 
 - Restyling any other view (`dashboard`, `search`, `admin/*`, auth pages, `Welcome`, `WebSearchPanel`) — they keep their literal classes; only the global token layer and `<html class="dark">` reach them.
-- `Topbar.astro` (shared by three pages), `<html lang="pl">`, the English dashboard link and a post-login `returnTo` — deferred (C5), recorded in `research.md`.
+- `Topbar.astro` beyond switching its colours to tokens (amendment) — its English labels, `<html lang="pl">`, the English dashboard link and a post-login `returnTo` stay deferred (C5), recorded in `research.md`.
+- Moving the other dark views to the light theme — they keep `bg-cosmic` and literals until their own changes.
 - Fixing `auth/SubmitButton.tsx`'s literal overrides.
-- A light theme or a theme switcher; `:root` light values stay as they are.
+- A user-facing theme switcher.
 - A brand-gradient token — the client heading becomes `text-foreground`.
 - Playwright/Storybook or any screenshot test runner — the gate is the kitchen-sink page.
 - Changing behaviour or API calls of the panel (`/api/resolve-error`, `/api/escalate-error`, `/api/tickets?mine=1`).
@@ -100,45 +113,61 @@ Switch the token theme on app-wide and add the shadcn components the view needs,
 
 ---
 
-## Phase 2: Token values
+## Phase 2: XEMI brand tokens (light theme)
 
 ### Overview
 
-Make the `.dark` values reproduce today's cosmic look, add the missing status roles and move `bg-cosmic`'s colours into tokens.
+Make the light `:root` theme carry the XEMI brand (amendment), switch the app back to it, keep the cosmic dark variant in `.dark`, make `bg-cosmic` theme-independent, add the status and brand roles, and add Lato.
 
 ### Changes Required:
 
-#### 1. Dark token values
+#### 1. Light theme active
+
+**File**: `src/layouts/Layout.astro`
+
+**Intent**: Revert phase 1's `class="dark"` so `:root` (XEMI light) is the active theme.
+
+**Contract**: `<html lang="en">` without a theme class.
+
+#### 2. XEMI values in `:root`
 
 **File**: `src/styles/global.css`
 
-**Intent**: Map today's palette onto role names so the view can switch from literals to roles with minimal visual change.
+**Intent**: Map xemi.pl's palette onto role names.
 
-**Contract**: In `.dark`: `--background` (navy, from `#0a0e1a`), `--foreground` (white), `--card` (translucent white glass, today `white/10`), `--card-foreground`, `--muted` (`white/5`), `--muted-foreground` (today `blue-100/60`), `--border` (`white/10`), `--input` (`white/20` border / `white/10` fill), `--primary` and `--ring` (today's purple accent, `purple-300`), `--primary-foreground`, `--accent`, `--destructive` (one red, replaces rose/red mix). Unmentioned `.dark` variables keep their values. `:root` unchanged except for the new roles below.
+**Contract**: `--background` `#FFFFFF`, `--foreground` `#141414`, `--card`/`--popover` white, `--muted` `#F4F4F4`, `--muted-foreground` a xemi.pl gray meeting 4.5:1 on both white and `#F4F4F4` (≈ `#6F6F6F`), `--border` light gray (≈ `#DDDDDD`), `--input` a gray meeting 3:1 on white (≈ `#8F8F8F`), `--accent` light blue `#BFE5F5` with `--accent-foreground` `#141414`, `--brand` `#009FE3` (logo, large accents; ≈3.0:1 on white — not for text or small controls), `--primary` a darker brand blue meeting 4.5:1 with white `--primary-foreground`, `--ring` brand blue meeting 3:1 on white, `--destructive` a red meeting 4.5:1, `--success`/`--warning` meeting 4.5:1 on white (+ `-foreground`), `--radius` ≈ 0.375rem (xemi.pl uses 4–7 px). All values as `oklch(...)`; `.dark` keeps the cosmic values already staged (plus `--brand` for completeness).
 
-#### 2. Status roles
-
-**File**: `src/styles/global.css`
-
-**Intent**: Give success and warning a role so status colour comes from one source (C2).
-
-**Contract**: `--success`, `--success-foreground`, `--warning`, `--warning-foreground` in `:root` and `.dark`; `--color-success`, `--color-success-foreground`, `--color-warning`, `--color-warning-foreground` and `--color-destructive-foreground` (with `--destructive-foreground` in both themes) in `@theme inline`.
-
-#### 3. Cosmic background from tokens
+#### 3. Roles published
 
 **File**: `src/styles/global.css`
 
-**Intent**: Remove the only hex literals in the stylesheet outside the token blocks.
+**Intent**: Make every new role usable as a class.
 
-**Contract**: `@utility bg-cosmic` keeps its name and gradient shape but reads `--background` and one new `--background-elevated` (from `#0f1529`) defined in both themes; every page using `bg-cosmic` keeps working unchanged.
+**Contract**: `@theme inline` publishes `--color-brand`, `--color-success(-foreground)`, `--color-warning(-foreground)`, `--color-destructive-foreground`, and `--font-sans` (Lato first, then system sans).
 
-#### 4. Recorded values
+#### 4. `bg-cosmic` independent of the theme
 
-**File**: `context/changes/report-error-ui-contract/tokens.md` (new)
+**File**: `src/styles/global.css`
 
-**Intent**: Keep the chosen values and their origin in the repo, not in the chat.
+**Intent**: Keep the 12 dark views (white literal text on `bg-cosmic`) unchanged now that the active theme is light.
 
-**Contract**: Table role → `.dark` value → today's literal it replaces → contrast ratio against `--background`/`--card`; one line in `global.css` above the `.dark` block pointing to this file.
+**Contract**: `@utility bg-cosmic` reads theme-independent `--cosmic-from` (`#0a0e1a`) and `--cosmic-via` (`#0f1529`) defined once in `:root` as oklch; it does not read `--background`. No hex anywhere in `global.css`.
+
+#### 5. Lato
+
+**File**: `package.json`, `src/layouts/Layout.astro` (or `global.css`)
+
+**Intent**: Use the XEMI typeface without a request to an external font server.
+
+**Contract**: `@fontsource/lato` dependency; weights 400, 700, 800 imported once globally; `body` font comes from `--font-sans` through the existing base layer.
+
+#### 6. Recorded values
+
+**File**: `context/changes/report-error-ui-contract/tokens.md`
+
+**Intent**: Keep the chosen values, their xemi.pl source and contrast in the repo.
+
+**Contract**: Rewritten for the light theme: role → value → xemi.pl source → contrast vs `--background`/`--muted`; a short section keeping the dark (cosmic) values; one line above `:root` in `global.css` pointing to this file.
 
 ### Success Criteria:
 
@@ -147,12 +176,14 @@ Make the `.dark` values reproduce today's cosmic look, add the missing status ro
 - Type-check passes: `npx astro sync && npx astro check`
 - Lint passes: `npm run lint`
 - Production build passes: `npm run build`
-- `global.css` contains no hex colour outside `:root`/`.dark`: `grep -nE '#[0-9a-fA-F]{3,8}' src/styles/global.css` returns nothing
+- `global.css` contains no hex colour: `grep -nE '#[0-9a-fA-F]{3,8}' src/styles/global.css` returns nothing
+- Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual Verification:
 
-- `tokens.md` lists every changed and new role with its replaced literal and a contrast ratio meeting AA for text pairs and 3:1 for ring/border
-- All pages using `bg-cosmic` look the same as before at desktop width
+- `tokens.md` lists every role with its xemi.pl source and a contrast meeting AA for text pairs and 3:1 for ring/input border
+- `/dashboard`, `/search`, `/admin/tickets` and `/auth/signin` still look as before (dark `bg-cosmic`, readable text)
+- Body text renders in Lato
 
 **Implementation Note**: After automated verification passes, pause for manual confirmation before the next phase.
 
@@ -188,7 +219,23 @@ Rebuild `/report-error` from token classes and `src/components/ui` components, e
 
 **Intent**: Make the four branches (profile error, staff, client, unassigned) one consistent pattern (C5, view-level part).
 
-**Contract**: One heading style (`text-foreground`, no gradient) and one hint style for all branches; the profile-error branch uses `text-destructive` or an `Alert`; staff and unassigned get distinct headings (e.g. "Strona dla klientów" vs "Konto czeka na przypisanie"); the panel container becomes a `Card`. All texts stay Polish.
+**Contract**: One heading style (`text-foreground`, no gradient) and one hint style for all branches; the profile-error branch uses `text-destructive` or an `Alert`; staff and unassigned get distinct headings (e.g. "Strona dla klientów" vs "Konto czeka na przypisanie"); the panel container becomes a `Card`. All texts stay Polish. The page wrapper uses `bg-background` instead of `bg-cosmic` (amendment).
+
+#### 4. XEMI logo in the page header
+
+**File**: `public/logo-xemi.svg` (new, official file from `https://www.xemi.pl/wp-content/themes/xemi/img/logo-xemi.svg`), `src/pages/report-error.astro`
+
+**Intent**: Brand the view as XEMI (amendment).
+
+**Contract**: The logo renders above the page heading in every branch, `alt="XEMI"`, sized by height (≈ 32–40 px desktop, smaller at ≈390 px), with explicit width/height to avoid layout shift. The SVG's own `#009EE2` fill stays as shipped (the hex scan covers view files, not assets).
+
+#### 5. Topbar on tokens
+
+**File**: `src/components/Topbar.astro`, `src/pages/search.astro`, `src/pages/admin/tickets.astro`
+
+**Intent**: Keep the shared Topbar readable on the light `/report-error` while it stays dark on the other pages that render it (amendment).
+
+**Contract**: Topbar uses only token classes (e.g. `bg-card/…`, `border-border`, `text-muted-foreground`, links `text-primary` with focus-visible ring); `search.astro` and `admin/tickets.astro` add `class="dark"` to their outermost wrapper so tokens resolve to the cosmic `.dark` values there. Labels and `lang` unchanged (deferred).
 
 ### Success Criteria:
 
@@ -198,13 +245,14 @@ Rebuild `/report-error` from token classes and `src/components/ui` components, e
 - Lint passes: `npm run lint`
 - Production build passes: `npm run build`
 - Smoke passes against the production preview on a freshly reset local Supabase
-- Hard-coded-value scan on `src/pages/report-error.astro` and `src/components/error-resolution/*.tsx` returns 0 matches
+- Hard-coded-value scan on `src/pages/report-error.astro`, `src/components/error-resolution/*.tsx` and `src/components/Topbar.astro` returns 0 matches
 
 #### Manual Verification:
 
 - `/report-error` as Klient Alfa: paste → matched, ticket-created, already-reported, escalation with comment all work as before (no behaviour change)
-- Desktop and one mobile (≈390 px) screenshot of the client view; differences from today limited to the heading, focus rings and status colours
-- Staff, unassigned and profile-error branches render with the shared heading/hint pattern
+- Desktop and one mobile (≈390 px) screenshot of the client view: light XEMI look, logo in the header, brand-blue primary actions, Lato
+- Staff, unassigned and profile-error branches render with the shared heading/hint pattern and the logo
+- Topbar is readable on `/report-error` (light) and still dark on `/search` and `/admin/tickets`
 
 **Implementation Note**: After automated verification passes, pause for manual confirmation before the next phase.
 
@@ -238,7 +286,7 @@ Cover the 7-state matrix for every control, add the dev-only kitchen sink with s
 
 **Intent**: One page that shows every state of the view side by side — the visual gate and review evidence.
 
-**Contract**: Returns 404 when `import.meta.env.DEV` is false (production build and preview); renders each component in default, disabled, error, empty and loading (hover/focus-visible demonstrated by keyboard on the same page); Polish copy; no API calls. Screenshots (desktop + ≈390 px) are saved to `context/changes/report-error-ui-contract/screenshots/`.
+**Contract**: Returns 404 when `import.meta.env.DEV` is false (production build and preview); renders each component in default, disabled, error, empty and loading (hover/focus-visible demonstrated by keyboard on the same page), plus the Topbar in the light theme and inside a `class="dark"` wrapper; Polish copy; no API calls. Screenshots (desktop + ≈390 px) are saved to `context/changes/report-error-ui-contract/screenshots/`.
 
 #### 3. Agent rule
 
@@ -254,7 +302,7 @@ Cover the 7-state matrix for every control, add the dev-only kitchen sink with s
 
 **Intent**: Fail lint (and lint-staged) when a palette or arbitrary colour class is added to the cleaned files.
 
-**Contract**: A config block scoped by `files` to `src/pages/report-error.astro`, `src/components/error-resolution/**` and the kitchen-sink files, using `no-restricted-syntax` on string literals in `class`/`className` attributes and in `cn(...)` arguments, matching the scan's palette/arbitrary/colour-function pattern, with a message pointing to the CLAUDE.md UI contract. No new dependency.
+**Contract**: A config block scoped by `files` to `src/pages/report-error.astro`, `src/components/error-resolution/**`, `src/components/Topbar.astro` and the kitchen-sink files, using `no-restricted-syntax` on string literals in `class`/`className` attributes and in `cn(...)` arguments, matching the scan's palette/arbitrary/colour-function pattern, with a message pointing to the CLAUDE.md UI contract. No new dependency.
 
 ### Success Criteria:
 
@@ -321,29 +369,31 @@ None: CSS variables and the same component tree; the panel split adds no request
 
 #### Automated
 
-- [x] 1.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 1.2 Lint passes: `npm run lint`
-- [x] 1.3 Production build passes: `npm run build`
-- [x] 1.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 1.1 Type-check passes: `npx astro sync && npx astro check` — 229825b
+- [x] 1.2 Lint passes: `npm run lint` — 229825b
+- [x] 1.3 Production build passes: `npm run build` — 229825b
+- [x] 1.4 Smoke passes against the production preview on a freshly reset local Supabase — 229825b
 
 #### Manual
 
-- [x] 1.5 `/report-error`, `/dashboard`, `/search`, `/admin/tickets` and `/auth/signin` look the same as before at desktop width (body colour change fully covered by `bg-cosmic`)
-- [x] 1.6 Keyboard focus on the sign-in submit button shows the `--ring` focus ring
+- [x] 1.5 `/report-error`, `/dashboard`, `/search`, `/admin/tickets` and `/auth/signin` look the same as before at desktop width (body colour change fully covered by `bg-cosmic`) — 229825b
+- [x] 1.6 Keyboard focus on the sign-in submit button shows the `--ring` focus ring — 229825b
 
-### Phase 2: Token values
+### Phase 2: XEMI brand tokens (light theme)
 
 #### Automated
 
-- [ ] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 `global.css` contains no hex colour outside `:root`/`.dark`: `grep -nE '#[0-9a-fA-F]{3,8}' src/styles/global.css` returns nothing
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 `global.css` contains no hex colour: `grep -nE '#[0-9a-fA-F]{3,8}' src/styles/global.css` returns nothing
+- [x] 2.5 Smoke passes against the production preview on a freshly reset local Supabase
 
 #### Manual
 
-- [ ] 2.5 `tokens.md` lists every changed and new role with its replaced literal and a contrast ratio meeting AA for text pairs and 3:1 for ring/border
-- [ ] 2.6 All pages using `bg-cosmic` look the same as before at desktop width
+- [x] 2.6 `tokens.md` lists every role with its xemi.pl source and a contrast meeting AA for text pairs and 3:1 for ring/input border
+- [x] 2.7 `/dashboard`, `/search`, `/admin/tickets` and `/auth/signin` still look as before (dark `bg-cosmic`, readable text)
+- [x] 2.8 Body text renders in Lato
 
 ### Phase 3: One view on tokens and components
 
@@ -353,13 +403,14 @@ None: CSS variables and the same component tree; the panel split adds no request
 - [ ] 3.2 Lint passes: `npm run lint`
 - [ ] 3.3 Production build passes: `npm run build`
 - [ ] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [ ] 3.5 Hard-coded-value scan on `src/pages/report-error.astro` and `src/components/error-resolution/*.tsx` returns 0 matches
+- [ ] 3.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/components/error-resolution/*.tsx` and `src/components/Topbar.astro` returns 0 matches
 
 #### Manual
 
 - [ ] 3.6 `/report-error` as Klient Alfa: paste → matched, ticket-created, already-reported, escalation with comment all work as before (no behaviour change)
-- [ ] 3.7 Desktop and one mobile (≈390 px) screenshot of the client view; differences from today limited to the heading, focus rings and status colours
-- [ ] 3.8 Staff, unassigned and profile-error branches render with the shared heading/hint pattern
+- [ ] 3.7 Desktop and one mobile (≈390 px) screenshot of the client view: light XEMI look, logo in the header, brand-blue primary actions, Lato
+- [ ] 3.8 Staff, unassigned and profile-error branches render with the shared heading/hint pattern and the logo
+- [ ] 3.9 Topbar is readable on `/report-error` (light) and still dark on `/search` and `/admin/tickets`
 
 ### Phase 4: States, visual gate and guardrail
 

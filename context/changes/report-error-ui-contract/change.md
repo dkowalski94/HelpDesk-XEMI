@@ -3,7 +3,7 @@ change_id: report-error-ui-contract
 title: Report-error view on the design-system contract
 status: implementing
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-26
 archived_at: null
 ---
 
