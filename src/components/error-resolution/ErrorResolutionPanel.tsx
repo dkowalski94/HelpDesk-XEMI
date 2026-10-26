@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import { COMMENT_MAX_LENGTH, ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
 import { useMyTickets } from "@/hooks/useMyTickets";
 import type { ErrorResolutionResponse, ErrorResolutionSuccess, EscalationResponse } from "@/types";
-import { ErrorAlert } from "./ErrorAlert";
 import { ErrorTextForm } from "./ErrorTextForm";
 import { EscalationControl, type EscalationResult } from "./EscalationControl";
 import { MyTicketsList } from "./MyTicketsList";
-import { ResolutionOutcome } from "./ResolutionOutcome";
+import { OutcomeRegion } from "./ResolutionOutcome";
 
 /**
  * "None of the suggestions helped" under a match (S-03): files a ticket for the text that
@@ -126,15 +125,16 @@ export default function ErrorResolutionPanel() {
         length={length}
         pending={pending}
         blocked={blocked}
+        error={error}
         onChange={setErrorText}
         onSubmit={handleSubmit}
       />
 
-      {error && <ErrorAlert message={error} />}
-
-      {result && (
-        <ResolutionOutcome result={result} escalation={<Escalation errorText={submittedText} onEscalated={reload} />} />
-      )}
+      <OutcomeRegion
+        result={result}
+        pending={pending}
+        escalation={<Escalation errorText={submittedText} onEscalated={reload} />}
+      />
 
       <MyTicketsList state={myTickets} />
     </div>

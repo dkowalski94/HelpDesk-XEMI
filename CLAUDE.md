@@ -86,6 +86,16 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - **Shared types** (entities, DTOs) go in `src/types.ts`.
 - **shadcn/ui component set**: `Button`, `Textarea`, `Alert`, `Card`, `Badge` (`src/components/ui/`). The current new-york-v4 registry emits `import { cn } from "cn"` and `import { Slot } from "radix-ui"`: after `npx shadcn@latest add`, rewrite those imports to `@/lib/utils` and `@radix-ui/react-slot` and drop the `cn`/`radix-ui` dependencies it adds (`git checkout -- package.json package-lock.json && npm ci`). `LibBadge.astro` is a project-specific badge, not a shadcn component.
 
+### UI contract
+
+Applies to views already on the contract: `src/pages/report-error.astro`, `src/components/error-resolution/`, `src/components/Topbar.astro`. Other views still use literals on `bg-cosmic` until their own change moves them.
+
+- **Tokens** live in `src/styles/global.css`; values, xemi.pl sources and contrast in `context/changes/report-error-ui-contract/tokens.md`. The light XEMI `:root` theme is active (`<html>` has no theme class). `.dark` is the cosmic dark variant, applied by a `class="dark"` wrapper (the Topbar on `search.astro` and `admin/tickets.astro`). `bg-cosmic` is theme-independent (`--cosmic-*`) and used only by views not yet migrated. A new role goes in `:root`, `.dark` and `@theme inline` (`--color-<role>`) — never a raw colour in `@theme inline`.
+- **Components**: check `src/components/ui` before building a control; add a missing one with `npx shadcn@latest add <name>` (see the component-set line above), not by hand.
+- **No palette classes (`text-blue-200`, `bg-white/10`), arbitrary values (`-[12px]`) or colour functions/hex (`oklch(`, `#fff`) in views** — use roles (`bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `text-primary`, `text-destructive`, `text-success`, `text-warning`, `border-border`). `--brand` is for the logo and large accents only (≈3:1 on white). Use full `ring-ring` on focus, not `ring-ring/50` (below 3:1 on white).
+- **Kitchen sink** `/dev/ui-kitchen-sink` (dev only, 404 in production builds) renders every state of the view's components with static props via `src/components/error-resolution/KitchenSink.tsx`; add a cell when adding a state or component, and use it as the screenshot gate.
+- **ESLint enforces it**: `uiContractConfig` in `eslint.config.js` (`no-restricted-syntax` on `class`/`className`/`class:list`, `cn()` arguments and string constants) fails lint and lint-staged in the files above. Moving a view onto the contract means adding its files to that block's `files`.
+
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)

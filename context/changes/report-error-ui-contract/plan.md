@@ -399,34 +399,34 @@ None: CSS variables and the same component tree; the panel split adds no request
 
 #### Automated
 
-- [x] 3.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 3.2 Lint passes: `npm run lint`
-- [x] 3.3 Production build passes: `npm run build`
-- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [x] 3.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/components/error-resolution/*.tsx` and `src/components/Topbar.astro` returns 0 matches
+- [x] 3.1 Type-check passes: `npx astro sync && npx astro check` — f982a26
+- [x] 3.2 Lint passes: `npm run lint` — f982a26
+- [x] 3.3 Production build passes: `npm run build` — f982a26
+- [x] 3.4 Smoke passes against the production preview on a freshly reset local Supabase — f982a26
+- [x] 3.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/components/error-resolution/*.tsx` and `src/components/Topbar.astro` returns 0 matches — f982a26
 
 #### Manual
 
-- [x] 3.6 `/report-error` as Klient Alfa: paste → matched, ticket-created, already-reported, escalation with comment all work as before (no behaviour change)
-- [x] 3.7 Desktop and one mobile (≈390 px) screenshot of the client view: light XEMI look, logo in the header, brand-blue primary actions, Lato
-- [x] 3.8 Staff, unassigned and profile-error branches render with the shared heading/hint pattern and the logo
-- [x] 3.9 Topbar is readable on `/report-error` (light) and still dark on `/search` and `/admin/tickets`
+- [x] 3.6 `/report-error` as Klient Alfa: paste → matched, ticket-created, already-reported, escalation with comment all work as before (no behaviour change) — f982a26
+- [x] 3.7 Desktop and one mobile (≈390 px) screenshot of the client view: light XEMI look, logo in the header, brand-blue primary actions, Lato — f982a26
+- [x] 3.8 Staff, unassigned and profile-error branches render with the shared heading/hint pattern and the logo — f982a26
+- [x] 3.9 Topbar is readable on `/report-error` (light) and still dark on `/search` and `/admin/tickets` — f982a26
 
 ### Phase 4: States, visual gate and guardrail
 
 #### Automated
 
-- [ ] 4.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 4.2 Lint passes: `npm run lint`
-- [ ] 4.3 Production build passes: `npm run build`
-- [ ] 4.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [ ] 4.5 Hard-coded-value scan on the view and kitchen-sink files returns 0 matches
-- [ ] 4.6 Lint guardrail fires: adding `text-blue-200` to a class in `ErrorResolutionPanel.tsx` makes `npx eslint src/components/error-resolution` fail (reverted after)
-- [ ] 4.7 `/dev/ui-kitchen-sink` returns 404 on the production preview
+- [x] 4.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 4.2 Lint passes: `npm run lint`
+- [x] 4.3 Production build passes: `npm run build`
+- [x] 4.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 4.5 Hard-coded-value scan on the view and kitchen-sink files returns 0 matches
+- [x] 4.6 Lint guardrail fires: adding `text-blue-200` to a class in `ErrorResolutionPanel.tsx` makes `npx eslint src/components/error-resolution` fail (reverted after)
+- [x] 4.7 `/dev/ui-kitchen-sink` returns 404 on the production preview
 
 #### Manual
 
-- [ ] 4.8 Kitchen sink in `npm run dev` shows every cell of the 7-state matrix for the error form, escalation control, outcomes and list, or an N/A with a reason; screenshots (desktop + ≈390 px) saved in the change folder
-- [ ] 4.9 Keyboard-only pass on `/report-error`: every control reachable with a visible focus ring; disabled reason announced; result and errors announced by a screen reader (or verified via the accessibility tree)
-- [ ] 4.10 No layout jump when the ticket list loads or a result arrives
-- [ ] 4.11 Polish diacritics correct; the page usable at ≈390 px
+- [x] 4.8 Kitchen sink in `npm run dev` shows every cell of the 7-state matrix for the error form, escalation control, outcomes and list, or an N/A with a reason; screenshots (desktop + ≈390 px) saved in the change folder
+- [x] 4.9 Keyboard-only pass on `/report-error`: every control reachable with a visible focus ring; disabled reason announced; result and errors announced by a screen reader (or verified via the accessibility tree)
+- [x] 4.10 No layout jump when the ticket list loads or a result arrives
+- [x] 4.11 Polish diacritics correct; the page usable at ≈390 px

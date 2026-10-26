@@ -1,4 +1,5 @@
 import type React from "react";
+import { useId } from "react";
 import { Loader2, Send, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,6 +43,13 @@ export function EscalationControl({
   onCommentChange,
   onSubmit,
 }: EscalationControlProps) {
+  // Generated ids: the kitchen sink renders several controls on one page.
+  const id = useId();
+  const fieldId = `${id}-comment`;
+  const hintId = `${id}-hint`;
+  const counterId = `${id}-counter`;
+  const tooLong = length > COMMENT_MAX_LENGTH;
+
   // After success the control is gone, so the same match cannot be escalated twice.
   if (result) {
     if (result.escalation.outcome === "ticket-created") {
@@ -80,19 +88,20 @@ export function EscalationControl({
 
   return (
     <Card className={INNER_CARD}>
-      <form onSubmit={onSubmit} className="space-y-2">
-        <label htmlFor="escalationComment" className="text-foreground block text-sm font-semibold">
+      <form onSubmit={onSubmit} aria-busy={pending} className="space-y-2">
+        <label htmlFor={fieldId} className="text-foreground block text-sm font-semibold">
           Komentarz (opcjonalnie)
         </label>
-        <p id="escalationComment-hint" className="text-muted-foreground text-sm">
+        <p id={hintId} className="text-muted-foreground text-sm">
           Opisz, co zostało już wypróbowane — pomoże to zespołowi serwisowemu.
         </p>
         <Textarea
-          id="escalationComment"
+          id={fieldId}
           name="comment"
           rows={4}
           value={comment}
-          aria-describedby="escalationComment-hint escalationComment-counter"
+          aria-invalid={tooLong}
+          aria-describedby={`${hintId} ${counterId}`}
           onChange={(e) => {
             onCommentChange(e.target.value);
           }}
@@ -100,12 +109,18 @@ export function EscalationControl({
         />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <FieldCounter
-            id="escalationComment-counter"
+            id={counterId}
             length={length}
             max={COMMENT_MAX_LENGTH}
             tooLongMessage="komentarz jest za długi"
           />
-          <Button type="submit" variant="outline" disabled={blocked} className={FOCUS_RING}>
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={blocked}
+            aria-describedby={tooLong && !pending ? counterId : undefined}
+            className={FOCUS_RING}
+          >
             {pending ? <Loader2 className="animate-spin" /> : <Send />}
             {pending ? "Przekazuję..." : "Przekaż do serwisu"}
           </Button>

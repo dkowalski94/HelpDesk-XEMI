@@ -79,6 +79,39 @@ const scriptsConfig = defineConfig({
   rules: { "no-console": "off" },
 });
 
+// UI contract (CLAUDE.md → "UI contract"): the views on design tokens may not reintroduce palette
+// classes, arbitrary px/rem values or colour functions. Same pattern as the plan's hard-coded-value scan.
+const HARD_CODED_UI_VALUE =
+  "/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(|oklch\\(|-\\[[0-9.]+(px|rem)\\]|\\b(bg|text|border|ring|outline|from|via|to|fill|stroke|shadow|divide)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)\\b/";
+const HARD_CODED_UI_MESSAGE =
+  "Hard-coded colour or arbitrary value in a view on the UI contract — use a token role (bg-card, text-muted-foreground, text-destructive…) or a component from src/components/ui. See CLAUDE.md → UI contract.";
+// `class` / `className` / `class:list` attributes (JSX in .tsx, astro-eslint-parser in .astro), `cn(...)` arguments,
+// and class strings kept in constants (`linkClass` in Topbar, `heading` in report-error, `FOCUS_RING`).
+const UI_CLASS_CONTEXTS = [
+  "JSXAttribute[name.name=/^(class|className)$/]",
+  "JSXAttribute[name.namespace.name='class']",
+  "CallExpression[callee.name='cn']",
+  "VariableDeclarator",
+];
+
+const uiContractConfig = defineConfig({
+  files: [
+    "src/pages/report-error.astro",
+    "src/components/error-resolution/**",
+    "src/components/Topbar.astro",
+    "src/pages/dev/ui-kitchen-sink.astro",
+  ],
+  rules: {
+    "no-restricted-syntax": [
+      "error",
+      ...UI_CLASS_CONTEXTS.flatMap((context) => [
+        { selector: `${context} Literal[value=${HARD_CODED_UI_VALUE}]`, message: HARD_CODED_UI_MESSAGE },
+        { selector: `${context} TemplateElement[value.raw=${HARD_CODED_UI_VALUE}]`, message: HARD_CODED_UI_MESSAGE },
+      ]),
+    ],
+  },
+});
+
 export default defineConfig(
   includeIgnoreFile(gitignorePath),
   // Agent tooling installed under .claude/ is not project source; typed linting has no tsconfig for it.
@@ -92,5 +125,6 @@ export default defineConfig(
   eslintPluginAstro.configs["flat/jsx-a11y-recommended"],
   astroConfig,
   scriptsConfig,
+  uiContractConfig,
   eslintPluginPrettier,
 );
