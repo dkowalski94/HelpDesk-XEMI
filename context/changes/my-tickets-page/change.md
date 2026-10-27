@@ -1,7 +1,7 @@
 ---
 change_id: my-tickets-page
 title: My tickets page
-status: implementing
+status: implemented
 created: 2026-10-27
 updated: 2026-10-27
 archived_at: null

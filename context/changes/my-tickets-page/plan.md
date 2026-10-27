@@ -240,15 +240,15 @@ No database change. Rolling back the Worker restores the in-panel list.
 
 #### Automated
 
-- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Production build passes: `npm run build`
-- [x] 2.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [x] 2.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/pages/my-tickets.astro`, `src/layouts/ClientPageLayout.astro`, `src/components/error-resolution/*.tsx` returns 0 matches
-- [x] 2.6 No reference to `useMyTickets` remains: `grep -rn useMyTickets src` returns nothing
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check` — cfa089e
+- [x] 2.2 Lint passes: `npm run lint` — cfa089e
+- [x] 2.3 Production build passes: `npm run build` — cfa089e
+- [x] 2.4 Smoke passes against the production preview on a freshly reset local Supabase — cfa089e
+- [x] 2.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/pages/my-tickets.astro`, `src/layouts/ClientPageLayout.astro`, `src/components/error-resolution/*.tsx` returns 0 matches — cfa089e
+- [x] 2.6 No reference to `useMyTickets` remains: `grep -rn useMyTickets src` returns nothing — cfa089e
 
 #### Manual
 
-- [x] 2.7 `/report-error` as Klient Alfa: matched result shows immediately; ticket-created / already-reported / escalation work as before; no list on the page; "Zobacz w moich zgłoszeniach" opens `/my-tickets`
-- [x] 2.8 Kitchen sink shows the list's states including pagination links
-- [x] 2.9 Polish diacritics correct; both pages usable at ≈390 px
+- [x] 2.7 `/report-error` as Klient Alfa: matched result shows immediately; ticket-created / already-reported / escalation work as before; no list on the page; "Zobacz w moich zgłoszeniach" opens `/my-tickets` — cfa089e
+- [x] 2.8 Kitchen sink shows the list's states including pagination links — cfa089e
+- [x] 2.9 Polish diacritics correct; both pages usable at ≈390 px — cfa089e
