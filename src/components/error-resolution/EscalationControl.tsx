@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import type { EscalationSuccess } from "@/types";
 import { ErrorAlert } from "./ErrorAlert";
 import { FieldCounter } from "./FieldCounter";
-import { FIXED_ROWS, FOCUS_RING, INNER_CARD, formatDate } from "./format";
+import { BLOCKED_CLASS, FIXED_ROWS, FOCUS_RING, INNER_CARD, formatDate } from "./format";
 
 export interface EscalationResult {
   escalation: EscalationSuccess;
@@ -117,9 +117,9 @@ export function EscalationControl({
           <Button
             type="submit"
             variant="outline"
-            disabled={blocked}
+            aria-disabled={blocked}
             aria-describedby={tooLong && !pending ? counterId : undefined}
-            className={FOCUS_RING}
+            className={cn(FOCUS_RING, BLOCKED_CLASS)}
           >
             {pending ? <Loader2 className="animate-spin" /> : <Send />}
             {pending ? "Przekazuję..." : "Przekaż do serwisu"}

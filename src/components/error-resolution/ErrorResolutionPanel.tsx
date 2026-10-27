@@ -12,7 +12,16 @@ import { OutcomeRegion } from "./ResolutionOutcome";
  * produced the match, with an optional comment. State lives here, so a new paste — which
  * unmounts the matched view — starts it afresh. Presentation is `EscalationControl`.
  */
-function Escalation({ errorText, onEscalated }: { errorText: string; onEscalated: () => void }) {
+function Escalation({
+  errorText,
+  onEscalated,
+  onPendingChange,
+}: {
+  errorText: string;
+  onEscalated: () => void;
+  /** Lets the panel block a new paste while this ticket is being filed (a new paste would unmount this control). */
+  onPendingChange: (pending: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [pending, setPending] = useState(false);
@@ -28,6 +37,7 @@ function Escalation({ errorText, onEscalated }: { errorText: string; onEscalated
     if (blocked) return;
 
     setPending(true);
+    onPendingChange(true);
     setError(null);
 
     const body = new FormData();
@@ -50,6 +60,7 @@ function Escalation({ errorText, onEscalated }: { errorText: string; onEscalated
       setError("Nie udało się połączyć z serwerem. Spróbuj ponownie.");
     } finally {
       setPending(false);
+      onPendingChange(false);
     }
   }
 
@@ -83,7 +94,8 @@ export default function ErrorResolutionPanel() {
 
   const length = errorText.trim().length;
   const tooLong = length > ERROR_TEXT_MAX_LENGTH;
-  const blocked = pending || length === 0 || tooLong;
+  const [escalationPending, setEscalationPending] = useState(false);
+  const blocked = pending || escalationPending || length === 0 || tooLong;
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -133,7 +145,9 @@ export default function ErrorResolutionPanel() {
       <OutcomeRegion
         result={result}
         pending={pending}
-        escalation={<Escalation errorText={submittedText} onEscalated={reload} />}
+        escalation={
+          <Escalation errorText={submittedText} onEscalated={reload} onPendingChange={setEscalationPending} />
+        }
       />
 
       <MyTicketsList state={myTickets} />

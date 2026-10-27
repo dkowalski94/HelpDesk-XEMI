@@ -54,7 +54,7 @@ Published in `@theme inline` for this change: `--color-brand`, `--color-destruct
 - **Primary on accent.** `text-primary` on `bg-accent` is 4.22:1 — below AA; text on an accent surface uses `text-accent-foreground`.
 - **Focus ring at half alpha.** `--ring` passes 3:1 on both surfaces, but `button.tsx` and the base layer draw it as `ring-ring/50` / `outline-ring/50` (1.91 / 1.84). The 3 px ring width partly compensates; phase 3 should use full `ring-ring` (or `focus-visible:border-ring`) on the view's controls where focus must meet 3:1.
 - **`--input` passes 3:1 on white and on `#F4F4F4`.** The plan's ≈`#8F8F8F` gives 2.94 on `#F4F4F4`, so `#8C8C8C` was used.
-- **Lato weights.** `@fontsource/lato` ships 100/300/400/700/900 — there is no 800; `Layout.astro` imports 400, 700 and 900 (900 stands in for xemi.pl's 800).
+- **Lato weights.** `@fontsource/lato` ships 100/300/400/700/900 — there is no 800; `Layout.astro` imports 400 and 700 only — no view uses a heavier weight (900, the stand-in for xemi.pl's 800, was dropped in the implementation review, F9).
 - **`--background-elevated` removed.** It existed only for `bg-cosmic`, which now reads `--cosmic-from`/`--cosmic-via`; nothing else read it and it was never published in `@theme inline`.
 - **`bg-cosmic` is theme-independent.** `linear-gradient(to bottom, var(--cosmic-from), var(--cosmic-via), var(--cosmic-from))`, defined once in `:root` and not overridden in `.dark`, so the 12 views with white literal text on `bg-cosmic` keep their navy background. Their `body` behind it is now white (`bg-background`), covered by `bg-cosmic min-h-screen`.
 - **Global side effect.** The base layer `outline-ring/50` now draws a blue focus outline on every page, and body text everywhere is Lato.

@@ -7,7 +7,7 @@ import { ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
 import { cn } from "@/lib/utils";
 import { ErrorAlert } from "./ErrorAlert";
 import { FieldCounter } from "./FieldCounter";
-import { FIXED_ROWS, FOCUS_RING } from "./format";
+import { BLOCKED_CLASS, FIXED_ROWS, FOCUS_RING } from "./format";
 
 interface ErrorTextFormProps {
   value: string;
@@ -69,7 +69,12 @@ export function ErrorTextForm({ value, length, pending, blocked, error, onChange
             </p>
           )}
         </div>
-        <Button type="submit" disabled={blocked} aria-describedby={blockedReasonId} className={FOCUS_RING}>
+        <Button
+          type="submit"
+          aria-disabled={blocked}
+          aria-describedby={blockedReasonId}
+          className={cn(FOCUS_RING, BLOCKED_CLASS)}
+        >
           {pending ? <Loader2 className="animate-spin" /> : <Send />}
           {pending ? "Szukam rozwiązania..." : "Wyślij"}
         </Button>

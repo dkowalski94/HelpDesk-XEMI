@@ -113,14 +113,38 @@ interface OutcomeRegionProps {
   escalation?: React.ReactNode;
 }
 
+const SOLUTION_FORMS: Record<string, string> = { one: "rozwiązanie", few: "rozwiązania", many: "rozwiązań" };
+const plural = new Intl.PluralRules("pl");
+
+/** One short sentence for screen readers; the outcome itself holds forms and is too long to announce. */
+function announcement(result: ErrorResolutionSuccess | null, pending: boolean): string {
+  if (pending) return "Szukam rozwiązania...";
+  if (!result) return "";
+  switch (result.outcome) {
+    case "matched": {
+      const count = result.matches.length;
+      if (count === 0) return "Nie znaleźliśmy rozwiązania.";
+      return `Znaleźliśmy ${count} ${SOLUTION_FORMS[plural.select(count)] ?? "rozwiązania"}.`;
+    }
+    case "ticket-created":
+      return "Nie znaleźliśmy rozwiązania. Przekazaliśmy błąd do zespołu serwisowego XEMI.";
+    default:
+      return "Ten błąd został już zgłoszony.";
+  }
+}
+
 /**
- * The live region the outcome appears in. It stays mounted so screen readers announce what
- * arrives, and keeps a minimum height (a placeholder card while pending) so the result
- * replacing the placeholder does not push the list below it around.
+ * Where the outcome appears. A separate, always-mounted `role="status"` line announces a
+ * summary, so the cards and the escalation form are not inside a live region. Keeps a
+ * minimum height (a placeholder card while pending) so the result replacing the
+ * placeholder does not push the list below it around.
  */
 export function OutcomeRegion({ result, pending, escalation }: OutcomeRegionProps) {
   return (
-    <div role="status" aria-busy={pending} className={cn("empty:mb-0", (pending || result) && "min-h-24")}>
+    <div aria-busy={pending} className={cn((pending || result) && "min-h-24")}>
+      <p role="status" className="sr-only">
+        {announcement(result, pending)}
+      </p>
       {pending ? (
         <Card className={cn(INNER_CARD, "min-h-24 justify-center")}>
           <p className="text-muted-foreground flex items-center gap-2 text-sm">

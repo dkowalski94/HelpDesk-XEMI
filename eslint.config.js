@@ -85,13 +85,15 @@ const HARD_CODED_UI_VALUE =
   "/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(|oklch\\(|-\\[[0-9.]+(px|rem)\\]|\\b(bg|text|border|ring|outline|from|via|to|fill|stroke|shadow|divide)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)\\b/";
 const HARD_CODED_UI_MESSAGE =
   "Hard-coded colour or arbitrary value in a view on the UI contract — use a token role (bg-card, text-muted-foreground, text-destructive…) or a component from src/components/ui. See CLAUDE.md → UI contract.";
-// `class` / `className` / `class:list` attributes (JSX in .tsx, astro-eslint-parser in .astro), `cn(...)` arguments,
-// and class strings kept in constants (`linkClass` in Topbar, `heading` in report-error, `FOCUS_RING`).
+// `class` / `className` / `class:list` / `style` attributes (JSX in .tsx, astro-eslint-parser in .astro), `cn(...)`
+// arguments outside those attributes (inside them they are already covered — no double report), and class strings
+// kept in constants, matched by name (`linkClass` in Topbar, `heading`/`hint` in report-error, `FOCUS_RING`,
+// `INNER_CARD`, `FIXED_ROWS` in format.ts) so copy and fixture text such as "kod #4012" is not checked.
 const UI_CLASS_CONTEXTS = [
-  "JSXAttribute[name.name=/^(class|className)$/]",
+  "JSXAttribute[name.name=/^(class|className|style)$/]",
   "JSXAttribute[name.namespace.name='class']",
-  "CallExpression[callee.name='cn']",
-  "VariableDeclarator",
+  "CallExpression[callee.name='cn']:not(JSXAttribute CallExpression)",
+  "VariableDeclarator[id.name=/Class(es)?$|_(CLASS|RING|CARD|ROWS)$|^(heading|hint)$/]",
 ];
 
 const uiContractConfig = defineConfig({
@@ -99,7 +101,7 @@ const uiContractConfig = defineConfig({
     "src/pages/report-error.astro",
     "src/components/error-resolution/**",
     "src/components/Topbar.astro",
-    "src/pages/dev/ui-kitchen-sink.astro",
+    "src/dev/ui-kitchen-sink.astro",
   ],
   rules: {
     "no-restricted-syntax": [
