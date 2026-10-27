@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* XEMI light theme (active). Values, xemi.pl sources and contrast: context/changes/report-error-ui-contract/tokens.md */
+/* XEMI light theme (active). Values, xemi.pl sources and contrast: context/foundation/design-tokens.md */
 :root {
   --radius: 0.375rem;
   --background: oklch(1 0 0);

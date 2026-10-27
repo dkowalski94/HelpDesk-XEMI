@@ -3,7 +3,7 @@ project: "HelpDesk XEMI"
 version: 1
 status: draft
 created: 2026-09-22
-updated: 2026-10-19
+updated: 2026-10-26
 prd_version: 1
 main_goal: speed
 top_blocker: decisions
@@ -157,6 +157,17 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 ## Open Roadmap Questions
 
 1. **What is the secondary (nice-to-have) success outcome for this MVP?** — Owner: user. Block: roadmap-wide (informational only — Primary and Guardrails are sufficient to evaluate MVP success without it).
+
+## Next milestone candidates
+
+Collected 2026-10-26 (user) during `report-error-ui-contract`; not yet decomposed into slices — input for the next `/10x-roadmap` milestone. Do after `report-error-ui-contract` is archived.
+
+- **Start page instead of the starter** — `/` (today `Welcome.astro`) becomes a Polish start page with links to „Zgłoś błąd” (`/report-error`) and „Moje zgłoszenia”, not a dashboard. What staff and unassigned accounts see there is still to decide. Entry: `/10x-ui /`.
+- **„Moje zgłoszenia” as its own page** — move the "Twoje zgłoszenia" list out of the `/report-error` panel to a separate client page (same `GET /api/tickets?mine=1`).
+- **Remove `/dashboard`** — page, `PROTECTED_ROUTES` entry, post-sign-in redirect target and every link to it (`Topbar.astro`, `report-error.astro`, `admin/users.astro`, `scripts/smoke.mjs`).
+- **New user bar** — replace the starter `Topbar.astro` (email + Dashboard / Web search / Sign out, English): Polish labels, XEMI look, `<html lang="pl">`; contents to decide. Picks up the C5 items deferred in `report-error-ui-contract` (`returnTo` after sign-in included).
+- **Remove web search and Exa entirely** — `src/lib/exa.ts`, `src/lib/services/web-search.ts`, `src/pages/api/web-search.ts`, `src/pages/search.astro`, `src/components/search/`, the web-search types in `src/types.ts`, `EXA_API_KEY` (`astro.config.mjs` env schema, `config-status.ts`, `.env.example`, Wrangler secret), the *Web search (Exa)* section of `CLAUDE.md`.
+- **Company filter for staff tickets** — `/admin/tickets` gets a filter by client company.
 
 ## Parked
 
