@@ -7,8 +7,9 @@ import type { TicketListFailureReason, TicketListResponse } from "@/types";
 // asserted. S-01 and S-02 extend this route rather than replacing it.
 //
 // The default listing stays unfiltered on purpose — it is the smoke test's RLS probe.
-// `?mine=1` narrows it to the caller's own tickets for the client page: a view filter
-// inside what RLS returns, not a security boundary. Any other value is ignored.
+// `?mine=1` narrows it to the caller's own tickets (`/my-tickets` reads the service directly,
+// not this route): a view filter inside what RLS returns, not a security boundary. Any other
+// value is ignored.
 
 const FAILURE_STATUS: Record<TicketListFailureReason, number> = {
   unauthorized: 401,

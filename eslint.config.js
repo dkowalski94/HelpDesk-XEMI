@@ -87,7 +87,7 @@ const HARD_CODED_UI_MESSAGE =
   "Hard-coded colour or arbitrary value in a view on the UI contract — use a token role (bg-card, text-muted-foreground, text-destructive…) or a component from src/components/ui. See CLAUDE.md → UI contract.";
 // `class` / `className` / `class:list` / `style` attributes (JSX in .tsx, astro-eslint-parser in .astro), `cn(...)`
 // arguments outside those attributes (inside them they are already covered — no double report), and class strings
-// kept in constants, matched by name (`linkClass` in Topbar, `heading`/`hint` in report-error, `FOCUS_RING`,
+// kept in constants, matched by name (`linkClass` in Topbar and report-error, `headingClass`/`hint` in ClientPageLayout, `FOCUS_RING`,
 // `INNER_CARD`, `FIXED_ROWS` in format.ts) so copy and fixture text such as "kod #4012" is not checked.
 const UI_CLASS_CONTEXTS = [
   "JSXAttribute[name.name=/^(class|className|style)$/]",
@@ -99,6 +99,8 @@ const UI_CLASS_CONTEXTS = [
 const uiContractConfig = defineConfig({
   files: [
     "src/pages/report-error.astro",
+    "src/pages/my-tickets.astro",
+    "src/layouts/ClientPageLayout.astro",
     "src/components/error-resolution/**",
     "src/components/Topbar.astro",
     "src/dev/ui-kitchen-sink.astro",

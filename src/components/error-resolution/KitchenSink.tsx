@@ -8,7 +8,7 @@ import { OutcomeRegion } from "./ResolutionOutcome";
 
 /*
  * Dev-only gallery (`/dev/ui-kitchen-sink`): the presentational components of /report-error
- * with static props, one cell per state of the 7-state matrix. No requests; callbacks do nothing.
+ * and /my-tickets with static props, one cell per state of the 7-state matrix. No requests; callbacks do nothing.
  */
 
 const noop = () => undefined;
@@ -235,22 +235,38 @@ export default function KitchenSink() {
         </Cell>
       </Group>
 
-      <Group title="Twoje zgłoszenia">
+      <Group title="Moje zgłoszenia">
+        <Cell
+          state="loading"
+          note="N/A — lista jest renderowana na serwerze (/my-tickets), strona przychodzi już z danymi."
+        />
         <Cell
           state="hover / focus-visible / disabled"
-          note="N/A — lista nie ma kontrolek; pełna treść ucięta wiersza jest w atrybucie title."
+          note="Tylko linki stron (sekcja niżej): Tab na link pokazuje pełny pierścień focus. Pełna treść uciętego wiersza jest w atrybucie title."
         />
-        <Cell state="loading" note="aria-busy i wiersze zastępcze, żeby lista nie przesuwała treści.">
-          <MyTicketsList state={{ status: "loading" }} />
-        </Cell>
         <Cell state="default" note="Zgłoszenie oczekujące i rozwiązane (z przyczyną i krokami).">
-          <MyTicketsList state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }} />
+          <MyTicketsList state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }} heading={null} />
         </Cell>
         <Cell state="empty">
-          <MyTicketsList state={{ status: "ok", tickets: [] }} />
+          <MyTicketsList state={{ status: "ok", tickets: [] }} heading={null} />
         </Cell>
         <Cell state="error">
-          <MyTicketsList state={{ status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." }} />
+          <MyTicketsList state={{ status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." }} heading={null} />
+        </Cell>
+        <Cell state="paginacja" note="Pierwsza strona: tylko link do starszych zgłoszeń.">
+          <MyTicketsList
+            state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }}
+            heading={null}
+            olderHref="#starsze"
+          />
+        </Cell>
+        <Cell state="paginacja" note="Strona środkowa: linki do nowszych i starszych zgłoszeń.">
+          <MyTicketsList
+            state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }}
+            heading={null}
+            olderHref="#starsze"
+            newerHref="#nowsze"
+          />
         </Cell>
       </Group>
     </div>

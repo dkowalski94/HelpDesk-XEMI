@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import { COMMENT_MAX_LENGTH, ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
-import { useMyTickets } from "@/hooks/useMyTickets";
 import type { ErrorResolutionResponse, ErrorResolutionSuccess, EscalationResponse } from "@/types";
 import { ErrorTextForm } from "./ErrorTextForm";
 import { EscalationControl, type EscalationResult } from "./EscalationControl";
-import { MyTicketsList } from "./MyTicketsList";
 import { OutcomeRegion } from "./ResolutionOutcome";
 
 /**
@@ -14,11 +12,9 @@ import { OutcomeRegion } from "./ResolutionOutcome";
  */
 function Escalation({
   errorText,
-  onEscalated,
   onPendingChange,
 }: {
   errorText: string;
-  onEscalated: () => void;
   /** Lets the panel block a new paste while this ticket is being filed (a new paste would unmount this control). */
   onPendingChange: (pending: boolean) => void;
 }) {
@@ -52,7 +48,6 @@ function Escalation({
         setError("Wystąpił błąd serwera. Spróbuj ponownie za chwilę.");
       } else if (payload.ok) {
         setResult({ escalation: payload, withComment: length > 0 });
-        onEscalated();
       } else {
         setError(payload.error);
       }
@@ -90,7 +85,6 @@ export default function ErrorResolutionPanel() {
   // The text that produced `result`, kept apart from the textarea so editing it after a
   // match does not change what an escalation sends.
   const [submittedText, setSubmittedText] = useState("");
-  const { state: myTickets, reload } = useMyTickets();
 
   const length = errorText.trim().length;
   const tooLong = length > ERROR_TEXT_MAX_LENGTH;
@@ -119,7 +113,6 @@ export default function ErrorResolutionPanel() {
       } else if (payload.ok) {
         setSubmittedText(sentText);
         setResult(payload);
-        if (payload.outcome !== "matched") reload();
       } else {
         setError(payload.error);
       }
@@ -145,12 +138,8 @@ export default function ErrorResolutionPanel() {
       <OutcomeRegion
         result={result}
         pending={pending}
-        escalation={
-          <Escalation errorText={submittedText} onEscalated={reload} onPendingChange={setEscalationPending} />
-        }
+        escalation={<Escalation errorText={submittedText} onPendingChange={setEscalationPending} />}
       />
-
-      <MyTicketsList state={myTickets} />
     </div>
   );
 }

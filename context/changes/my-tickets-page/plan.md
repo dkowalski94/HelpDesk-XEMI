@@ -225,30 +225,30 @@ No database change. Rolling back the Worker restores the in-panel list.
 
 #### Automated
 
-- [x] 1.1 Type-check passes: `npx astro sync && npx astro check`
-- [x] 1.2 Lint passes: `npm run lint`
-- [x] 1.3 Production build passes: `npm run build`
-- [x] 1.4 Smoke passes against the production preview on a freshly reset local Supabase, including the new `/my-tickets` steps
+- [x] 1.1 Type-check passes: `npx astro sync && npx astro check` — 553a83f
+- [x] 1.2 Lint passes: `npm run lint` — 553a83f
+- [x] 1.3 Production build passes: `npm run build` — 553a83f
+- [x] 1.4 Smoke passes against the production preview on a freshly reset local Supabase, including the new `/my-tickets` steps — 553a83f
 
 #### Manual
 
-- [x] 1.5 As Klient Alfa, `/my-tickets` lists own tickets with Polish dates; a resolved ticket shows cause and steps
-- [x] 1.6 `/report-error` looks and behaves as before for every branch (shared layout introduced no visible change)
-- [x] 1.7 Page usable at ≈390 px; keyboard focus visible on the pagination links
+- [x] 1.5 As Klient Alfa, `/my-tickets` lists own tickets with Polish dates; a resolved ticket shows cause and steps — 553a83f
+- [x] 1.6 `/report-error` looks and behaves as before for every branch (shared layout introduced no visible change) — 553a83f
+- [x] 1.7 Page usable at ≈390 px; keyboard focus visible on the pagination links — 553a83f
 
 ### Phase 2: Slim /report-error and close the contract
 
 #### Automated
 
-- [ ] 2.1 Type-check passes: `npx astro sync && npx astro check`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 Smoke passes against the production preview on a freshly reset local Supabase
-- [ ] 2.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/pages/my-tickets.astro`, `src/layouts/ClientPageLayout.astro`, `src/components/error-resolution/*.tsx` returns 0 matches
-- [ ] 2.6 No reference to `useMyTickets` remains: `grep -rn useMyTickets src` returns nothing
+- [x] 2.1 Type-check passes: `npx astro sync && npx astro check`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 Smoke passes against the production preview on a freshly reset local Supabase
+- [x] 2.5 Hard-coded-value scan on `src/pages/report-error.astro`, `src/pages/my-tickets.astro`, `src/layouts/ClientPageLayout.astro`, `src/components/error-resolution/*.tsx` returns 0 matches
+- [x] 2.6 No reference to `useMyTickets` remains: `grep -rn useMyTickets src` returns nothing
 
 #### Manual
 
-- [ ] 2.7 `/report-error` as Klient Alfa: matched result shows immediately; ticket-created / already-reported / escalation work as before; no list on the page; "Zobacz w moich zgłoszeniach" opens `/my-tickets`
-- [ ] 2.8 Kitchen sink shows the list's states including pagination links
-- [ ] 2.9 Polish diacritics correct; both pages usable at ≈390 px
+- [x] 2.7 `/report-error` as Klient Alfa: matched result shows immediately; ticket-created / already-reported / escalation work as before; no list on the page; "Zobacz w moich zgłoszeniach" opens `/my-tickets`
+- [x] 2.8 Kitchen sink shows the list's states including pagination links
+- [x] 2.9 Polish diacritics correct; both pages usable at ≈390 px

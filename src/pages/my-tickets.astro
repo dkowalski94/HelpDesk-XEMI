@@ -1,7 +1,6 @@
 ---
 import ClientPageLayout from "@/layouts/ClientPageLayout.astro";
-import { MyTicketsList } from "@/components/error-resolution/MyTicketsList";
-import type { MyTicketsState } from "@/hooks/useMyTickets";
+import { MyTicketsList, type MyTicketsState } from "@/components/error-resolution/MyTicketsList";
 import { createClient } from "@/lib/supabase";
 import { listVisibleTickets, TICKET_PAGE_DEFAULT } from "@/lib/services/tickets";
 

@@ -1,20 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { MyTicketsState } from "@/hooks/useMyTickets";
 import { cn } from "@/lib/utils";
-import type { TicketStatus } from "@/types";
+import type { TicketStatus, TicketSummary } from "@/types";
 import { CauseSteps } from "./CauseSteps";
 import { ErrorAlert } from "./ErrorAlert";
 import { FOCUS_RING, formatDate } from "./format";
-
-/** Rows shown while the list loads, so the first rows arriving replace them instead of pushing content down. */
-const SKELETON_ROWS = 2;
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   todo: "Do zrobienia",
   resolved: "Rozwiązane",
 };
+
+/** The server-rendered list: the caller's tickets, or why they could not be read. */
+export type MyTicketsState = { status: "ok"; tickets: TicketSummary[] } | { status: "error"; error: string };
 
 interface MyTicketsListProps {
   state: MyTicketsState;
@@ -30,29 +29,15 @@ interface MyTicketsListProps {
 }
 
 /**
- * The caller's own tickets: "Twoje zgłoszenia" in the `/report-error` panel (loaded by
- * `useMyTickets`), and the server-rendered list on `/my-tickets`, with page links.
+ * The caller's own tickets, server-rendered on `/my-tickets` (no hydration), with page links.
  */
 export function MyTicketsList({ state, heading = "Twoje zgłoszenia", olderHref, newerHref }: MyTicketsListProps) {
   return (
     <section
-      aria-busy={state.status === "loading"}
       aria-label={heading === null ? "Lista zgłoszeń" : undefined}
-      className={cn("min-h-36 space-y-3", heading !== null && "border-border border-t pt-6")}
+      className={cn("space-y-3", heading !== null && "border-border border-t pt-6")}
     >
       {heading !== null && <h2 className="text-foreground text-lg font-semibold">{heading}</h2>}
-      {state.status === "loading" && (
-        <>
-          <p className="sr-only">Wczytywanie...</p>
-          <ul aria-hidden="true" className="space-y-2">
-            {Array.from({ length: SKELETON_ROWS }, (_, i) => (
-              <li key={i}>
-                <Card className="bg-muted h-10 animate-pulse rounded-lg py-0 shadow-none" />
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
       {state.status === "error" && <ErrorAlert message={state.error} />}
       {state.status === "ok" && state.tickets.length === 0 && (
         <p className="text-muted-foreground text-sm">Nie masz jeszcze żadnych zgłoszeń.</p>

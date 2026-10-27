@@ -4,6 +4,10 @@ import ErrorResolutionPanel from "@/components/error-resolution/ErrorResolutionP
 
 // The four audience branches are decided by the layout on the server: the island is
 // mounted only for the one audience POST /api/resolve-error accepts.
+
+// Same link style as the Topbar: token colours and a full-strength focus outline.
+const linkClass =
+  "rounded-sm text-sm text-primary transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 ---
 
 <ClientPageLayout
@@ -12,4 +16,9 @@ import ErrorResolutionPanel from "@/components/error-resolution/ErrorResolutionP
   intro="Wklej komunikat błędu. Najpierw poszukamy rozwiązania w bazie wiedzy i dokumentacji, a jeśli go nie znajdziemy, przekażemy zgłoszenie do zespołu serwisowego XEMI."
 >
   <ErrorResolutionPanel client:load />
+  <p class="mt-6">
+    <a href="/my-tickets" class:list={linkClass}>
+      Zobacz w moich zgłoszeniach
+    </a>
+  </p>
 </ClientPageLayout>
