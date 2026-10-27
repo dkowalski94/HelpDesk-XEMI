@@ -245,25 +245,20 @@ export default function KitchenSink() {
           note="Tylko linki stron (sekcja niżej): Tab na link pokazuje pełny pierścień focus. Pełna treść uciętego wiersza jest w atrybucie title."
         />
         <Cell state="default" note="Zgłoszenie oczekujące i rozwiązane (z przyczyną i krokami).">
-          <MyTicketsList state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }} heading={null} />
+          <MyTicketsList state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }} />
         </Cell>
         <Cell state="empty">
-          <MyTicketsList state={{ status: "ok", tickets: [] }} heading={null} />
+          <MyTicketsList state={{ status: "ok", tickets: [] }} />
         </Cell>
         <Cell state="error">
-          <MyTicketsList state={{ status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." }} heading={null} />
+          <MyTicketsList state={{ status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." }} />
         </Cell>
         <Cell state="paginacja" note="Pierwsza strona: tylko link do starszych zgłoszeń.">
-          <MyTicketsList
-            state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }}
-            heading={null}
-            olderHref="#starsze"
-          />
+          <MyTicketsList state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }} olderHref="#starsze" />
         </Cell>
         <Cell state="paginacja" note="Strona środkowa: linki do nowszych i starszych zgłoszeń.">
           <MyTicketsList
             state={{ status: "ok", tickets: [TODO_TICKET, RESOLVED_TICKET] }}
-            heading={null}
             olderHref="#starsze"
             newerHref="#nowsze"
           />

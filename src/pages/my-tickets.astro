@@ -2,6 +2,7 @@
 import ClientPageLayout from "@/layouts/ClientPageLayout.astro";
 import { MyTicketsList, type MyTicketsState } from "@/components/error-resolution/MyTicketsList";
 import { createClient } from "@/lib/supabase";
+import { isClientUser } from "@/lib/services/profile";
 import { listVisibleTickets, TICKET_PAGE_DEFAULT } from "@/lib/services/tickets";
 
 // The caller's own tickets, rendered on the server (no client:* directive, so no hydration);
@@ -9,7 +10,7 @@ import { listVisibleTickets, TICKET_PAGE_DEFAULT } from "@/lib/services/tickets"
 // The layout decides the audience branch; the list is read only for a client user, under
 // the caller's session, so RLS bounds it and `createdBy` narrows it to their own tickets.
 const { user, profile } = Astro.locals;
-const isClient = profile?.role === "client_user" && profile.companyKind === "client";
+const isClient = isClientUser(profile);
 
 // No validation layer (see CLAUDE.md): like `intParam` in api/tickets.ts, a missing or
 // non-numeric value falls back to 0 and a negative one is clamped to 0.
@@ -19,6 +20,9 @@ const offset = Number.isNaN(parsedOffset) ? 0 : Math.min(Math.max(parsedOffset, 
 let state: MyTicketsState = { status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." };
 let olderHref: string | undefined;
 let newerHref: string | undefined;
+// An offset past the end (only reachable by editing the URL) would show the empty-account
+// message to a user who has tickets; send them back to the first page instead.
+let pastTheEnd = false;
 
 if (isClient && user) {
   const supabase = createClient(Astro.request.headers, Astro.cookies);
@@ -26,6 +30,7 @@ if (isClient && user) {
     ? await listVisibleTickets(supabase, { limit: TICKET_PAGE_DEFAULT, offset, createdBy: user.id })
     : null;
   if (page) {
+    pastTheEnd = offset > 0 && page.tickets.length === 0;
     state = { status: "ok", tickets: page.tickets };
     if (page.nextOffset !== null) olderHref = `/my-tickets?offset=${page.nextOffset}`;
     if (offset > 0) {
@@ -34,6 +39,13 @@ if (isClient && user) {
     }
   }
 }
+
+// Set on Astro.response rather than `return Astro.redirect()`: a frontmatter `return` crashes
+// typescript-eslint's no-misused-promises in astro-eslint-parser.
+if (pastTheEnd) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", "/my-tickets");
+}
 ---
 
 <ClientPageLayout
@@ -41,5 +53,5 @@ if (isClient && user) {
   heading="Moje zgłoszenia"
   intro="Zgłoszenia przekazane do zespołu serwisowego XEMI, od najnowszych. Przy rozwiązanych znajdziesz przyczynę i kroki naprawy."
 >
-  <MyTicketsList state={state} heading={null} olderHref={olderHref} newerHref={newerHref} />
+  <MyTicketsList state={state} olderHref={olderHref} newerHref={newerHref} />
 </ClientPageLayout>

@@ -522,6 +522,11 @@ const steps = [
     () => request("/my-tickets?offset=abc"),
     { status: 200, check: ({ text }) => myTicketsList(text) && text.includes(errorText) },
   ],
+  [
+    "/my-tickets sends an offset past the end back to the first page",
+    () => request("/my-tickets?offset=1000"),
+    { status: 302, location: "/my-tickets" },
+  ],
 
   // --- Suggestion escalation (S-03): the same account escalates a distinct text -------
   // Gate checks for anonymous, staff and unassigned callers sit next to resolve-error's above.

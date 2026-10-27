@@ -17,11 +17,6 @@ export type MyTicketsState = { status: "ok"; tickets: TicketSummary[] } | { stat
 
 interface MyTicketsListProps {
   state: MyTicketsState;
-  /**
-   * The list's own `h2`. `null` omits it, with its top rule, where the page already titles
-   * the list (the `/my-tickets` `h1` "Moje zgłoszenia").
-   */
-  heading?: string | null;
   /** Link to the next, older page; shown as "Starsze zgłoszenia" when given. */
   olderHref?: string;
   /** Link to the previous, newer page; shown as "Nowsze zgłoszenia" when given. */
@@ -30,14 +25,11 @@ interface MyTicketsListProps {
 
 /**
  * The caller's own tickets, server-rendered on `/my-tickets` (no hydration), with page links.
+ * The page's `h1` "Moje zgłoszenia" titles the list, so it has no heading of its own.
  */
-export function MyTicketsList({ state, heading = "Twoje zgłoszenia", olderHref, newerHref }: MyTicketsListProps) {
+export function MyTicketsList({ state, olderHref, newerHref }: MyTicketsListProps) {
   return (
-    <section
-      aria-label={heading === null ? "Lista zgłoszeń" : undefined}
-      className={cn("space-y-3", heading !== null && "border-border border-t pt-6")}
-    >
-      {heading !== null && <h2 className="text-foreground text-lg font-semibold">{heading}</h2>}
+    <section aria-label="Lista zgłoszeń" className="space-y-3">
       {state.status === "error" && <ErrorAlert message={state.error} />}
       {state.status === "ok" && state.tickets.length === 0 && (
         <p className="text-muted-foreground text-sm">Nie masz jeszcze żadnych zgłoszeń.</p>

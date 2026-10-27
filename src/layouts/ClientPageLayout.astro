@@ -2,6 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import Topbar from "@/components/Topbar.astro";
 import { Card } from "@/components/ui/card";
+import { isClientUser } from "@/lib/services/profile";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,7 +25,7 @@ const { title, heading, intro } = Astro.props;
 const { profile, profileLookupFailed } = Astro.locals;
 
 const isStaff = profile?.role === "service_staff";
-const isClient = profile?.role === "client_user" && profile.companyKind === "client";
+const isClient = isClientUser(profile);
 
 // One heading and one hint style for all four branches.
 const headingClass = "mb-2 text-2xl font-bold text-foreground";
@@ -49,7 +50,8 @@ const hint = "text-sm text-muted-foreground";
           <>
             <h1 class:list={headingClass}>Strona dla klientów</h1>
             <p class:list={hint}>
-              Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów.
+              Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów i nie ma własnych
+              zgłoszeń.
             </p>
           </>
         ) : isClient ? (

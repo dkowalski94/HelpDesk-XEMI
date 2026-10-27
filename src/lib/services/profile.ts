@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/database.types";
-import type { SessionProfileResult } from "@/types";
+import type { SessionProfile, SessionProfileResult } from "@/types";
+
+/** A client user of a client company — the audience of the client pages. */
+export function isClientUser(profile: SessionProfile | null): boolean {
+  return profile?.role === "client_user" && profile.companyKind === "client";
+}
 
 /**
  * Resolves who the signed-in user is acting as: their role plus the company
