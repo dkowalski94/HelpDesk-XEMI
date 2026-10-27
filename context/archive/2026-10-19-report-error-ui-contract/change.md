@@ -1,10 +1,10 @@
 ---
 change_id: report-error-ui-contract
 title: Report-error view on the design-system contract
-status: impl_reviewed
+status: archived
 created: 2026-10-19
-updated: 2026-10-26
-archived_at: null
+updated: 2026-10-27
+archived_at: 2026-10-27T07:23:12Z
 ---
 
 ## Notes
