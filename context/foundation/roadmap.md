@@ -46,7 +46,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | ID   | Change ID                   | Outcome (user can …)                                                                                      | Prerequisites | PRD refs       | Status   |
 | ---- | --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------- | -------------- | -------- |
 | S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05          | ready    |
-| S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps        | —             | MS-02          | ready    |
+| S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps        | —             | MS-02          | done |
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03   | proposed |
 | S-04 | polish-user-bar             | see a Polish, XEMI-styled user bar and return to the page they asked for after signing in                | S-01, S-03    | MS-04          | proposed |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company                                                   | —             | MS-06          | ready    |
@@ -101,7 +101,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Comes before the start page because it is the start page's link target; the list moves out of the `/report-error` panel, so that view's states and the kitchen sink change with it.
-- **Status:** ready
+- **Status:** done
 
 ### S-03: Start page for guest, client and staff
 
@@ -183,3 +183,7 @@ M-1 items (their IDs belong to M-1):
 - **S-03: a client user can mark a suggested resolution as not helpful, which creates a service ticket carrying their comment.** — Archived 2026-10-19 → `context/archive/2026-10-19-mark-suggestion-unhelpful/`. Lesson: —.
 
 Outside any milestone item: `report-error-ui-contract` — archived 2026-10-27 → `context/archive/2026-10-19-report-error-ui-contract/`.
+
+M-2 items (their IDs belong to M-2):
+
+- **S-02: a client user can open "Moje zgłoszenia" as a separate page and see their own tickets with status and, for resolved ones, the cause and steps; `/report-error` keeps the paste flow and points to that page.** — Archived 2026-10-27 → `context/archive/2026-10-27-my-tickets-page/`. Lesson: —.
