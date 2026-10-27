@@ -162,6 +162,21 @@ const REPORT_PAGE = {
   waiting: "Twoje konto czeka na przypisanie do firmy",
 };
 
+// Distinctive substrings of /my-tickets. "Moje zgłoszenia" is also the document title of
+// every branch, so the list's own label marks the client branch.
+const MY_TICKETS_PAGE = {
+  heading: "Moje zgłoszenia",
+  list: 'aria-label="Lista zgłoszeń"',
+  error: "Nie udało się wczytać Twoich zgłoszeń.",
+  staff: REPORT_PAGE.staff,
+  waiting: REPORT_PAGE.waiting,
+};
+/** True when /my-tickets rendered the client list without the error state. */
+const myTicketsList = (text) =>
+  text.includes(MY_TICKETS_PAGE.heading) &&
+  text.includes(MY_TICKETS_PAGE.list) &&
+  !text.includes(MY_TICKETS_PAGE.error);
+
 /** True when the staff queue page renders a resolve form for the ticket. */
 const inQueue = (html, id) => id !== null && html.includes(`name="ticketId" value="${id}"`);
 const hasTicket = (json, id) => id !== null && json.tickets.some((ticket) => ticket.id === id);
@@ -187,6 +202,11 @@ const steps = [
   [
     "report-error page redirects anonymous user",
     () => request("/report-error", { as: "anonymous" }),
+    { status: 302, location: "/auth/signin" },
+  ],
+  [
+    "my-tickets page redirects anonymous user",
+    () => request("/my-tickets", { as: "anonymous" }),
     { status: 302, location: "/auth/signin" },
   ],
   ["tickets api rejects anonymous user", () => request("/api/tickets", { as: "anonymous" }), { status: 401 }],
@@ -271,6 +291,14 @@ const steps = [
     },
   ],
   [
+    "staff gets the staff message on /my-tickets, not the list",
+    () => request("/my-tickets", { as: "staff" }),
+    {
+      status: 200,
+      check: ({ text }) => text.includes(MY_TICKETS_PAGE.staff) && !text.includes(MY_TICKETS_PAGE.list),
+    },
+  ],
+  [
     "new account signs in again",
     () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
     { status: 302, location: "/" },
@@ -296,6 +324,14 @@ const steps = [
     {
       status: 200,
       check: ({ text }) => text.includes(REPORT_PAGE.waiting) && !text.includes(REPORT_PAGE.instruction),
+    },
+  ],
+  [
+    "unassigned account gets the waiting message on /my-tickets, not the list",
+    () => request("/my-tickets"),
+    {
+      status: 200,
+      check: ({ text }) => text.includes(MY_TICKETS_PAGE.waiting) && !text.includes(MY_TICKETS_PAGE.list),
     },
   ],
 
@@ -464,6 +500,27 @@ const steps = [
       status: 200,
       check: ({ json }) => json?.ok === true && smokeTicketId !== null && !hasTicket(json, smokeTicketId),
     },
+  ],
+  // The error text is plain ASCII, so Astro's HTML escaping leaves it intact.
+  [
+    "...and /my-tickets of the filing Klient Alfa account lists it",
+    () => request("/my-tickets"),
+    { status: 200, check: ({ text }) => myTicketsList(text) && text.includes(errorText) },
+  ],
+  [
+    "...and /my-tickets of the seeded Klient Alfa user, same company, does not",
+    () => request("/my-tickets", { as: "alfa" }),
+    { status: 200, check: ({ text }) => myTicketsList(text) && !text.includes(errorText) },
+  ],
+  [
+    "...and /my-tickets of the Klient Beta user does not",
+    () => request("/my-tickets", { as: "beta" }),
+    { status: 200, check: ({ text }) => myTicketsList(text) && !text.includes(errorText) },
+  ],
+  [
+    "/my-tickets clamps a non-numeric offset to the first page",
+    () => request("/my-tickets?offset=abc"),
+    { status: 200, check: ({ text }) => myTicketsList(text) && text.includes(errorText) },
   ],
 
   // --- Suggestion escalation (S-03): the same account escalates a distinct text -------

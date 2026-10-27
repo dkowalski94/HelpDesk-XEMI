@@ -1,0 +1,46 @@
+---
+import ClientPageLayout from "@/layouts/ClientPageLayout.astro";
+import { MyTicketsList } from "@/components/error-resolution/MyTicketsList";
+import type { MyTicketsState } from "@/hooks/useMyTickets";
+import { createClient } from "@/lib/supabase";
+import { listVisibleTickets, TICKET_PAGE_DEFAULT } from "@/lib/services/tickets";
+
+// The caller's own tickets, rendered on the server (no client:* directive, so no hydration);
+// `lang="pl"` comes from the layout's Card.
+// The layout decides the audience branch; the list is read only for a client user, under
+// the caller's session, so RLS bounds it and `createdBy` narrows it to their own tickets.
+const { user, profile } = Astro.locals;
+const isClient = profile?.role === "client_user" && profile.companyKind === "client";
+
+// No validation layer (see CLAUDE.md): like `intParam` in api/tickets.ts, a missing or
+// non-numeric value falls back to 0 and a negative one is clamped to 0.
+const parsedOffset = Number.parseInt(Astro.url.searchParams.get("offset") ?? "", 10);
+const offset = Number.isNaN(parsedOffset) ? 0 : Math.min(Math.max(parsedOffset, 0), Number.MAX_SAFE_INTEGER);
+
+let state: MyTicketsState = { status: "error", error: "Nie udało się wczytać Twoich zgłoszeń." };
+let olderHref: string | undefined;
+let newerHref: string | undefined;
+
+if (isClient && user) {
+  const supabase = createClient(Astro.request.headers, Astro.cookies);
+  const page = supabase
+    ? await listVisibleTickets(supabase, { limit: TICKET_PAGE_DEFAULT, offset, createdBy: user.id })
+    : null;
+  if (page) {
+    state = { status: "ok", tickets: page.tickets };
+    if (page.nextOffset !== null) olderHref = `/my-tickets?offset=${page.nextOffset}`;
+    if (offset > 0) {
+      const newerOffset = Math.max(0, offset - TICKET_PAGE_DEFAULT);
+      newerHref = newerOffset === 0 ? "/my-tickets" : `/my-tickets?offset=${newerOffset}`;
+    }
+  }
+}
+---
+
+<ClientPageLayout
+  title="Moje zgłoszenia"
+  heading="Moje zgłoszenia"
+  intro="Zgłoszenia przekazane do zespołu serwisowego XEMI, od najnowszych. Przy rozwiązanych znajdziesz przyczynę i kroki naprawy."
+>
+  <MyTicketsList state={state} heading={null} olderHref={olderHref} newerHref={newerHref} />
+</ClientPageLayout>

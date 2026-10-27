@@ -1,0 +1,73 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+/**
+ * Chrome and audience branches of a client-only page (`/report-error`, `/my-tickets`):
+ * Topbar, XEMI logo and `Card`, with the profile-error / staff / waiting messages in one
+ * place so both pages show identical texts. The default slot is rendered only for the one
+ * audience the client endpoints accept (client users of a client company). A missing
+ * profile reads as "waiting for assignment", as on the dashboard.
+ */
+interface Props {
+  /** Document title. */
+  title: string;
+  /** The client branch's `h1`. */
+  heading: string;
+  /** Optional hint under the client heading. */
+  intro?: string;
+}
+
+const { title, heading, intro } = Astro.props;
+const { profile, profileLookupFailed } = Astro.locals;
+
+const isStaff = profile?.role === "service_staff";
+const isClient = profile?.role === "client_user" && profile.companyKind === "client";
+
+// One heading and one hint style for all four branches.
+const headingClass = "mb-2 text-2xl font-bold text-foreground";
+const hint = "text-sm text-muted-foreground";
+---
+
+<Layout title={title}>
+  <div class="min-h-screen bg-background p-4">
+    <div class="mx-auto w-full max-w-3xl">
+      <Topbar />
+      <Card lang="pl" className="gap-0 p-6 sm:p-8">
+        <img src="/logo-xemi.svg" alt="XEMI" width="137" height="36" class="mb-6 h-8 w-auto self-start sm:h-9" />
+        {profileLookupFailed ? (
+          <>
+            <h1 class:list={cn(headingClass, "text-destructive")}>Nie udało się wczytać Twojego konta</h1>
+            <p class:list={hint}>
+              Wystąpił błąd podczas odczytu Twojej firmy i roli. To problem po naszej stronie — odśwież stronę za
+              chwilę.
+            </p>
+          </>
+        ) : isStaff ? (
+          <>
+            <h1 class:list={headingClass}>Strona dla klientów</h1>
+            <p class:list={hint}>
+              Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów.
+            </p>
+          </>
+        ) : isClient ? (
+          <>
+            <h1 class:list={headingClass}>{heading}</h1>
+            {intro && <p class:list={cn(hint, "mb-6")}>{intro}</p>}
+            <slot />
+          </>
+        ) : (
+          <>
+            <h1 class:list={headingClass}>Konto czeka na przypisanie</h1>
+            <p class:list={hint}>
+              Twoje konto czeka na przypisanie do firmy. Zespół serwisowy XEMI przypisuje nowe konta — po przypisaniu ta
+              strona będzie dostępna.
+            </p>
+          </>
+        )}
+      </Card>
+    </div>
+  </div>
+</Layout>
