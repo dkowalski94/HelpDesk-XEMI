@@ -7,7 +7,7 @@ import { ErrorAlert } from "@/components/error-resolution/ErrorAlert";
 import { FIXED_ROWS, FOCUS_RING, INNER_CARD } from "@/components/error-resolution/format";
 import { RESOLUTION_TEXT_MAX_LENGTH } from "@/lib/services/ticket-resolution";
 import { cn } from "@/lib/utils";
-import type { StaffQueueResult } from "@/types";
+import type { StaffCompanyOption, StaffQueueResult } from "@/types";
 
 /**
  * The staff queue on `/admin/tickets`: every client company's open tickets with a resolve form each.
@@ -15,7 +15,10 @@ import type { StaffQueueResult } from "@/types";
  * the route maps the query string to the messages and loads the queue.
  *
  * The smoke test reads `name="ticketId" value="<id>"` from the HTML, and the preview script below
- * finds each form by `data-company-name` and its native `cause`/`steps` textareas.
+ * finds each form by `data-company-name` and its native `cause`/`steps` textareas. The company
+ * filter is a plain GET form (`data-company-filter`): the script submits it on change, and the
+ * "Filtruj" button does the same without JavaScript. "Wszystkie firmy" submits `?company=`,
+ * which the route treats as all companies.
  */
 interface Props {
   queue: StaffQueueResult;
@@ -27,9 +30,26 @@ interface Props {
   missingEmbeddings: number | null;
   /** Link to the next page of the queue, shown as "Dalej". */
   nextHref: string | null;
+  /** Client companies with their open counts for the filter; `null` hides the filter (list failed). */
+  companies: StaffCompanyOption[] | null;
+  /** The company the queue is filtered to (already validated by the route), or `null` for all. */
+  selectedCompanyId: string | null;
+  /** Id of the filter's `<select>`; the kitchen sink sets one per cell so ids stay unique there. */
+  filterId?: string;
 }
 
-const { queue, successMessage, errorMessage, missingEmbeddings, nextHref } = Astro.props;
+const {
+  queue,
+  successMessage,
+  errorMessage,
+  missingEmbeddings,
+  nextHref,
+  companies,
+  selectedCompanyId,
+  filterId = "company-filter",
+} = Astro.props;
+
+const selectedCompanyName = companies?.find((company) => company.id === selectedCompanyId)?.name ?? null;
 
 const RESOLUTION_PREVIEW_HINT =
   "Dane firmy, nazwiska i numery zostaną zamaskowane. Zgłaszający zobaczy przyczynę i kroki bez zmian.";
@@ -45,6 +65,10 @@ const bodyTextClass = "text-sm break-words whitespace-pre-line text-foreground/8
 const previewBoxClass = "rounded-lg border border-border bg-card p-3";
 const previewTextClass = "mt-1 text-sm break-words whitespace-pre-line text-muted-foreground";
 const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
+const selectClass = cn(
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:ring-3 sm:w-auto",
+  FOCUS_RING,
+);
 ---
 
 <h1 class:list={headingClass}>Zgłoszenia do rozwiązania</h1>
@@ -52,6 +76,34 @@ const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
   Otwarte zgłoszenia wszystkich firm klienckich, od najstarszych. Zapisane rozwiązanie trafia do zgłaszającego i do bazy
   wiedzy.
 </p>
+
+{companies !== null && (
+  <form
+    method="GET"
+    action="/admin/tickets"
+    class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3"
+    data-company-filter
+  >
+    <div>
+      <label for={filterId} class:list={labelClass}>
+        Firma
+      </label>
+      <select id={filterId} name="company" class:list={cn("mt-1", selectClass)}>
+        <option value="" selected={selectedCompanyId === null}>
+          Wszystkie firmy
+        </option>
+        {companies.map((company) => (
+          <option value={company.id} selected={company.id === selectedCompanyId}>
+            {company.name} ({company.openCount})
+          </option>
+        ))}
+      </select>
+    </div>
+    <Button type="submit" variant="outline" className={cn("self-start sm:self-auto", FOCUS_RING)}>
+      Filtruj
+    </Button>
+  </form>
+)}
 
 {successMessage && (
   <Alert className="mb-4 border-success/40 bg-success/10">
@@ -70,6 +122,7 @@ const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
     action="/api/admin/backfill-embeddings"
     class="mb-6 flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4 sm:flex-row sm:items-center"
   >
+    {selectedCompanyId && <input type="hidden" name="company" value={selectedCompanyId} />}
     <p class="flex-1 text-sm font-semibold text-warning">{missingEmbeddings} rozwiązań czeka na embedding</p>
     <Button type="submit" variant="outline" className={FOCUS_RING}>
       Przelicz
@@ -80,7 +133,20 @@ const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
 {queue.status === "error" ? (
   <ErrorAlert message="Nie udało się wczytać zgłoszeń. Odśwież stronę za chwilę." />
 ) : queue.tickets.length === 0 ? (
-  <p class="text-sm text-muted-foreground">Brak zgłoszeń do rozwiązania.</p>
+  selectedCompanyId ? (
+    <div class="space-y-3">
+      <p class="text-sm text-muted-foreground">
+        {selectedCompanyName
+          ? `Brak zgłoszeń do rozwiązania w firmie ${selectedCompanyName}.`
+          : "Brak zgłoszeń do rozwiązania w wybranej firmie."}
+      </p>
+      <a href="/admin/tickets" class:list={cn(buttonVariants({ variant: "outline" }), FOCUS_RING)}>
+        Pokaż wszystkie firmy
+      </a>
+    </div>
+  ) : (
+    <p class="text-sm text-muted-foreground">Brak zgłoszeń do rozwiązania.</p>
+  )
 ) : (
   <ul class="space-y-4">
     {queue.tickets.map((ticket) => (
@@ -108,6 +174,7 @@ const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
             data-company-name={ticket.companyName ?? ""}
           >
             <input type="hidden" name="ticketId" value={ticket.id} />
+            {selectedCompanyId && <input type="hidden" name="company" value={selectedCompanyId} />}
             <div>
               <label for={`cause-${ticket.id}`} class:list={labelClass}>
                 Przyczyna (opcjonalnie)
@@ -157,6 +224,15 @@ const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
 
 <script>
   import { sanitizeResolutionText } from "@/lib/sanitize-error-text";
+
+  // Narrow the queue as soon as a company is picked; "Filtruj" stays for no-JS.
+  for (const filter of document.querySelectorAll<HTMLFormElement>("form[data-company-filter]")) {
+    const select = filter.elements.namedItem("company");
+    if (!(select instanceof HTMLSelectElement)) continue;
+    select.addEventListener("change", () => {
+      filter.requestSubmit();
+    });
+  }
 
   // Same function the server applies to the knowledge base copy, so the preview is what other
   // companies will read. Without JavaScript the server-rendered hint stays in place.

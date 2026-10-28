@@ -9,7 +9,8 @@
 // any of them — tickets have no DELETE policy. After ~24 runs against the
 // same database the seeded ticket e101 falls off the first page of GET /api/tickets, and the
 // staff check and the three onlyTicketsOf(COMPANY.alfa, TICKET.alfa) steps fail (the open
-// escalation tickets also fill the oldest-first staff queue, after ~49 runs): run
+// escalation tickets also fill the oldest-first staff queue, after ~49 runs, and its Klient
+// Alfa filter, which the filtered /admin/tickets steps read, at the same point): run
 // `npx supabase db reset` every couple of dozen local runs.
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
@@ -121,8 +122,9 @@ function escalateError(as, text, comment) {
   return request("/api/escalate-error", { method: "POST", form: { errorText: text, comment }, as });
 }
 
-function resolveTicket(as, { ticketId, cause = "", steps }) {
-  return request("/api/admin/resolve-ticket", { method: "POST", form: { ticketId: ticketId ?? "", cause, steps }, as });
+function resolveTicket(as, { ticketId, cause = "", steps, company }) {
+  const form = { ticketId: ticketId ?? "", cause, steps, ...(company === undefined ? {} : { company }) };
+  return request("/api/admin/resolve-ticket", { method: "POST", form, as });
 }
 
 /** True when the ticket list is non-empty, belongs entirely to one company, and holds that company's seeded ticket. */
@@ -593,6 +595,22 @@ const steps = [
       check: ({ text }) => text.includes(escalationComment) && !text.includes(escalationSecondComment),
     },
   ],
+  // The company filter narrows the queue (a view filter inside RLS); same first-page assumption.
+  [
+    "...and the Klient Alfa filter on /admin/tickets keeps the escalation ticket",
+    () => request(`/admin/tickets?company=${COMPANY.alfa}`, { as: "staff" }),
+    { status: 200, check: ({ text }) => text.includes(escalationComment) },
+  ],
+  [
+    "...and the Klient Beta filter leaves it out",
+    () => request(`/admin/tickets?company=${COMPANY.beta}`, { as: "staff" }),
+    { status: 200, check: ({ text }) => !text.includes(escalationComment) },
+  ],
+  [
+    "...and a company that is not a UUID is ignored (all companies)",
+    () => request("/admin/tickets?company=not-a-uuid", { as: "staff" }),
+    { status: 200, check: ({ text }) => text.includes(escalationComment) },
+  ],
 
   // --- Ticket resolution (S-02): staff resolves the ticket filed above ---------------
   // Both endpoints are rejected for anonymous and client callers first, then the ticket is
@@ -643,6 +661,14 @@ const steps = [
     "staff cannot resolve with blank steps",
     () => resolveTicket("staff", { ticketId: smokeTicketId, steps: "   " }),
     { status: 302, location: "/admin/tickets?error=invalid" },
+  ],
+  [
+    "...and with the Klient Alfa filter the redirect keeps the company",
+    () => resolveTicket("staff", { ticketId: smokeTicketId, steps: "   ", company: COMPANY.alfa }),
+    {
+      status: 302,
+      check: ({ location }) => location === `/admin/tickets?company=${COMPANY.alfa}&error=invalid`,
+    },
   ],
   [
     "staff resolves the ticket",

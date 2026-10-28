@@ -3,7 +3,7 @@ import type { Database } from "@/database.types";
 import { embedText, OpenAIRequestError } from "@/lib/openai";
 import { sanitizeErrorText, sanitizeResolutionText } from "@/lib/sanitize-error-text";
 import { TICKET_COLUMNS, toTicketSummary } from "@/lib/services/tickets";
-import type { BackfillEmbeddingsResult, ResolveTicketOutcome, StaffQueueResult } from "@/types";
+import type { BackfillEmbeddingsResult, ResolveTicketOutcome, StaffCompanyOption, StaffQueueResult } from "@/types";
 
 /** Tickets per page of the staff queue. */
 export const STAFF_QUEUE_PAGE_SIZE = 50;
@@ -16,7 +16,37 @@ export const BACKFILL_BATCH = 20;
 
 const QUEUE_COLUMNS = `${TICKET_COLUMNS}, user_comment, companies ( name )` as const;
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A ticket or company id. Anything else from a form or the query string is dropped, never echoed. */
+export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Builds a `/admin/tickets` URL the same way for the page and both staff endpoints, with
+ * the parameters in a fixed order: `company`, `offset`, `status`, `filled`, `error`.
+ * `company` is kept only when it is a UUID, so raw input never reaches the URL; with no
+ * parameters the result is the bare `/admin/tickets`.
+ */
+export function staffQueueHref({
+  company,
+  offset,
+  status,
+  filled,
+  error,
+}: {
+  company?: string | null;
+  offset?: number | null;
+  status?: string | null;
+  filled?: number | null;
+  error?: string | null;
+}): string {
+  const params = new URLSearchParams();
+  if (company && UUID_PATTERN.test(company)) params.set("company", company);
+  if (offset !== undefined && offset !== null) params.set("offset", String(Math.trunc(offset)));
+  if (status) params.set("status", status);
+  if (filled !== undefined && filled !== null) params.set("filled", String(Math.trunc(filled)));
+  if (error) params.set("error", error);
+  const query = params.toString();
+  return query ? `/admin/tickets?${query}` : "/admin/tickets";
+}
 
 /**
  * Embeds one sanitized text. Never throws: a missing key or an OpenAI failure is
@@ -37,8 +67,10 @@ async function tryEmbed(text: string, context: string): Promise<number[] | null>
 }
 
 /**
- * Lists one page of `todo` tickets from every client company, oldest first, with the
- * sanitized text each would put in the knowledge base.
+ * Lists one page of `todo` tickets from every client company — or from one company when
+ * `companyId` is given — oldest first, with the sanitized text each would put in the
+ * knowledge base. The company filter is a view filter inside what RLS returns, not a
+ * security boundary.
  *
  * Runs under the caller's own session: RLS lets staff read every ticket and company,
  * so this is only ever called for staff. Paged like `listVisibleTickets` — one extra
@@ -46,12 +78,13 @@ async function tryEmbed(text: string, context: string): Promise<number[] | null>
  */
 export async function listTodoQueue(
   supabase: SupabaseClient<Database>,
-  { offset }: { offset: number },
+  { offset, companyId }: { offset: number; companyId?: string | null },
 ): Promise<StaffQueueResult> {
-  const { data, error } = await supabase
-    .from("tickets")
-    .select(QUEUE_COLUMNS)
-    .eq("status", "todo")
+  let query = supabase.from("tickets").select(QUEUE_COLUMNS).eq("status", "todo");
+  if (companyId) {
+    query = query.eq("company_id", companyId);
+  }
+  const { data, error } = await query
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
     .range(offset, offset + STAFF_QUEUE_PAGE_SIZE);
@@ -74,6 +107,27 @@ export async function listTodoQueue(
     }),
     nextOffset: data.length > STAFF_QUEUE_PAGE_SIZE ? offset + STAFF_QUEUE_PAGE_SIZE : null,
   };
+}
+
+/**
+ * Lists the client companies alphabetically, each with its number of `todo` tickets, for
+ * the staff queue's filter. One PostgREST call: the embedded `tickets(count)` is narrowed
+ * by the `tickets.status` filter, so it counts open tickets only. `null` on error (logged).
+ */
+export async function listClientCompanies(supabase: SupabaseClient<Database>): Promise<StaffCompanyOption[] | null> {
+  const { data, error } = await supabase
+    .from("companies")
+    .select("id, name, tickets(count)")
+    .eq("kind", "client")
+    .eq("tickets.status", "todo")
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Client company list failed", error);
+    return null;
+  }
+
+  return data.map((row) => ({ id: row.id, name: row.name, openCount: row.tickets[0]?.count ?? 0 }));
 }
 
 /**

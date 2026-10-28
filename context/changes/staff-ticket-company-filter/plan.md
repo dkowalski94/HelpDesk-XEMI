@@ -227,30 +227,30 @@ None — no schema change, nothing to push to the hosted project.
 
 #### Automated
 
-- [x] 1.1 Lint passes with the page in `uiContractConfig`: `npm run lint`
-- [x] 1.2 Types check: `npx astro sync && npx astro check`
-- [x] 1.3 Build succeeds: `npm run build`
-- [x] 1.4 Smoke passes unchanged against the preview after `npx supabase db reset`: `npm run smoke`
+- [x] 1.1 Lint passes with the page in `uiContractConfig`: `npm run lint` — b60d795
+- [x] 1.2 Types check: `npx astro sync && npx astro check` — b60d795
+- [x] 1.3 Build succeeds: `npm run build` — b60d795
+- [x] 1.4 Smoke passes unchanged against the preview after `npx supabase db reset`: `npm run smoke` — b60d795
 
 #### Manual
 
-- [x] 1.5 `/admin/tickets` as `serwis@xemi.local` shows the light look at start-page width with the Topbar item active
-- [x] 1.6 Kitchen-sink "Kolejka serwisu" cells screenshotted; every state legible, focus ring visible on textareas, button and link
-- [x] 1.7 Resolving a ticket still works and the KB preview updates while typing
+- [x] 1.5 `/admin/tickets` as `serwis@xemi.local` shows the light look at start-page width with the Topbar item active — b60d795
+- [x] 1.6 Kitchen-sink "Kolejka serwisu" cells screenshotted; every state legible, focus ring visible on textareas, button and link — b60d795
+- [x] 1.7 Resolving a ticket still works and the KB preview updates while typing — b60d795
 
 ### Phase 2: Company filter
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 Types check: `npx astro sync && npx astro check`
-- [ ] 2.3 Build succeeds: `npm run build`
-- [ ] 2.4 Smoke passes including the new filter and kept-filter steps, after `npx supabase db reset`: `npm run smoke`
+- [x] 2.1 Lint passes: `npm run lint`
+- [x] 2.2 Types check: `npx astro sync && npx astro check`
+- [x] 2.3 Build succeeds: `npm run build`
+- [x] 2.4 Smoke passes including the new filter and kept-filter steps, after `npx supabase db reset`: `npm run smoke`
 
 #### Manual
 
-- [ ] 2.5 Selecting "Klient Alfa" narrows the queue immediately (with JS) and via "Filtruj" (JS disabled); the URL is shareable
-- [ ] 2.6 "Klient Beta (0)" shows the filtered-empty message and "Pokaż wszystkie firmy" returns to all
-- [ ] 2.7 Resolving a ticket and clicking "Przelicz" while filtered return to the same company with the message shown
-- [ ] 2.8 "Dalej" keeps the company filter when the filtered queue has more than 50 tickets (or verified by temporarily lowering `STAFF_QUEUE_PAGE_SIZE` locally)
-- [ ] 2.9 Kitchen-sink filter cells screenshotted; select has a visible focus ring
+- [x] 2.5 Selecting "Klient Alfa" narrows the queue immediately (with JS) and via "Filtruj" (JS disabled); the URL is shareable
+- [x] 2.6 "Klient Beta (0)" shows the filtered-empty message and "Pokaż wszystkie firmy" returns to all
+- [x] 2.7 Resolving a ticket and clicking "Przelicz" while filtered return to the same company with the message shown
+- [x] 2.8 "Dalej" keeps the company filter when the filtered queue has more than 50 tickets (or verified by temporarily lowering `STAFF_QUEUE_PAGE_SIZE` locally)
+- [x] 2.9 Kitchen-sink filter cells screenshotted; select has a visible focus ring

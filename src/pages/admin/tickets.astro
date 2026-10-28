@@ -4,7 +4,13 @@ import Topbar from "@/components/Topbar.astro";
 import { createClient } from "@/lib/supabase";
 import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
 import { Card } from "@/components/ui/card";
-import { countMissingEmbeddings, listTodoQueue } from "@/lib/services/ticket-resolution";
+import {
+  countMissingEmbeddings,
+  listClientCompanies,
+  listTodoQueue,
+  staffQueueHref,
+  UUID_PATTERN,
+} from "@/lib/services/ticket-resolution";
 import type { StaffQueueResult } from "@/types";
 
 // Messages are fixed strings keyed by a code so the query string can never put
@@ -40,11 +46,29 @@ const offsetParam = Astro.url.searchParams.get("offset");
 const offset = offsetParam !== null && /^\d+$/.test(offsetParam) ? Number(offsetParam) : 0;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
-const queue: StaffQueueResult = supabase ? await listTodoQueue(supabase, { offset }) : { status: "error" };
+const companies = supabase ? await listClientCompanies(supabase) : null;
+
+// The company filter is a view filter inside what RLS returns. Only a UUID is accepted and,
+// when the company list loaded, only one of its ids; anything else (incl. the empty value
+// "Wszystkie firmy" submits) means all companies. If the list failed, the filter is hidden
+// but a UUID-valid `company` still applies, so a shared link keeps working.
+const companyParam = Astro.url.searchParams.get("company");
+const selectedCompanyId =
+  companyParam !== null &&
+  UUID_PATTERN.test(companyParam) &&
+  (companies === null || companies.some((company) => company.id === companyParam))
+    ? companyParam
+    : null;
+
+const queue: StaffQueueResult = supabase
+  ? await listTodoQueue(supabase, { offset, companyId: selectedCompanyId })
+  : { status: "error" };
 const missingEmbeddings = supabase ? await countMissingEmbeddings(supabase) : null;
 
 const nextHref =
-  queue.status === "ok" && queue.nextOffset !== null ? `/admin/tickets?offset=${String(queue.nextOffset)}` : null;
+  queue.status === "ok" && queue.nextOffset !== null
+    ? staffQueueHref({ company: selectedCompanyId, offset: queue.nextOffset })
+    : null;
 ---
 
 <Layout title="Zgłoszenia do rozwiązania">
@@ -58,6 +82,8 @@ const nextHref =
           errorMessage={errorMessage}
           missingEmbeddings={missingEmbeddings}
           nextHref={nextHref}
+          companies={companies}
+          selectedCompanyId={selectedCompanyId}
         />
       </Card>
     </div>

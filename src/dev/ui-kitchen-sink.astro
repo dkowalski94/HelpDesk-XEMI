@@ -5,7 +5,7 @@ import KitchenSink from "@/components/error-resolution/KitchenSink";
 import StartPage from "@/components/start/StartPage.astro";
 import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
 import { Card } from "@/components/ui/card";
-import type { StaffQueueResult, StaffQueueTicket } from "@/types";
+import type { StaffCompanyOption, StaffQueueResult, StaffQueueTicket } from "@/types";
 
 // Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets, /admin/tickets). Routed by the `devOnlyRoutes`
 // integration in astro.config.mjs under `astro dev` only, so production builds do not contain it.
@@ -49,7 +49,26 @@ const queueList = (prefix: string): StaffQueueResult => ({
 });
 const queueEmpty: StaffQueueResult = { status: "ok", tickets: [], nextOffset: null };
 const queueError: StaffQueueResult = { status: "error" };
-const queueCells = [
+const companyOptions: StaffCompanyOption[] = [
+  { id: "company-alfa", name: "Klient Alfa", openCount: 1 },
+  { id: "company-beta", name: "Klient Beta", openCount: 1 },
+  { id: "company-gamma", name: "Klient Gamma", openCount: 0 },
+];
+const queueAlfa = (prefix: string): StaffQueueResult => ({
+  status: "ok",
+  tickets: queueTickets(prefix).filter((ticket) => ticket.companyId === "company-alfa"),
+  nextOffset: null,
+});
+const queueCells: {
+  title: string;
+  queue: StaffQueueResult;
+  successMessage?: string;
+  errorMessage?: string;
+  missingEmbeddings?: number;
+  nextHref?: string;
+  companies?: StaffCompanyOption[] | null;
+  selectedCompanyId?: string;
+}[] = [
   { title: "Lista: dwa zgłoszenia (z komentarzem klienta i bez)", queue: queueList("ks-list") },
   { title: "Pusta kolejka", queue: queueEmpty },
   { title: "Błąd wczytania", queue: queueError },
@@ -58,6 +77,29 @@ const queueCells = [
   { title: "Komunikat błędu", queue: queueEmpty, errorMessage: "To zgłoszenie zostało już rozwiązane." },
   { title: "Baner „Przelicz”", queue: queueEmpty, missingEmbeddings: 4 },
   { title: "Link „Dalej”", queue: queueList("ks-next"), nextHref: "/admin/tickets?offset=20" },
+  {
+    title: "Filtr: „Wszystkie firmy” (liczniki, w tym 0)",
+    queue: queueList("ks-filter-all"),
+    companies: companyOptions,
+  },
+  {
+    title: "Filtr: wybrana firma i jej zgłoszenia (z banerem „Przelicz”)",
+    queue: queueAlfa("ks-filter-alfa"),
+    companies: companyOptions,
+    selectedCompanyId: "company-alfa",
+    missingEmbeddings: 2,
+  },
+  {
+    title: "Filtr: brak zgłoszeń w wybranej firmie",
+    queue: queueEmpty,
+    companies: companyOptions,
+    selectedCompanyId: "company-gamma",
+  },
+  {
+    title: "Filtr ukryty (lista firm się nie wczytała)",
+    queue: queueList("ks-filter-hidden"),
+    companies: null,
+  },
 ];
 ---
 
@@ -107,10 +149,10 @@ const queueCells = [
     <section class="space-y-4">
       <h2 class="text-xl font-bold text-foreground">Kolejka serwisu</h2>
       <p class="text-sm text-muted-foreground">
-        Widok /admin/tickets: lista, pusta kolejka, błąd wczytania, komunikaty, baner „Przelicz” i link „Dalej”. Podgląd
-        do bazy wiedzy aktualizuje się przy pisaniu.
+        Widok /admin/tickets: lista, pusta kolejka, błąd wczytania, komunikaty, baner „Przelicz”, link „Dalej” i filtr
+        firm (wszystkie, wybrana, pusta firma, ukryty). Podgląd do bazy wiedzy aktualizuje się przy pisaniu.
       </p>
-      {queueCells.map((cell) => (
+      {queueCells.map((cell, index) => (
         <>
           <h3 class="text-base font-bold text-foreground">{cell.title}</h3>
           <Card lang="pl" className="gap-0 p-6 sm:p-8">
@@ -120,6 +162,9 @@ const queueCells = [
               errorMessage={cell.errorMessage ?? null}
               missingEmbeddings={cell.missingEmbeddings ?? null}
               nextHref={cell.nextHref ?? null}
+              companies={cell.companies ?? null}
+              selectedCompanyId={cell.selectedCompanyId ?? null}
+              filterId={`company-filter-${String(index)}`}
             />
           </Card>
         </>

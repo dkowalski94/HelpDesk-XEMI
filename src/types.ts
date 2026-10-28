@@ -240,6 +240,13 @@ export interface StaffQueueTicket extends TicketSummary {
 export type StaffQueueResult =
   { status: "ok"; tickets: StaffQueueTicket[]; nextOffset: number | null } | { status: "error" };
 
+/** A client company in the staff queue's filter, with its number of `todo` tickets. */
+export interface StaffCompanyOption {
+  id: string;
+  name: string;
+  openCount: number;
+}
+
 /**
  * What resolving a ticket did — the endpoint forwards it to `/admin/tickets` as a
  * query parameter, and the page maps it to a fixed message.
