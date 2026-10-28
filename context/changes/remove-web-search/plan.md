@@ -216,11 +216,11 @@ No database change. Rollback is a plain `wrangler rollback`; the older Worker tr
 
 #### Automated
 
-- [x] 2.1 No Exa/web-search references in the repo outside `context/`
-- [x] 2.2 `npm run lint` passes
+- [x] 2.1 No Exa/web-search references in the repo outside `context/` — 664b386
+- [x] 2.2 `npm run lint` passes — 664b386
 
 #### Manual
 
-- [x] 2.3 `EXA_API_KEY` removed from the production Worker secrets
-- [x] 2.4 `EXA_API_KEY` removed from local `.env` and `.dev.vars`
-- [ ] 2.5 Production start page shows no Exa banner and `/search` returns 404 after deploy
+- [x] 2.3 `EXA_API_KEY` removed from the production Worker secrets — 664b386
+- [x] 2.4 `EXA_API_KEY` removed from local `.env` and `.dev.vars` — 664b386
+- [x] 2.5 Production start page shows no Exa banner and `/search` returns 404 after deploy — 664b386
