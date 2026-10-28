@@ -200,27 +200,27 @@ No database change. Rollback is a plain `wrangler rollback`; the older Worker tr
 
 #### Automated
 
-- [x] 1.1 `npx astro sync` and `npx astro check` pass
-- [x] 1.2 `npm run lint` passes
-- [x] 1.3 `npm run build` passes
-- [x] 1.4 No Exa/web-search references in `src`, `astro.config.mjs`, `.env.example`
-- [x] 1.5 `npm run smoke` passes against the production preview with a reset local Supabase
+- [x] 1.1 `npx astro sync` and `npx astro check` pass — 81e8447
+- [x] 1.2 `npm run lint` passes — 81e8447
+- [x] 1.3 `npm run build` passes — 81e8447
+- [x] 1.4 No Exa/web-search references in `src`, `astro.config.mjs`, `.env.example` — 81e8447
+- [x] 1.5 `npm run smoke` passes against the production preview with a reset local Supabase — 81e8447
 
 #### Manual
 
-- [x] 1.6 No Exa banner on `/` with or without `EXA_API_KEY`
-- [x] 1.7 `/search` returns 404 signed in and signed out
-- [x] 1.8 `POST /api/web-search` returns 404
+- [x] 1.6 No Exa banner on `/` with or without `EXA_API_KEY` — 81e8447
+- [x] 1.7 `/search` returns 404 signed in and signed out — 81e8447
+- [x] 1.8 `POST /api/web-search` returns 404 — 81e8447
 
 ### Phase 2: Docs, agent skill and secrets
 
 #### Automated
 
-- [ ] 2.1 No Exa/web-search references in the repo outside `context/`
-- [ ] 2.2 `npm run lint` passes
+- [x] 2.1 No Exa/web-search references in the repo outside `context/`
+- [x] 2.2 `npm run lint` passes
 
 #### Manual
 
-- [ ] 2.3 `EXA_API_KEY` removed from the production Worker secrets
-- [ ] 2.4 `EXA_API_KEY` removed from local `.env` and `.dev.vars`
+- [x] 2.3 `EXA_API_KEY` removed from the production Worker secrets
+- [x] 2.4 `EXA_API_KEY` removed from local `.env` and `.dev.vars`
 - [ ] 2.5 Production start page shows no Exa banner and `/search` returns 404 after deploy

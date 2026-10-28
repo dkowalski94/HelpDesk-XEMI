@@ -35,13 +35,6 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - Protected page example: `src/pages/my-tickets.astro`
 - `SUPABASE_URL`/`SUPABASE_KEY` are declared `optional: true` in the `astro:env` schema. `createClient()` (`src/lib/supabase.ts`) returns `null` when either is missing, and the middleware treats that as a logged-out user rather than throwing — the app boots and renders without Supabase configured. `src/lib/config-status.ts` drives the "Supabase not configured" banner shown in that state.
 
-### Web search (Exa)
-
-- `src/lib/exa.ts` — thin `fetch` wrapper over the Exa REST API, keyed by `EXA_API_KEY` from `astro:env/server`. Deliberately **not** the `exa-js` SDK: it depends on `cross-fetch`, which `require`s `node-fetch` and fails in the workerd runtime. `isExaConfigured()` lets callers degrade instead of throwing, same as `createClient()` for Supabase.
-- `src/lib/services/web-search.ts` — sends Exa's recommended `/search` request: `query` + `type: "auto"` + `contents: { highlights: true }`, and nothing else. Do not add `numResults`, `category`, domain filters or date/freshness filters without a stated requirement — over-specifying the request is the documented integration mistake.
-- `src/pages/api/web-search.ts` — `POST`, signed-in users only (each call spends Exa credits). Returns the `WebSearchResponse` discriminated union from `src/types.ts`; the route maps `WebSearchFailureReason` to a status code.
-- UI: `src/pages/search.astro` (in `PROTECTED_ROUTES`) mounting the `src/components/search/WebSearchPanel.tsx` island.
-
 ### Error resolution (S-01)
 
 - `src/pages/api/resolve-error.ts` — `POST`, FormData field `errorText`. Client users of a client company only: anonymous → 401, profile lookup failure → 500, anyone else (staff, unassigned) → 403 `not-a-client` before any OpenAI call. Not in `PROTECTED_ROUTES` — like `/api/tickets`, it answers 401 itself. Returns the `ErrorResolutionResponse` union from `src/types.ts`.
@@ -92,7 +85,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 Applies to views already on the contract: `src/pages/index.astro`, `src/components/start/`, `src/components/AccountStatusNotice.astro`, `src/pages/report-error.astro`, `src/pages/my-tickets.astro`, `src/layouts/ClientPageLayout.astro`, `src/components/error-resolution/`, `src/components/Topbar.astro`, `src/components/UserBar.astro`. Other views still use literals on `bg-cosmic` until their own change moves them.
 
-- **Tokens** live in `src/styles/global.css`; values, xemi.pl sources and contrast in `context/foundation/design-tokens.md`. The light XEMI `:root` theme is active (`<html>` has no theme class). `.dark` is the cosmic dark variant, applied by a `class="dark"` wrapper (`search.astro` and `admin/tickets.astro`). `bg-cosmic` is theme-independent (`--cosmic-*`) and used only by views not yet migrated. A new role goes in `:root`, `.dark` and `@theme inline` (`--color-<role>`) — never a raw colour in `@theme inline`.
+- **Tokens** live in `src/styles/global.css`; values, xemi.pl sources and contrast in `context/foundation/design-tokens.md`. The light XEMI `:root` theme is active (`<html>` has no theme class). `.dark` is the cosmic dark variant, applied by a `class="dark"` wrapper (`admin/tickets.astro`). `bg-cosmic` is theme-independent (`--cosmic-*`) and used only by views not yet migrated. A new role goes in `:root`, `.dark` and `@theme inline` (`--color-<role>`) — never a raw colour in `@theme inline`.
 - **Components**: check `src/components/ui` before building a control; add a missing one with `npx shadcn@latest add <name>` (see the component-set line above), not by hand.
 - **No palette classes (`text-blue-200`, `bg-white/10`), arbitrary values (`-[12px]`) or colour functions/hex (`oklch(`, `#fff`) in views** — use roles (`bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `text-primary`, `text-destructive`, `text-success`, `text-warning`, `border-border`). `--brand` is for the logo and large accents only (≈3:1 on white). Use full `ring-ring` on focus, not `ring-ring/50` (below 3:1 on white).
 - **Kitchen sink** `/dev/ui-kitchen-sink` (dev only: `src/dev/ui-kitchen-sink.astro`, routed by the `devOnlyRoutes` integration in `astro.config.mjs` under `astro dev`, absent from production builds) renders every state of the view's components with static props via `src/components/error-resolution/KitchenSink.tsx`; add a cell when adding a state or component, and use it as the screenshot gate.
@@ -101,7 +94,7 @@ Applies to views already on the contract: `src/pages/index.astro`, `src/componen
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)
-- Env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `EXA_API_KEY`, `OPENAI_API_KEY` (all optional; without `OPENAI_API_KEY` every pasted error falls back to a ticket) (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
+- Env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `OPENAI_API_KEY` (all optional; without `OPENAI_API_KEY` every pasted error falls back to a ticket) (copy `.env.example` to `.env` for Node, or `.dev.vars` for Cloudflare local dev)
 - Ingestion script env vars (`.env.ingest`, template `.env.ingest.example`, gitignored): `SUPABASE_URL`, `SUPABASE_KEY` (same publishable/anon key as the app), `OPENAI_API_KEY`, optional `HELPDESK_EMAIL`. `DEBUG=1` adds stack traces to its output.
 - Local Supabase: `npx supabase start` (requires Docker)
 - Cloudflare local dev: secrets go in `.dev.vars` (gitignored)
