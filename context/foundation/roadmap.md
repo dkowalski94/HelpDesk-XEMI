@@ -28,7 +28,7 @@ milestone_status: open
 - **Scope anchors:**
   - MS-01: Strona startowa zamiast startera, nie dashboard. Bez logowania ładnie wystylowana, przedstawia czym jest MVP, aby klient wiedział, na jakiej stronie się znajduje; po zalogowaniu klient ma dobrze widoczne „Zgłoś błąd” oraz „Moje zgłoszenia”; serwisant ma swoją funkcjonalność rozwiązywania problemów.
   - MS-02: „Moje zgłoszenia” jako osobna strona.
-  - MS-07 (2026-10-28): Wszystkie strony w jednym jasnym wyglądzie XEMI, jak strona startowa — bez ciemnego wyglądu startera (`/admin/tickets` w S-05, strony logowania w S-04, `/admin/users` w S-06; `/search` i `/dashboard` znikają w S-01 i S-03).
+  - MS-07 (2026-10-28): Wszystkie strony w jednym jasnym wyglądzie XEMI, jak strona startowa — bez ciemnego wyglądu startera (`/admin/tickets` w S-05, strony logowania w S-04, `/admin/users` w S-06; `/search` i `/dashboard` znikają w S-01 i S-03); końcowy przegląd spójności wszystkich stron w S-07.
   - MS-03: Usunąć `/dashboard`.
   - MS-04: Pasek z użytkownikiem inny niż w starterze (polski, wygląd XEMI), razem z powrotem na żądaną stronę po zalogowaniu.
   - MS-05: Usunąć wyszukiwanie w sieci i całą integrację Exa.
@@ -52,6 +52,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | proposed    |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | ready       |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | proposed    |
+| S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | proposed    |
 
 ## Streams
 
@@ -62,6 +63,7 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | A      | Way in      | `S-02` → `S-03` → `S-04` | The north star path; small steps, each deployable on its own (`low-complexity`).       |
 | B      | Cleanup     | `S-01`                   | Standalone; the user bar already dropped its "Web search" link in S-03.                |
 | C      | Staff pages | `S-03` → `S-05`, `S-06`  | Both reuse S-03's user bar and contract; touch only `/admin/tickets` / `/admin/users`. |
+| D      | Finish      | `S-04`, `S-05`, `S-06` → `S-07` | Joins streams A and C; the last M-2 slice, run once every page is on the contract. |
 
 ## Baseline
 
@@ -155,6 +157,19 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Risk:** The smoke test reads the waiting list from this page's HTML (`waitingUserId`), so its markup change must keep that parser working.
 - **Status:** proposed
 
+### S-07: Cross-page UI consistency pass
+
+- **Outcome:** a guest, a client and a staff member moving between every page — start page, `/report-error`, `/my-tickets`, sign-in/sign-up/confirm-email, 404, `/admin/tickets`, `/admin/users` — see one consistent light XEMI look (same width, headings, spacing, buttons, focus rings and user bar); no page keeps the starter's dark look, and the leftover cosmic theme (`bg-cosmic`, `--cosmic-*`, the `.dark` variant) is removed if nothing uses it any more.
+- **Change ID:** ui-consistency-pass
+- **PRD refs:** MS-07
+- **Prerequisites:** S-04, S-05, S-06 (every page already on the UI contract)
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:**
+  - Whether the `.dark` variant and `--cosmic-*` tokens are dropped entirely or kept for a future dark mode. Owner: user. Block: no (decide in `/10x-plan`).
+- **Risk:** An audit slice can grow without bound — scope it to inconsistencies found by a `/10x-ui` audit across all pages with screenshots as the gate; anything that is a new feature rather than a fix goes to the backlog. The CLAUDE.md UI contract then covers every view, so `uiContractConfig` lists all pages.
+- **Status:** proposed
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                   | Suggested issue title                                   | Ready for `/10x-plan` | Notes                             |
@@ -165,6 +180,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 | S-04       | polish-sign-in              | Polish XEMI sign-in pages, 404, lang=pl Layout + return | no                    | After S-03 lands                  |
 | S-05       | staff-ticket-company-filter | Company filter + XEMI restyle of the staff ticket queue | no                    | After S-03 lands                  |
 | S-06       | admin-users-ui-contract     | `/admin/users` in Polish on the XEMI look               | no                    | After S-03 lands                  |
+| S-07       | ui-consistency-pass         | Cross-page XEMI consistency pass; drop the cosmic theme | no                    | After S-04, S-05, S-06 land       |
 
 This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 
