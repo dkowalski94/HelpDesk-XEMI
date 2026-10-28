@@ -242,15 +242,15 @@ None — no schema change, nothing to push to the hosted project.
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [x] 2.2 Types check: `npx astro sync && npx astro check`
-- [x] 2.3 Build succeeds: `npm run build`
-- [x] 2.4 Smoke passes including the new filter and kept-filter steps, after `npx supabase db reset`: `npm run smoke`
+- [x] 2.1 Lint passes: `npm run lint` — e3c3379
+- [x] 2.2 Types check: `npx astro sync && npx astro check` — e3c3379
+- [x] 2.3 Build succeeds: `npm run build` — e3c3379
+- [x] 2.4 Smoke passes including the new filter and kept-filter steps, after `npx supabase db reset`: `npm run smoke` — e3c3379
 
 #### Manual
 
-- [x] 2.5 Selecting "Klient Alfa" narrows the queue immediately (with JS) and via "Filtruj" (JS disabled); the URL is shareable
-- [x] 2.6 "Klient Beta (0)" shows the filtered-empty message and "Pokaż wszystkie firmy" returns to all
-- [x] 2.7 Resolving a ticket and clicking "Przelicz" while filtered return to the same company with the message shown
-- [x] 2.8 "Dalej" keeps the company filter when the filtered queue has more than 50 tickets (or verified by temporarily lowering `STAFF_QUEUE_PAGE_SIZE` locally)
-- [x] 2.9 Kitchen-sink filter cells screenshotted; select has a visible focus ring
+- [x] 2.5 Selecting "Klient Alfa" narrows the queue immediately (with JS) and via "Filtruj" (JS disabled); the URL is shareable — e3c3379
+- [x] 2.6 "Klient Beta (0)" shows the filtered-empty message and "Pokaż wszystkie firmy" returns to all — e3c3379
+- [x] 2.7 Resolving a ticket and clicking "Przelicz" while filtered return to the same company with the message shown — e3c3379
+- [x] 2.8 "Dalej" keeps the company filter when the filtered queue has more than 50 tickets (or verified by temporarily lowering `STAFF_QUEUE_PAGE_SIZE` locally) — e3c3379
+- [x] 2.9 Kitchen-sink filter cells screenshotted; select has a visible focus ring — e3c3379

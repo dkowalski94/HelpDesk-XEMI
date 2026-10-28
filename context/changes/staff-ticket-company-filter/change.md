@@ -1,7 +1,7 @@
 ---
 change_id: staff-ticket-company-filter
 title: Staff ticket company filter
-status: implementing
+status: implemented
 created: 2026-10-28
 updated: 2026-10-28
 archived_at: null
