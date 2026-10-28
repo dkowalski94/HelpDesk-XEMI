@@ -162,6 +162,17 @@ const REPORT_PAGE = {
   waiting: "Twoje konto czeka na przypisanie do firmy",
 };
 
+// Distinctive substrings of the start page (/): the guest's sign-in button and the
+// unassigned account's notice, both rendered on the server.
+const START_PAGE = {
+  guest: "Zaloguj się",
+  waiting: "Konto czeka na przypisanie",
+};
+/** True when / rendered the guest view: the sign-in entry, no signed-in notice. */
+const guestStartPage = ({ text }) => text.includes(START_PAGE.guest) && !text.includes(START_PAGE.waiting);
+/** True when the user bar carries the client entries: report an error and own tickets. */
+const clientEntries = (text) => text.includes('href="/report-error"') && text.includes('href="/my-tickets"');
+
 // Distinctive substrings of /my-tickets. "Moje zgłoszenia" is also the document title of
 // every branch, so the list's own label marks the client branch.
 const MY_TICKETS_PAGE = {
@@ -193,8 +204,8 @@ const resolutionSteps = `smoke-${runId} kroki: 1. Zamknij okno. 2. Otwórz je po
 const stillWaiting = (actual) => smokeUserId !== null && waitingUserId(actual.text, email) === smokeUserId;
 
 const steps = [
-  ["home renders", () => request("/"), { status: 200 }],
-  ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["home renders the guest start page", () => request("/"), { status: 200, check: guestStartPage }],
+  ["dashboard is gone", () => request("/dashboard"), { status: 404 }],
   ["admin page redirects anonymous user", () => request("/admin/users"), { status: 302, location: "/auth/signin" }],
   // Asserts the middleware gate, not the endpoint's own role check: the 401 comes
   // from STAFF_ROUTES before the handler runs.
@@ -235,9 +246,13 @@ const steps = [
     () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
     { status: 302, location: "/" },
   ],
-  ["dashboard renders for signed-in user", () => request("/dashboard"), { status: 200 }],
+  [
+    "start page tells the signed-in unassigned account it is waiting",
+    () => request("/"),
+    { status: 200, check: ({ text }) => text.includes(START_PAGE.waiting) },
+  ],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
-  ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["start page is the guest view after signout", () => request("/"), { status: 200, check: guestStartPage }],
 
   // --- Read isolation: GET /api/tickets returns exactly what RLS permits -------------
   ["Klient Alfa user signs in", () => signIn("alfa"), { status: 302, location: "/" }],
@@ -381,21 +396,22 @@ const steps = [
     () => assignCompany("alfa", { userId: SEEDED.alfa.id, companyId: COMPANY.alfa, role: "service_staff" }),
     { status: 403 },
   ],
-  // A service_staff profile would reach /admin/users; the dashboard names role and company.
+  // A service_staff profile would reach /admin/users; the start page's user bar shows the
+  // client entries only to a client user of a client company.
   [
     "...and is still turned away from /admin/users",
     () => request("/admin/users", { as: "alfa" }),
-    { status: 302, location: "/dashboard" },
+    { status: 302, location: "/" },
   ],
   [
-    "...and the dashboard still says Client user at Klient Alfa",
-    () => request("/dashboard", { as: "alfa" }),
-    { status: 200, check: ({ text }) => text.includes("Client user") && text.includes("Klient Alfa") },
+    "...and the start page still shows it the client entries",
+    () => request("/", { as: "alfa" }),
+    { status: 200, check: ({ text }) => clientEntries(text) },
   ],
   [
     "unassigned account is redirected away from /admin/users",
     () => request("/admin/users"),
-    { status: 302, location: "/dashboard" },
+    { status: 302, location: "/" },
   ],
 
   // --- The one successful write: staff assigns the throwaway account -----------------
@@ -417,15 +433,11 @@ const steps = [
     { status: 200, check: onlyTicketsOf(COMPANY.alfa, TICKET.alfa) },
   ],
   [
-    "...and its dashboard says Client user at Klient Alfa",
-    () => request("/dashboard"),
-    { status: 200, check: ({ text }) => text.includes("Client user") && text.includes("Klient Alfa") },
+    "...and its start page shows the client entries",
+    () => request("/"),
+    { status: 200, check: ({ text }) => clientEntries(text) },
   ],
-  [
-    "...and it is still turned away from /admin/users",
-    () => request("/admin/users"),
-    { status: 302, location: "/dashboard" },
-  ],
+  ["...and it is still turned away from /admin/users", () => request("/admin/users"), { status: 302, location: "/" }],
 
   // --- Error resolution: the assigned throwaway account files one Alfa ticket ---------
   // CI has no OPENAI_API_KEY, so the search is unavailable and every paste falls back to a
@@ -615,7 +627,7 @@ const steps = [
   [
     "client user is turned away from /admin/tickets",
     () => request("/admin/tickets", { as: "alfa" }),
-    { status: 302, location: "/dashboard" },
+    { status: 302, location: "/" },
   ],
   // Assumes the smoke ticket is on the queue's first, oldest-first page; see the header.
   [

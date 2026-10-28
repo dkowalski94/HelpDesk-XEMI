@@ -32,7 +32,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - **Two invariants the route gate depends on, neither visible from `src/middleware.ts`.** (1) Astro normalizes `context.url.pathname` — percent-decoding, duplicate-slash collapsing, dot-segment resolution — _before_ middleware runs, which is why `/admin%2Fusers` and `/admin../dashboard` are gated; re-check after an Astro upgrade. (2) `wrangler.jsonc` serves `./dist` as static assets with no `run_worker_first`, so a matching asset is served **before** the Worker runs: a single `export const prerender = true` on a page under a gated prefix, or one file in `public/<gated-prefix>/`, silently removes the gate from that path with no error anywhere.
 - API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`; `src/pages/api/admin/{assign-company,resolve-ticket,backfill-embeddings}.ts` (staff-only); `src/pages/api/escalate-error.ts` (`POST`, see _Suggestion escalation (S-03)_); `src/pages/api/tickets.ts` (`GET`, returns 401 itself for anonymous callers — it is not in `PROTECTED_ROUTES`; the select has no company filter, so it returns exactly what RLS permits)
 - Auth pages: `src/pages/auth/{signin,signup,confirm-email}.astro`
-- Protected page example: `src/pages/dashboard.astro`
+- Protected page example: `src/pages/my-tickets.astro`
 - `SUPABASE_URL`/`SUPABASE_KEY` are declared `optional: true` in the `astro:env` schema. `createClient()` (`src/lib/supabase.ts`) returns `null` when either is missing, and the middleware treats that as a logged-out user rather than throwing — the app boots and renders without Supabase configured. `src/lib/config-status.ts` drives the "Supabase not configured" banner shown in that state.
 
 ### Web search (Exa)

@@ -49,7 +49,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05          | ready    |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps        | —             | MS-02          | done |
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03   | in-progress |
-| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages and return to the page they asked for after signing in    | S-03          | MS-04, MS-07   | proposed |
+| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07   | proposed |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07   | ready    |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                       | S-03          | MS-07          | proposed |
 
@@ -118,9 +118,9 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Risk:** The north star; `/dashboard` is today's post-sign-in target and holds the unassigned/profile-error messages, so removing it and adding the start page belong in one slice to avoid a gap.
 - **Status:** in-progress
 
-### S-04: Polish sign-in pages and return to the requested page
+### S-04: Polish sign-in pages, 404 page, Polish Layout shell and return to the requested page
 
-- **Outcome:** user can sign in, sign up and read the confirm-email page in Polish on the light XEMI look with the user bar, and after signing in returns to the page they originally asked for.
+- **Outcome:** user can sign in, sign up and read the confirm-email page in Polish on the light XEMI look with the user bar, and after signing in returns to the page they originally asked for. An unknown address (e.g. the removed `/dashboard`) shows a Polish, XEMI-styled 404 page (`src/pages/404.astro`) with the user bar and a link to the start page, instead of Astro's default. The shared shell `src/layouts/Layout.astro` declares `<html lang="pl">` and the default title "HelpDesk XEMI" instead of "10x Astro Starter" (the per-element `lang="pl"` wrappers on contract pages can then go).
 - **Change ID:** polish-sign-in (was `polish-user-bar`; re-scoped 2026-10-28 — the bar itself — logo, role buttons, „Zalogowany jako”, „Wyloguj” — shipped in S-03)
 - **PRD refs:** MS-04, MS-07
 - **Prerequisites:** S-03
@@ -162,7 +162,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 | S-01       | remove-web-search           | Remove web search and the Exa integration                     | yes                   | Run `/10x-plan remove-web-search`          |
 | S-02       | my-tickets-page             | "Moje zgłoszenia" as a separate client page                   | yes                   | Run `/10x-plan my-tickets-page`            |
 | S-03       | start-page                  | Start page for guest/client/staff; remove /dashboard          | no                    | After S-02 lands                           |
-| S-04       | polish-sign-in              | Polish XEMI sign-in pages + return to requested page          | no                    | After S-03 lands                           |
+| S-04       | polish-sign-in              | Polish XEMI sign-in pages, 404, lang=pl Layout + return       | no                    | After S-03 lands                           |
 | S-05       | staff-ticket-company-filter | Company filter + XEMI restyle of the staff ticket queue       | no                    | After S-03 lands                           |
 | S-06       | admin-users-ui-contract     | `/admin/users` in Polish on the XEMI look                     | no                    | After S-03 lands                           |
 

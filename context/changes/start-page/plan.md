@@ -218,29 +218,29 @@ Delete the page and repoint every link, redirect, smoke step and doc at `/`.
 
 #### Automated
 
-- [x] 1.1 Lint passes with the new files under the contract: `npm run lint`
-- [x] 1.2 Type check passes: `npx astro sync && npx astro check`
-- [x] 1.3 Production build passes: `npm run build`
-- [x] 1.4 `Welcome.astro` is gone and unreferenced: `grep -rn "Welcome" src` returns nothing
+- [x] 1.1 Lint passes with the new files under the contract: `npm run lint` — a3e9b83
+- [x] 1.2 Type check passes: `npx astro sync && npx astro check` — a3e9b83
+- [x] 1.3 Production build passes: `npm run build` — a3e9b83
+- [x] 1.4 `Welcome.astro` is gone and unreferenced: `grep -rn "Welcome" src` returns nothing — a3e9b83
 
 #### Manual
 
-- [x] 1.5 Kitchen sink shows all five start-page audiences legibly with visible focus (screenshot gate)
-- [x] 1.6 `/` shows the right audience for guest, Klient Alfa user, `serwis@xemi.local` and a fresh unassigned signup
-- [x] 1.7 `/report-error` and `/my-tickets` still show the waiting / profile-error texts
+- [x] 1.5 Kitchen sink shows all five start-page audiences legibly with visible focus (screenshot gate) — a3e9b83
+- [x] 1.6 `/` shows the right audience for guest, Klient Alfa user, `serwis@xemi.local` and a fresh unassigned signup — a3e9b83
+- [x] 1.7 `/report-error` and `/my-tickets` still show the waiting / profile-error texts — a3e9b83
 
 ### Phase 2: Remove /dashboard
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 Type check passes: `npx astro sync && npx astro check`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 No app reference to the page remains (grep returns only the smoke 404 step)
-- [ ] 2.5 Smoke passes on a fresh database (`npx supabase db reset`, preview, `npm run smoke`)
+- [x] 2.1 Lint passes: `npm run lint`
+- [x] 2.2 Type check passes: `npx astro sync && npx astro check`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 No app reference to the page remains (grep returns only the smoke 404 step)
+- [x] 2.5 Smoke passes on a fresh database (`npx supabase db reset`, preview, `npm run smoke`)
 
 #### Manual
 
-- [ ] 2.6 `/dashboard` shows the 404 page whether signed in or not
-- [ ] 2.7 Klient Alfa user opening `/admin/tickets` lands on `/`
-- [ ] 2.8 Topbar "Strona startowa" and the `/admin/users` back link lead to `/`
+- [x] 2.6 `/dashboard` shows the 404 page whether signed in or not
+- [x] 2.7 Klient Alfa user opening `/admin/tickets` lands on `/`
+- [x] 2.8 Topbar "Strona startowa" and the `/admin/users` back link lead to `/`

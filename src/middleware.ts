@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { createClient } from "@/lib/supabase";
 import { getSessionProfile } from "@/lib/services/profile";
 
-const PROTECTED_ROUTES = ["/dashboard", "/search", "/report-error", "/my-tickets"];
+const PROTECTED_ROUTES = ["/search", "/report-error", "/my-tickets"];
 
 // Staff-only routes: the pages and their API twin. /admin is deliberately NOT a
 // member of PROTECTED_ROUTES — anonymous visitors are caught by the OR in the
@@ -43,7 +43,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Stop at the boundary rather than letting the page render and rely on RLS to
     // hide everything it asks for. A fetch caller follows a 302 and receives HTML
     // with status 200, which reads as success — so API callers get a status code.
-    return isApiRoute ? new Response(null, { status: 403 }) : context.redirect("/dashboard");
+    // Pages send the visitor to the start page, which shows what their role can do.
+    return isApiRoute ? new Response(null, { status: 403 }) : context.redirect("/");
   }
 
   return next();
