@@ -233,14 +233,14 @@ Delete the page and repoint every link, redirect, smoke step and doc at `/`.
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [x] 2.2 Type check passes: `npx astro sync && npx astro check`
-- [x] 2.3 Production build passes: `npm run build`
-- [x] 2.4 No app reference to the page remains (grep returns only the smoke 404 step)
-- [x] 2.5 Smoke passes on a fresh database (`npx supabase db reset`, preview, `npm run smoke`)
+- [x] 2.1 Lint passes: `npm run lint` — 90321f2
+- [x] 2.2 Type check passes: `npx astro sync && npx astro check` — 90321f2
+- [x] 2.3 Production build passes: `npm run build` — 90321f2
+- [x] 2.4 No app reference to the page remains (grep returns only the smoke 404 step) — 90321f2
+- [x] 2.5 Smoke passes on a fresh database (`npx supabase db reset`, preview, `npm run smoke`) — 90321f2
 
 #### Manual
 
-- [x] 2.6 `/dashboard` shows the 404 page whether signed in or not
-- [x] 2.7 Klient Alfa user opening `/admin/tickets` lands on `/`
-- [x] 2.8 Topbar "Strona startowa" and the `/admin/users` back link lead to `/`
+- [x] 2.6 `/dashboard` shows the 404 page whether signed in or not — 90321f2
+- [x] 2.7 Klient Alfa user opening `/admin/tickets` lands on `/` — 90321f2
+- [x] 2.8 Topbar "Strona startowa" and the `/admin/users` back link lead to `/` — 90321f2
