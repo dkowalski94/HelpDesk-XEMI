@@ -1,8 +1,32 @@
 ---
-import Welcome from "@/components/Welcome.astro";
 import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import StartPage from "@/components/start/StartPage.astro";
+import { isClientUser } from "@/lib/services/profile";
+
+// Audience chosen on the server, in the same order as ClientPageLayout. No user also covers
+// "Supabase not configured" (the middleware then reads every request as logged out).
+const { user, profile, profileLookupFailed } = Astro.locals;
+
+let audience: "guest" | "client" | "staff" | "waiting" | "profile-error";
+if (!user) {
+  audience = "guest";
+} else if (profileLookupFailed) {
+  audience = "profile-error";
+} else if (profile?.role === "service_staff") {
+  audience = "staff";
+} else if (isClientUser(profile)) {
+  audience = "client";
+} else {
+  audience = "waiting";
+}
 ---
 
-<Layout>
-  <Welcome />
+<Layout title="HelpDesk XEMI">
+  <div class="flex min-h-screen flex-col bg-background p-4">
+    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+      <Topbar />
+      <StartPage audience={audience} />
+    </div>
+  </div>
 </Layout>

@@ -1,0 +1,92 @@
+---
+import { ClipboardPaste, Lightbulb, Wrench } from "lucide-react";
+import AccountStatusNotice from "@/components/AccountStatusNotice.astro";
+import { Card } from "@/components/ui/card";
+
+/**
+ * The start page (`/`) for one audience, chosen by the route from `Astro.locals`. Reads no
+ * locals itself, so the kitchen sink can render every audience with static props. The card
+ * grows to fill its flex parent, and the "how it works" tiles take the remaining height.
+ *
+ * The logo and every entry (sign-in, the role's pages) live in the user bar above it
+ * (`UserBar.astro`); this card only explains the product and the account's state.
+ */
+interface Props {
+  audience: "guest" | "client" | "staff" | "waiting" | "profile-error";
+}
+
+const { audience } = Astro.props;
+
+const steps = [
+  {
+    Icon: ClipboardPaste,
+    title: "Wklej treść błędu",
+    text: "Skopiuj komunikat z systemu ERP XEMI i wklej go w formularzu „Zgłoś błąd”.",
+  },
+  {
+    Icon: Lightbulb,
+    title: "Otrzymaj podpowiedź",
+    text: "Jeśli podobny problem był już rozwiązany, od razu zobaczysz przyczynę i kroki naprawy. Jeśli nie — powstaje zgłoszenie do serwisu.",
+  },
+  {
+    Icon: Wrench,
+    title: "Serwis rozwiązuje",
+    text: "Zespół serwisowy XEMI opisuje przyczynę i rozwiązanie. Odpowiedź znajdziesz w „Moje zgłoszenia”, a baza wiedzy rośnie.",
+  },
+];
+
+const headingClass = "mb-2 text-3xl font-bold text-foreground sm:text-4xl";
+const hint = "max-w-2xl text-muted-foreground sm:text-lg";
+const sectionHeadingClass = "mb-4 text-xl font-bold text-foreground";
+const stepClass =
+  "flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-muted p-6 text-center sm:p-8";
+const stepIconClass = "flex size-20 items-center justify-center rounded-full bg-card text-primary shadow-xs";
+const stepNumberClass = "text-sm font-bold text-primary";
+const stepTitleClass = "text-lg font-bold text-foreground";
+const stepTextClass = "text-sm text-muted-foreground";
+
+const isStatus = audience === "waiting" || audience === "profile-error";
+---
+
+<Card lang="pl" className="flex-1 gap-0 p-6 sm:p-10">
+  <h1 class:list={headingClass}>{audience === "staff" ? "HelpDesk XEMI — serwis" : "HelpDesk XEMI"}</h1>
+
+  {audience === "client" ? (
+    <p class:list={hint}>
+      Wklej błąd z systemu ERP w „Zgłoś błąd”, a odpowiedzi serwisu znajdziesz w „Moje zgłoszenia” — oba wejścia są na
+      pasku u góry.
+    </p>
+  ) : audience === "staff" ? (
+    <p class:list={hint}>
+      Rozwiązuj zgłoszenia klientów i przypisuj nowe konta do firm — oba wejścia są na pasku u góry. Rozwiązane
+      zgłoszenia zasilają bazę wiedzy.
+    </p>
+  ) : (
+    <p class:list={hint}>
+      HelpDesk pomaga użytkownikom systemu ERP XEMI. Wklej komunikat błędu, a otrzymasz przyczynę i kroki naprawy z bazy
+      wiedzy — albo problem trafi jako zgłoszenie do zespołu serwisowego XEMI.
+    </p>
+  )}
+
+  {isStatus && (
+    <section class="mt-8 rounded-xl border border-border p-6">
+      <AccountStatusNotice status={audience === "profile-error" ? "profile-error" : "waiting"} headingLevel="h2" />
+    </section>
+  )}
+
+  <section class="mt-10 flex flex-1 flex-col">
+    <h2 class:list={sectionHeadingClass}>Jak to działa</h2>
+    <ol class="grid flex-1 gap-4 sm:grid-cols-3">
+      {steps.map(({ Icon, title, text }, index) => (
+        <li class:list={stepClass}>
+          <span class:list={stepIconClass}>
+            <Icon className="size-10" strokeWidth={1.5} aria-hidden="true" />
+          </span>
+          <span class:list={stepNumberClass}>Krok {index + 1}</span>
+          <h3 class:list={stepTitleClass}>{title}</h3>
+          <p class:list={stepTextClass}>{text}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+</Card>

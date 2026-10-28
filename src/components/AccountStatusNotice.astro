@@ -1,0 +1,36 @@
+---
+import { cn } from "@/lib/utils";
+
+/**
+ * The profile-error and waiting-for-assignment messages, in one place so the start page
+ * and the client pages (`/report-error`, `/my-tickets`) say the same thing. The client pages
+ * render it as their `h1`; the start page renders it as an `h2` under its own heading.
+ */
+interface Props {
+  status: "profile-error" | "waiting";
+  headingLevel: "h1" | "h2";
+}
+
+const { status, headingLevel } = Astro.props;
+const Heading = headingLevel;
+
+const headingClass = "mb-2 text-2xl font-bold text-foreground";
+const hint = "text-sm text-muted-foreground";
+---
+
+{status === "profile-error" ? (
+  <>
+    <Heading class:list={cn(headingClass, "text-destructive")}>Nie udało się wczytać Twojego konta</Heading>
+    <p class:list={hint}>
+      Wystąpił błąd podczas odczytu Twojej firmy i roli. To problem po naszej stronie — odśwież stronę za chwilę.
+    </p>
+  </>
+) : (
+  <>
+    <Heading class:list={headingClass}>Konto czeka na przypisanie</Heading>
+    <p class:list={hint}>
+      Twoje konto czeka na przypisanie do firmy. Zespół serwisowy XEMI przypisuje nowe konta — po przypisaniu zgłaszanie
+      błędów będzie dostępne.
+    </p>
+  </>
+)}

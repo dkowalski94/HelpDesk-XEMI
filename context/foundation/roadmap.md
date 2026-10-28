@@ -3,7 +3,7 @@ project: "HelpDesk XEMI"
 version: 2
 status: draft
 created: 2026-09-22
-updated: 2026-10-27
+updated: 2026-10-28
 prd_version: —
 main_goal: low-complexity
 top_blocker: none
@@ -22,12 +22,13 @@ milestone_status: open
 
 **M-2: Polished entry and cleanup** — Status: open
 
-- **Intent:** Replace the starter leftovers around the working support loop with a Polish, XEMI-styled way in — a start page that explains the product and sends each role to its job, a separate "Moje zgłoszenia" page and a Polish user bar — and remove what the product does not use (`/dashboard`, web search/Exa); give staff a company filter on their queue.
+- **Intent:** Replace the starter leftovers around the working support loop with a Polish, XEMI-styled way in — a start page that explains the product and sends each role to its job, a separate "Moje zgłoszenia" page and a Polish user bar — and remove what the product does not use (`/dashboard`, web search/Exa); give staff a company filter on their queue; and move every remaining page onto the same light XEMI look.
 - **Source materials:** user description (anchors below), collected 2026-10-26 during `report-error-ui-contract` and refined 2026-10-27.
 - **Done when:** every S-NN below is `done`.
 - **Scope anchors:**
   - MS-01: Strona startowa zamiast startera, nie dashboard. Bez logowania ładnie wystylowana, przedstawia czym jest MVP, aby klient wiedział, na jakiej stronie się znajduje; po zalogowaniu klient ma dobrze widoczne „Zgłoś błąd” oraz „Moje zgłoszenia”; serwisant ma swoją funkcjonalność rozwiązywania problemów.
   - MS-02: „Moje zgłoszenia” jako osobna strona.
+  - MS-07 (2026-10-28): Wszystkie strony w jednym jasnym wyglądzie XEMI, jak strona startowa — bez ciemnego wyglądu startera (`/admin/tickets` w S-05, strony logowania w S-04, `/admin/users` w S-06; `/search` i `/dashboard` znikają w S-01 i S-03).
   - MS-03: Usunąć `/dashboard`.
   - MS-04: Pasek z użytkownikiem inny niż w starterze (polski, wygląd XEMI), razem z powrotem na żądaną stronę po zalogowaniu.
   - MS-05: Usunąć wyszukiwanie w sieci i całą integrację Exa.
@@ -47,9 +48,10 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | ---- | --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------- | -------------- | -------- |
 | S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05          | ready    |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps        | —             | MS-02          | done |
-| S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03   | proposed |
-| S-04 | polish-user-bar             | see a Polish, XEMI-styled user bar and return to the page they asked for after signing in                | S-01, S-03    | MS-04          | proposed |
-| S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company                                                   | —             | MS-06          | ready    |
+| S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03   | in-progress |
+| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages and return to the page they asked for after signing in    | S-03          | MS-04, MS-07   | proposed |
+| S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07   | ready    |
+| S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                       | S-03          | MS-07          | proposed |
 
 ## Streams
 
@@ -58,8 +60,8 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | Stream | Theme          | Chain                     | Note                                                                                           |
 | ------ | -------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
 | A      | Way in         | `S-02` → `S-03` → `S-04`  | The north star path; small steps, each deployable on its own (`low-complexity`).               |
-| B      | Cleanup        | `S-01`                    | Standalone; joins Stream A at `S-04`, which needs the "Web search" link already gone.          |
-| C      | Staff queue    | `S-05`                    | Standalone; touches only `/admin/tickets`, can run alongside anything.                         |
+| B      | Cleanup        | `S-01`                    | Standalone; the user bar already dropped its "Web search" link in S-03.                        |
+| C      | Staff pages    | `S-03` → `S-05`, `S-06`   | Both reuse S-03's user bar and contract; touch only `/admin/tickets` / `/admin/users`.         |
 
 ## Baseline
 
@@ -114,32 +116,44 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Unknowns:**
   - What an account not yet assigned to a company (and a failed profile lookup) sees on the start page — today only `/dashboard` shows these states. Owner: user. Block: no (decide in `/10x-plan`).
 - **Risk:** The north star; `/dashboard` is today's post-sign-in target and holds the unassigned/profile-error messages, so removing it and adding the start page belong in one slice to avoid a gap.
-- **Status:** proposed
+- **Status:** in-progress
 
-### S-04: Polish user bar
+### S-04: Polish sign-in pages and return to the requested page
 
-- **Outcome:** user can see a Polish, XEMI-styled user bar on every page that renders it, with links that match their role and no starter leftovers, and after signing in returns to the page they originally asked for.
-- **Change ID:** polish-user-bar
-- **PRD refs:** MS-04
-- **Prerequisites:** S-01, S-03
-- **Parallel with:** S-05
+- **Outcome:** user can sign in, sign up and read the confirm-email page in Polish on the light XEMI look with the user bar, and after signing in returns to the page they originally asked for.
+- **Change ID:** polish-sign-in (was `polish-user-bar`; re-scoped 2026-10-28 — the bar itself — logo, role buttons, „Zalogowany jako”, „Wyloguj” — shipped in S-03)
+- **PRD refs:** MS-04, MS-07
+- **Prerequisites:** S-03
+- **Parallel with:** S-01, S-05, S-06
 - **Blockers:** —
 - **Unknowns:**
-  - Exact contents of the bar (e.g. logo, company name, email, role links, "Wyloguj"). Owner: user. Block: no (decide in `/10x-plan`).
-- **Risk:** Last in the way-in path because its links depend on what S-01 and S-03 remove and add; the return-to-page step touches the sign-in flow, which the smoke test covers.
+  - Whether Supabase auth error messages (today shown in English from `error.message`) get Polish mappings. Owner: user. Block: no (decide in `/10x-plan`).
+- **Risk:** Touches `src/pages/auth/*`, `src/components/auth/*` and the sign-in redirect, which the smoke test covers; the return-to-page target must be validated as a same-origin path (no open redirect).
 - **Status:** proposed
 
 ### S-05: Company filter for the staff queue
 
-- **Outcome:** a service-staff member can filter the to-do ticket queue by client company.
+- **Outcome:** a service-staff member can filter the to-do ticket queue by client company, on an `/admin/tickets` moved onto the UI contract (light XEMI look, same width and user bar as the start page).
 - **Change ID:** staff-ticket-company-filter
-- **PRD refs:** MS-06
-- **Prerequisites:** —
-- **Parallel with:** S-01, S-02, S-03, S-04
+- **PRD refs:** MS-06, MS-07
+- **Prerequisites:** S-03 (user bar and contract shared with the start page)
+- **Parallel with:** S-01, S-04, S-06
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Independent of the way-in path; staff already read every company's tickets through RLS, so the filter narrows a view and opens no new data path.
+- **Risk:** Staff already read every company's tickets through RLS, so the filter narrows a view and opens no new data path; the restyle (added 2026-10-28) means the page joins `uiContractConfig` and the kitchen sink, which grows the slice.
 - **Status:** ready
+
+### S-06: `/admin/users` on the UI contract
+
+- **Outcome:** a service-staff member assigns new accounts to companies on a Polish, XEMI-styled `/admin/users` (light look, start-page width, user bar).
+- **Change ID:** admin-users-ui-contract
+- **PRD refs:** MS-07
+- **Prerequisites:** S-03
+- **Parallel with:** S-01, S-04, S-05
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** The smoke test reads the waiting list from this page's HTML (`waitingUserId`), so its markup change must keep that parser working.
+- **Status:** proposed
 
 ## Backlog Handoff
 
@@ -148,8 +162,9 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 | S-01       | remove-web-search           | Remove web search and the Exa integration                     | yes                   | Run `/10x-plan remove-web-search`          |
 | S-02       | my-tickets-page             | "Moje zgłoszenia" as a separate client page                   | yes                   | Run `/10x-plan my-tickets-page`            |
 | S-03       | start-page                  | Start page for guest/client/staff; remove /dashboard          | no                    | After S-02 lands                           |
-| S-04       | polish-user-bar             | Polish XEMI user bar + return to requested page after sign-in | no                    | After S-01 and S-03 land                   |
-| S-05       | staff-ticket-company-filter | Company filter on the staff ticket queue                      | yes                   | Run `/10x-plan staff-ticket-company-filter` |
+| S-04       | polish-sign-in              | Polish XEMI sign-in pages + return to requested page          | no                    | After S-03 lands                           |
+| S-05       | staff-ticket-company-filter | Company filter + XEMI restyle of the staff ticket queue       | no                    | After S-03 lands                           |
+| S-06       | admin-users-ui-contract     | `/admin/users` in Polish on the XEMI look                     | no                    | After S-03 lands                           |
 
 This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 
@@ -166,7 +181,6 @@ This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 - **Email notification to the service mailbox on new ticket, and its native ERP-UI display (FR-009, FR-010)** — Why parked: both nice-to-have priority; not part of the user's M-2 description.
 - **Showing ERP-documentation screenshots alongside a matched suggestion** — Why parked: nice-to-have (user, 2026-09-24). The screenshots illustrate the solution but carry no information missing from the text, so ingestion stores text only; showing them later would need image extraction, storage and a display surface.
 - **In-app error tracking/alerting for the Workers CPU-time-ceiling risk** — Why parked: `infrastructure.md` flags this as pre-go-live hardening; the already-present Cloudflare-side observability is sufficient for now.
-- **Restyling the remaining starter views (auth pages, `/admin/users`, `/admin/tickets` look)** — Why parked: not in the M-2 description; each can follow the UI contract via `/10x-ui` when touched (S-05 changes `/admin/tickets` behaviour, not its look).
 
 ## Milestone History
 

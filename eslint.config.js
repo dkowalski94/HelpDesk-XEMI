@@ -103,7 +103,11 @@ const uiContractConfig = defineConfig({
     "src/layouts/ClientPageLayout.astro",
     "src/components/error-resolution/**",
     "src/components/Topbar.astro",
+    "src/components/UserBar.astro",
     "src/dev/ui-kitchen-sink.astro",
+    "src/pages/index.astro",
+    "src/components/start/**",
+    "src/components/AccountStatusNotice.astro",
   ],
   rules: {
     "no-restricted-syntax": [

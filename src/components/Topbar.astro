@@ -1,40 +1,18 @@
 ---
-// Token classes only: light on /report-error, dark (cosmic `.dark` values) on pages that wrap it in class="dark".
-const { user } = Astro.locals;
+import UserBar from "@/components/UserBar.astro";
+import { isClientUser } from "@/lib/services/profile";
 
-const linkClass =
-  "rounded-sm text-primary transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+// Resolves the signed-in user and their role entries for the presentational UserBar.
+const { user, profile, profileLookupFailed } = Astro.locals;
+
+const access =
+  profileLookupFailed || !profile
+    ? "none"
+    : profile.role === "service_staff"
+      ? "staff"
+      : isClientUser(profile)
+        ? "client"
+        : "none";
 ---
 
-<div class="mb-4 flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-2 text-sm text-muted-foreground">
-  {user ? (
-    <>
-      <span class="text-muted-foreground">{user.email}</span>
-      <div class="flex items-center gap-3">
-        <a href="/dashboard" class:list={linkClass}>
-          Dashboard
-        </a>
-        <a href="/search" class:list={linkClass}>
-          Web search
-        </a>
-        <form method="POST" action="/api/auth/signout">
-          <button type="submit" class:list={linkClass}>
-            Sign out
-          </button>
-        </form>
-      </div>
-    </>
-  ) : (
-    <>
-      <span class="text-muted-foreground">Not signed in</span>
-      <div class="flex gap-3">
-        <a href="/auth/signin" class:list={linkClass}>
-          Sign in
-        </a>
-        <a href="/auth/signup" class:list={linkClass}>
-          Sign up
-        </a>
-      </div>
-    </>
-  )}
-</div>
+<UserBar email={user?.email ?? null} access={access} currentPath={Astro.url.pathname} />

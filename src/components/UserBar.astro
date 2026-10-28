@@ -1,0 +1,86 @@
+---
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+/**
+ * The user bar's markup: who is signed in and the entries of their role. Reads no locals —
+ * `Topbar.astro` resolves them — so the kitchen sink can render every variant with static props.
+ * Token classes only: light on the contract pages, cosmic `.dark` values inside class="dark".
+ */
+export interface Props {
+  /** `null` when signed out. */
+  email: string | null;
+  /** Which role entries to show; `none` for an account without a usable role (waiting, lookup error). */
+  access: "client" | "staff" | "none";
+  /** Current pathname, to mark the active entry. */
+  currentPath: string;
+}
+
+const { email, access, currentPath } = Astro.props;
+
+const entries =
+  access === "client"
+    ? [
+        { href: "/report-error", label: "Zgłoś błąd" },
+        { href: "/my-tickets", label: "Moje zgłoszenia" },
+      ]
+    : access === "staff"
+      ? [
+          { href: "/admin/tickets", label: "Zgłoszenia do rozwiązania" },
+          { href: "/admin/users", label: "Użytkownicy" },
+        ]
+      : [];
+
+// Full-strength focus ring: `--ring` at half alpha is below 3:1 on white (CLAUDE.md → UI contract).
+const FOCUS_RING = "focus-visible:border-ring focus-visible:ring-ring";
+const entryClass = cn(buttonVariants({ variant: "outline", size: "sm" }), FOCUS_RING);
+const primaryEntryClass = cn(buttonVariants({ variant: "default", size: "sm" }), FOCUS_RING);
+const quietLinkClass =
+  "rounded-sm text-primary transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+---
+
+<nav
+  lang="pl"
+  aria-label="Pasek użytkownika"
+  class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-muted px-4 py-2 text-sm text-muted-foreground"
+>
+  <a href="/" aria-label="HelpDesk XEMI — strona startowa" class:list={quietLinkClass}>
+    <img src="/logo-xemi.svg" alt="" width="137" height="36" class="h-7 w-auto sm:h-8" />
+  </a>
+  {email ? (
+    <>
+      {entries.length > 0 && (
+        <div class="flex flex-wrap items-center gap-1">
+          {entries.map((entry) => (
+            <a
+              href={entry.href}
+              class:list={currentPath.startsWith(entry.href) ? primaryEntryClass : entryClass}
+              aria-current={currentPath.startsWith(entry.href) ? "page" : undefined}
+            >
+              {entry.label}
+            </a>
+          ))}
+        </div>
+      )}
+      <div class="flex flex-wrap items-center gap-3">
+        <span>
+          Zalogowany jako: <span class="font-bold text-foreground">{email}</span>
+        </span>
+        <form method="POST" action="/api/auth/signout">
+          <button type="submit" class:list={quietLinkClass}>
+            Wyloguj
+          </button>
+        </form>
+      </div>
+    </>
+  ) : (
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="/auth/signin" class:list={primaryEntryClass}>
+        Zaloguj się
+      </a>
+      <a href="/auth/signup" class:list={entryClass}>
+        Załóż konto
+      </a>
+    </div>
+  )}
+</nav>
