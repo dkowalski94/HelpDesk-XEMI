@@ -3,9 +3,62 @@ import Layout from "@/layouts/Layout.astro";
 import UserBar from "@/components/UserBar.astro";
 import KitchenSink from "@/components/error-resolution/KitchenSink";
 import StartPage from "@/components/start/StartPage.astro";
+import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
+import { Card } from "@/components/ui/card";
+import type { StaffQueueResult, StaffQueueTicket } from "@/types";
 
-// Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets). Routed by the `devOnlyRoutes`
+// Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets, /admin/tickets). Routed by the `devOnlyRoutes`
 // integration in astro.config.mjs under `astro dev` only, so production builds do not contain it.
+
+// Staff queue fixtures. Ids carry a per-cell prefix so the textarea ids stay unique on this page.
+function queueTickets(prefix: string): StaffQueueTicket[] {
+  return [
+    {
+      id: `${prefix}-1`,
+      companyId: "company-alfa",
+      status: "todo",
+      errorText: "Błąd 4012: nie można zaksięgować dokumentu FV/2026/10/118 — okres zamknięty.",
+      createdAt: "2026-10-20T08:15:00.000Z",
+      resolution: null,
+      resolutionCause: null,
+      resolvedAt: null,
+      companyName: "Klient Alfa",
+      userComment: "Podpowiedź o otwarciu okresu nie pomogła — okres jest otwarty w ustawieniach.",
+      kbPreview: "Błąd 4012: nie można zaksięgować dokumentu [NUMER] — okres zamknięty.",
+    },
+    {
+      id: `${prefix}-2`,
+      companyId: "company-beta",
+      status: "todo",
+      errorText: "Timeout połączenia z serwerem licencji po 30 s.",
+      createdAt: "2026-10-22T13:40:00.000Z",
+      resolution: null,
+      resolutionCause: null,
+      resolvedAt: null,
+      companyName: "Klient Beta",
+      userComment: null,
+      kbPreview: "Timeout połączenia z serwerem licencji po 30 s.",
+    },
+  ];
+}
+
+const queueList = (prefix: string): StaffQueueResult => ({
+  status: "ok",
+  tickets: queueTickets(prefix),
+  nextOffset: null,
+});
+const queueEmpty: StaffQueueResult = { status: "ok", tickets: [], nextOffset: null };
+const queueError: StaffQueueResult = { status: "error" };
+const queueCells = [
+  { title: "Lista: dwa zgłoszenia (z komentarzem klienta i bez)", queue: queueList("ks-list") },
+  { title: "Pusta kolejka", queue: queueEmpty },
+  { title: "Błąd wczytania", queue: queueError },
+  { title: "Komunikat sukcesu", queue: queueEmpty, successMessage: "Rozwiązanie zapisane i dodane do bazy wiedzy." },
+  { title: "Komunikat po „Przelicz” (backfilled)", queue: queueEmpty, successMessage: "Uzupełniono embeddingi: 3." },
+  { title: "Komunikat błędu", queue: queueEmpty, errorMessage: "To zgłoszenie zostało już rozwiązane." },
+  { title: "Baner „Przelicz”", queue: queueEmpty, missingEmbeddings: 4 },
+  { title: "Link „Dalej”", queue: queueList("ks-next"), nextHref: "/admin/tickets?offset=20" },
+];
 ---
 
 <Layout title="Kitchen sink UI">
@@ -13,8 +66,8 @@ import StartPage from "@/components/start/StartPage.astro";
     <header class="space-y-2">
       <h1 class="text-2xl font-bold text-foreground">Kitchen sink UI</h1>
       <p class="text-sm text-muted-foreground">
-        Każdy stan widoków na kontrakcie UI (strona startowa, /report-error, /my-tickets) na statycznych danych, bez
-        zapytań do API. Hover i focus-visible sprawdź myszą i klawiszem Tab na tej stronie.
+        Każdy stan widoków na kontrakcie UI (strona startowa, /report-error, /my-tickets, /admin/tickets) na statycznych
+        danych, bez zapytań do API. Hover i focus-visible sprawdź myszą i klawiszem Tab na tej stronie.
       </p>
     </header>
 
@@ -49,6 +102,28 @@ import StartPage from "@/components/start/StartPage.astro";
       <StartPage audience="waiting" />
       <h3 class="text-base font-bold text-foreground">Błąd wczytania konta</h3>
       <StartPage audience="profile-error" />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-foreground">Kolejka serwisu</h2>
+      <p class="text-sm text-muted-foreground">
+        Widok /admin/tickets: lista, pusta kolejka, błąd wczytania, komunikaty, baner „Przelicz” i link „Dalej”. Podgląd
+        do bazy wiedzy aktualizuje się przy pisaniu.
+      </p>
+      {queueCells.map((cell) => (
+        <>
+          <h3 class="text-base font-bold text-foreground">{cell.title}</h3>
+          <Card lang="pl" className="gap-0 p-6 sm:p-8">
+            <StaffTicketQueue
+              queue={cell.queue}
+              successMessage={cell.successMessage ?? null}
+              errorMessage={cell.errorMessage ?? null}
+              missingEmbeddings={cell.missingEmbeddings ?? null}
+              nextHref={cell.nextHref ?? null}
+            />
+          </Card>
+        </>
+      ))}
     </section>
 
     <KitchenSink client:only="react" />
