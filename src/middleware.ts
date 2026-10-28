@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { createClient } from "@/lib/supabase";
 import { getSessionProfile } from "@/lib/services/profile";
 
-const PROTECTED_ROUTES = ["/search", "/report-error", "/my-tickets"];
+const PROTECTED_ROUTES = ["/report-error", "/my-tickets"];
 
 // Staff-only routes: the pages and their API twin. /admin is deliberately NOT a
 // member of PROTECTED_ROUTES — anonymous visitors are caught by the OR in the

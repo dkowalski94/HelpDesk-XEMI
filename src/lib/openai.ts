@@ -23,7 +23,7 @@ export function isOpenAIConfigured() {
  * Embeds one text with the OpenAI embeddings API, keyed by `OPENAI_API_KEY` from
  * `astro:env/server`.
  *
- * Uses `fetch` directly rather than the OpenAI SDK, same as `@/lib/exa`, so nothing
+ * Uses `fetch` directly rather than the OpenAI SDK, so nothing
  * Node-specific reaches the workerd runtime. No retries: a paste is answered while
  * the user waits, and a failed search falls back to filing a ticket.
  *

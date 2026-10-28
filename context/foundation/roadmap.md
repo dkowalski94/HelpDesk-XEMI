@@ -46,7 +46,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 
 | ID   | Change ID                   | Outcome (user can …)                                                                                     | Prerequisites | PRD refs     | Status      |
 | ---- | --------------------------- | -------------------------------------------------------------------------------------------------------- | ------------- | ------------ | ----------- |
-| S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | ready       |
+| S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | in-progress |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps       | —             | MS-02        | done        |
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | done        |
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | proposed    |
@@ -91,7 +91,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Pure removal, so it goes first among the quick wins; the hosted secret is removed by hand (no CI step) and the smoke test and CLAUDE.md must stop mentioning the route.
-- **Status:** ready
+- **Status:** in-progress
 
 ### S-02: "Moje zgłoszenia" as its own page
 
