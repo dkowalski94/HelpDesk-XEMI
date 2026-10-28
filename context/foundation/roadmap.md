@@ -44,24 +44,24 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 
 ## At a glance
 
-| ID   | Change ID                   | Outcome (user can …)                                                                                      | Prerequisites | PRD refs       | Status   |
-| ---- | --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------- | -------------- | -------- |
-| S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05          | ready    |
-| S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps        | —             | MS-02          | done |
-| S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03   | in-progress |
-| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07   | proposed |
-| S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07   | ready    |
-| S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                       | S-03          | MS-07          | proposed |
+| ID   | Change ID                   | Outcome (user can …)                                                                                     | Prerequisites | PRD refs     | Status      |
+| ---- | --------------------------- | -------------------------------------------------------------------------------------------------------- | ------------- | ------------ | ----------- |
+| S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | ready       |
+| S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps       | —             | MS-02        | done        |
+| S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | in-progress |
+| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | proposed    |
+| S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | ready       |
+| S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | proposed    |
 
 ## Streams
 
 Navigation aid — groups items that share a Prerequisites chain. Canonical ordering still lives in the dependency graph below; this table is the proposed reading order across parallel tracks.
 
-| Stream | Theme          | Chain                     | Note                                                                                           |
-| ------ | -------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
-| A      | Way in         | `S-02` → `S-03` → `S-04`  | The north star path; small steps, each deployable on its own (`low-complexity`).               |
-| B      | Cleanup        | `S-01`                    | Standalone; the user bar already dropped its "Web search" link in S-03.                        |
-| C      | Staff pages    | `S-03` → `S-05`, `S-06`   | Both reuse S-03's user bar and contract; touch only `/admin/tickets` / `/admin/users`.         |
+| Stream | Theme       | Chain                    | Note                                                                                   |
+| ------ | ----------- | ------------------------ | -------------------------------------------------------------------------------------- |
+| A      | Way in      | `S-02` → `S-03` → `S-04` | The north star path; small steps, each deployable on its own (`low-complexity`).       |
+| B      | Cleanup     | `S-01`                   | Standalone; the user bar already dropped its "Web search" link in S-03.                |
+| C      | Staff pages | `S-03` → `S-05`, `S-06`  | Both reuse S-03's user bar and contract; touch only `/admin/tickets` / `/admin/users`. |
 
 ## Baseline
 
@@ -83,7 +83,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 
 ### S-01: Web search and Exa removed
 
-- **Outcome:** user can use the app without the unused web-search page, its user-bar link and the "Exa not configured" banner; the Exa integration and its key are gone from code, config and docs.
+- **Outcome:** user can use the app without the unused web-search page and the "Exa not configured" banner; the Exa integration and its key are gone from code, config and docs.
 - **Change ID:** remove-web-search
 - **PRD refs:** MS-05
 - **Prerequisites:** —
@@ -157,14 +157,14 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                   | Suggested issue title                                         | Ready for `/10x-plan` | Notes                                      |
-| ---------- | --------------------------- | ------------------------------------------------------------- | --------------------- | ------------------------------------------ |
-| S-01       | remove-web-search           | Remove web search and the Exa integration                     | yes                   | Run `/10x-plan remove-web-search`          |
-| S-02       | my-tickets-page             | "Moje zgłoszenia" as a separate client page                   | yes                   | Run `/10x-plan my-tickets-page`            |
-| S-03       | start-page                  | Start page for guest/client/staff; remove /dashboard          | no                    | After S-02 lands                           |
-| S-04       | polish-sign-in              | Polish XEMI sign-in pages, 404, lang=pl Layout + return       | no                    | After S-03 lands                           |
-| S-05       | staff-ticket-company-filter | Company filter + XEMI restyle of the staff ticket queue       | no                    | After S-03 lands                           |
-| S-06       | admin-users-ui-contract     | `/admin/users` in Polish on the XEMI look                     | no                    | After S-03 lands                           |
+| Roadmap ID | Change ID                   | Suggested issue title                                   | Ready for `/10x-plan` | Notes                             |
+| ---------- | --------------------------- | ------------------------------------------------------- | --------------------- | --------------------------------- |
+| S-01       | remove-web-search           | Remove web search and the Exa integration               | yes                   | Run `/10x-plan remove-web-search` |
+| S-02       | my-tickets-page             | "Moje zgłoszenia" as a separate client page             | yes                   | Run `/10x-plan my-tickets-page`   |
+| S-03       | start-page                  | Start page for guest/client/staff; remove /dashboard    | no                    | After S-02 lands                  |
+| S-04       | polish-sign-in              | Polish XEMI sign-in pages, 404, lang=pl Layout + return | no                    | After S-03 lands                  |
+| S-05       | staff-ticket-company-filter | Company filter + XEMI restyle of the staff ticket queue | no                    | After S-03 lands                  |
+| S-06       | admin-users-ui-contract     | `/admin/users` in Polish on the XEMI look               | no                    | After S-03 lands                  |
 
 This table is the clean handoff to Jira/Linear or any MCP-backed backlog.
 

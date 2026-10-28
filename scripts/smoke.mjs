@@ -168,10 +168,14 @@ const START_PAGE = {
   guest: "Zaloguj się",
   waiting: "Konto czeka na przypisanie",
 };
-/** True when / rendered the guest view: the sign-in entry, no signed-in notice. */
-const guestStartPage = ({ text }) => text.includes(START_PAGE.guest) && !text.includes(START_PAGE.waiting);
-/** True when the user bar carries the client entries: report an error and own tickets. */
-const clientEntries = (text) => text.includes('href="/report-error"') && text.includes('href="/my-tickets"');
+/** True when / rendered the guest view: the sign-in entry, no signed-in notice or sign-out. */
+const guestStartPage = ({ text }) =>
+  text.includes(START_PAGE.guest) && !text.includes(START_PAGE.waiting) && !text.includes("Wyloguj");
+/** True when the user bar carries the client entries (report an error, own tickets) and no staff entry. */
+const clientEntries = (text) =>
+  text.includes('href="/report-error"') &&
+  text.includes('href="/my-tickets"') &&
+  !text.includes('href="/admin/tickets"');
 
 // Distinctive substrings of /my-tickets. "Moje zgłoszenia" is also the document title of
 // every branch, so the list's own label marks the client branch.

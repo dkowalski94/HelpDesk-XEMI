@@ -35,6 +35,8 @@ const entries =
 const FOCUS_RING = "focus-visible:border-ring focus-visible:ring-ring";
 const entryClass = cn(buttonVariants({ variant: "outline", size: "sm" }), FOCUS_RING);
 const primaryEntryClass = cn(buttonVariants({ variant: "default", size: "sm" }), FOCUS_RING);
+// The entry's page or a page below it; a bare prefix would also match `/my-tickets-old`.
+const isCurrent = (href: string) => currentPath === href || currentPath.startsWith(`${href}/`);
 const quietLinkClass =
   "rounded-sm text-primary transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 ---
@@ -54,8 +56,8 @@ const quietLinkClass =
           {entries.map((entry) => (
             <a
               href={entry.href}
-              class:list={currentPath.startsWith(entry.href) ? primaryEntryClass : entryClass}
-              aria-current={currentPath.startsWith(entry.href) ? "page" : undefined}
+              class:list={isCurrent(entry.href) ? primaryEntryClass : entryClass}
+              aria-current={isCurrent(entry.href) ? "page" : undefined}
             >
               {entry.label}
             </a>
