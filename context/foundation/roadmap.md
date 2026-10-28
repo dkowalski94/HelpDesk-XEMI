@@ -48,7 +48,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | ---- | --------------------------- | -------------------------------------------------------------------------------------------------------- | ------------- | ------------ | ----------- |
 | S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | ready       |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps       | —             | MS-02        | done        |
-| S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | in-progress |
+| S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | done        |
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | proposed    |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | ready       |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | proposed    |
@@ -116,7 +116,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Unknowns:**
   - What an account not yet assigned to a company (and a failed profile lookup) sees on the start page — today only `/dashboard` shows these states. Owner: user. Block: no (decide in `/10x-plan`).
 - **Risk:** The north star; `/dashboard` is today's post-sign-in target and holds the unassigned/profile-error messages, so removing it and adding the start page belong in one slice to avoid a gap.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-04: Polish sign-in pages, 404 page, Polish Layout shell and return to the requested page
 
@@ -201,3 +201,4 @@ Outside any milestone item: `report-error-ui-contract` — archived 2026-10-27 �
 M-2 items (their IDs belong to M-2):
 
 - **S-02: a client user can open "Moje zgłoszenia" as a separate page and see their own tickets with status and, for resolved ones, the cause and steps; `/report-error` keeps the paste flow and points to that page.** — Archived 2026-10-27 → `context/archive/2026-10-27-my-tickets-page/`. Lesson: —.
+- **S-03: a guest sees a styled Polish start page that explains what HelpDesk XEMI is; after signing in a client sees prominent "Zgłoś błąd" and "Moje zgłoszenia" entries and a staff member reaches ticket resolution; sign-in lands here and `/dashboard` no longer exists.** — Archived 2026-10-28 → `context/archive/2026-10-28-start-page/`. Lesson: —.

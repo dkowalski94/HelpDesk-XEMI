@@ -1,10 +1,10 @@
 ---
 change_id: start-page
 title: Start page
-status: impl_reviewed
+status: archived
 created: 2026-10-28
 updated: 2026-10-28
-archived_at: null
+archived_at: 2026-10-28T10:33:23Z
 ---
 
 ## Notes
