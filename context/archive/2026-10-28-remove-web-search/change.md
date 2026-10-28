@@ -1,10 +1,10 @@
 ---
 change_id: remove-web-search
 title: Remove web search
-status: implemented
+status: archived
 created: 2026-10-28
 updated: 2026-10-28
-archived_at: null
+archived_at: 2026-10-28T13:02:00Z
 ---
 
 ## Notes

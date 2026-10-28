@@ -46,7 +46,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 
 | ID   | Change ID                   | Outcome (user can …)                                                                                     | Prerequisites | PRD refs     | Status      |
 | ---- | --------------------------- | -------------------------------------------------------------------------------------------------------- | ------------- | ------------ | ----------- |
-| S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | in-progress |
+| S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | done        |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps       | —             | MS-02        | done        |
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | done        |
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | proposed    |
@@ -91,7 +91,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Pure removal, so it goes first among the quick wins; the hosted secret is removed by hand (no CI step) and the smoke test and CLAUDE.md must stop mentioning the route.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: "Moje zgłoszenia" as its own page
 
@@ -202,3 +202,4 @@ M-2 items (their IDs belong to M-2):
 
 - **S-02: a client user can open "Moje zgłoszenia" as a separate page and see their own tickets with status and, for resolved ones, the cause and steps; `/report-error` keeps the paste flow and points to that page.** — Archived 2026-10-27 → `context/archive/2026-10-27-my-tickets-page/`. Lesson: —.
 - **S-03: a guest sees a styled Polish start page that explains what HelpDesk XEMI is; after signing in a client sees prominent "Zgłoś błąd" and "Moje zgłoszenia" entries and a staff member reaches ticket resolution; sign-in lands here and `/dashboard` no longer exists.** — Archived 2026-10-28 → `context/archive/2026-10-28-start-page/`. Lesson: —.
+- **S-01: user can use the app without the unused web-search page and the "Exa not configured" banner; the Exa integration and its key are gone from code, config and docs.** — Archived 2026-10-28 → `context/archive/2026-10-28-remove-web-search/`. Lesson: —.
