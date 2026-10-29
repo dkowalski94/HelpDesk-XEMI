@@ -48,7 +48,7 @@ const stepTextClass = "text-sm text-muted-foreground";
 const isStatus = audience === "waiting" || audience === "profile-error";
 ---
 
-<Card lang="pl" className="flex-1 gap-0 p-6 sm:p-10">
+<Card className="flex-1 gap-0 p-6 sm:p-10">
   <h1 class:list={headingClass}>{audience === "staff" ? "HelpDesk XEMI — serwis" : "HelpDesk XEMI"}</h1>
 
   {audience === "client" ? (

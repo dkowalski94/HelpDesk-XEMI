@@ -1,0 +1,16 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import NotFound from "@/components/NotFound.astro";
+
+// Astro serves this page with status 404 for every unmatched route; same frame as the start page.
+---
+
+<Layout title="Nie znaleziono strony">
+  <div class="flex min-h-screen flex-col bg-background p-4">
+    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+      <Topbar />
+      <NotFound />
+    </div>
+  </div>
+</Layout>

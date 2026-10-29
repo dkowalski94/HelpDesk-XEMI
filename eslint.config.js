@@ -110,6 +110,8 @@ const uiContractConfig = defineConfig({
     "src/components/AccountStatusNotice.astro",
     "src/pages/admin/tickets.astro",
     "src/components/admin/**",
+    "src/pages/404.astro",
+    "src/components/NotFound.astro",
   ],
   rules: {
     "no-restricted-syntax": [

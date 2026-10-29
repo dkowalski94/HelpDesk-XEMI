@@ -1,0 +1,27 @@
+---
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+/**
+ * The "page not found" card of `404.astro`. Reads no locals, so the kitchen sink renders the
+ * same markup; the route adds the frame and the user bar.
+ */
+
+const headingClass = "mb-2 text-3xl font-bold text-foreground sm:text-4xl";
+const hint = "max-w-2xl text-muted-foreground sm:text-lg";
+// Full-strength focus ring: `--ring` at half alpha is below 3:1 on white (CLAUDE.md → UI contract).
+const backLinkClass = cn(buttonVariants({ variant: "default" }), "focus-visible:border-ring focus-visible:ring-ring");
+---
+
+<Card className="gap-0 p-6 sm:p-10">
+  <h1 class:list={headingClass}>Nie znaleziono strony</h1>
+  <p class:list={hint}>
+    Ta strona nie istnieje albo została przeniesiona. Sprawdź adres lub zacznij od strony startowej.
+  </p>
+  <div class="mt-8">
+    <a href="/" class:list={backLinkClass}>
+      Wróć na stronę startową
+    </a>
+  </div>
+</Card>

@@ -3,7 +3,7 @@ project: "HelpDesk XEMI"
 version: 2
 status: draft
 created: 2026-09-22
-updated: 2026-10-28
+updated: 2026-10-29
 prd_version: —
 main_goal: low-complexity
 top_blocker: none
@@ -49,7 +49,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | done        |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps       | —             | MS-02        | done        |
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | done        |
-| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | proposed    |
+| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | in-progress |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | done        |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | proposed    |
 | S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | proposed    |
@@ -131,7 +131,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Unknowns:**
   - Whether Supabase auth error messages (today shown in English from `error.message`) get Polish mappings. Owner: user. Block: no (decide in `/10x-plan`).
 - **Risk:** Touches `src/pages/auth/*`, `src/components/auth/*` and the sign-in redirect, which the smoke test covers; the return-to-page target must be validated as a same-origin path (no open redirect).
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-05: Company filter for the staff queue
 

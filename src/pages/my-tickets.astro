@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { isClientUser } from "@/lib/services/profile";
 import { listVisibleTickets, TICKET_PAGE_DEFAULT } from "@/lib/services/tickets";
 
-// The caller's own tickets, rendered on the server (no client:* directive, so no hydration);
-// `lang="pl"` comes from the layout's Card.
+// The caller's own tickets, rendered on the server (no client:* directive, so no hydration).
 // The layout decides the audience branch; the list is read only for a client user, under
 // the caller's session, so RLS bounds it and `createdBy` narrows it to their own tickets.
 const { user, profile } = Astro.locals;
