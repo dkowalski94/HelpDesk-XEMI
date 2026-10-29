@@ -1,5 +1,9 @@
 import { Eye, EyeOff } from "lucide-react";
 
+// Full-strength focus outline, as the quiet links of the user bar (CLAUDE.md → UI contract).
+const toggleClass =
+  "absolute top-1/2 right-2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
 interface PasswordToggleProps {
   visible: boolean;
   onToggle: () => void;
@@ -10,10 +14,10 @@ export function PasswordToggle({ visible, onToggle }: PasswordToggleProps) {
     <button
       type="button"
       onClick={onToggle}
-      className="absolute top-1/2 right-3 -translate-y-1/2 text-white/40 transition-colors hover:text-white/70"
-      aria-label={visible ? "Hide password" : "Show password"}
+      className={toggleClass}
+      aria-label={visible ? "Ukryj hasło" : "Pokaż hasło"}
     >
-      {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      {visible ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
     </button>
   );
 }

@@ -1,6 +1,8 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
 import SignUpForm from "@/components/auth/SignUpForm";
+import { Card } from "@/components/ui/card";
 import { authErrorMessage } from "@/lib/auth-messages";
 import { safeNextPath } from "@/lib/auth-redirect";
 
@@ -11,21 +13,27 @@ if (Astro.locals.user) {
   Astro.response.headers.set("Location", safeNextPath(Astro.url.searchParams.get("next")));
 }
 const errorMessage = authErrorMessage(Astro.url.searchParams.get("error"));
+
+const headingClass = "mb-6 text-2xl font-bold text-foreground";
+// Full-strength focus outline, as the quiet links of the user bar (CLAUDE.md → UI contract).
+const linkClass =
+  "rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 ---
 
-<Layout title="Sign up">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
-      <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
-        Sign up
-      </h1>
-      <SignUpForm serverError={errorMessage} client:load />
-      <p class="mt-4 text-center text-sm text-blue-100/60">
-        Already have an account?{" "}
-        <a href="/auth/signin" class="text-purple-300 hover:underline">
-          Sign in
-        </a>
-      </p>
+<Layout title="Załóż konto">
+  <div class="min-h-screen bg-background p-4">
+    <div class="mx-auto w-full max-w-5xl">
+      <Topbar />
+      <Card className="mx-auto w-full max-w-md gap-0 p-6 sm:p-8">
+        <h1 class:list={headingClass}>Załóż konto</h1>
+        <SignUpForm serverError={errorMessage} client:load />
+        <p class="mt-4 text-center text-sm text-muted-foreground">
+          Masz już konto?{" "}
+          <a href="/auth/signin" class:list={linkClass}>
+            Zaloguj się
+          </a>
+        </p>
+      </Card>
     </div>
   </div>
 </Layout>

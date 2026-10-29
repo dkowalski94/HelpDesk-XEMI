@@ -112,6 +112,8 @@ const uiContractConfig = defineConfig({
     "src/components/admin/**",
     "src/pages/404.astro",
     "src/components/NotFound.astro",
+    "src/pages/auth/**",
+    "src/components/auth/**",
   ],
   rules: {
     "no-restricted-syntax": [

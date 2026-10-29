@@ -325,31 +325,31 @@ No database change. The smoke test expectations change in the same commit as the
 
 #### Automated
 
-- [x] 2.1 `npm run lint` passes
-- [x] 2.2 `npx astro check` passes
-- [x] 2.3 `npm run build` passes
-- [x] 2.4 `npm run smoke` passes, including the updated anonymous-redirect steps and the four new steps
+- [x] 2.1 `npm run lint` passes — 9c4193e
+- [x] 2.2 `npx astro check` passes — 9c4193e
+- [x] 2.3 `npm run build` passes — 9c4193e
+- [x] 2.4 `npm run smoke` passes, including the updated anonymous-redirect steps and the four new steps — 9c4193e
 
 #### Manual
 
-- [x] 2.5 As a guest open `/my-tickets?offset=20`, sign in as Klient Alfa, land on `/my-tickets?offset=20`
-- [x] 2.6 Wrong password shows a Polish message and a second, correct attempt still lands on the requested page
-- [x] 2.7 `/auth/signin?error=<script>` shows the generic Polish message, not the parameter text
-- [x] 2.8 `/auth/signin?next=//example.com` followed by a successful sign-in lands on `/`
+- [x] 2.5 As a guest open `/my-tickets?offset=20`, sign in as Klient Alfa, land on `/my-tickets?offset=20` — 9c4193e
+- [x] 2.6 Wrong password shows a Polish message and a second, correct attempt still lands on the requested page — 9c4193e
+- [x] 2.7 `/auth/signin?error=<script>` shows the generic Polish message, not the parameter text — 9c4193e
+- [x] 2.8 `/auth/signin?next=//example.com` followed by a successful sign-in lands on `/` — 9c4193e
 
 ### Phase 3: Auth pages on the XEMI contract
 
 #### Automated
 
-- [ ] 3.1 `npm run lint` passes (auth pages and components are inside `uiContractConfig`)
-- [ ] 3.2 `npx astro check` passes
-- [ ] 3.3 `npm run build` passes
-- [ ] 3.4 `npm run smoke` passes
-- [ ] 3.5 `grep -rn "bg-cosmic" src/pages/auth src/components/auth` returns nothing
+- [x] 3.1 `npm run lint` passes (auth pages and components are inside `uiContractConfig`)
+- [x] 3.2 `npx astro check` passes
+- [x] 3.3 `npm run build` passes
+- [x] 3.4 `npm run smoke` passes
+- [x] 3.5 `grep -rn "bg-cosmic" src/pages/auth src/components/auth` returns nothing
 
 #### Manual
 
-- [ ] 3.6 Kitchen sink `/dev/ui-kitchen-sink` shows every auth state on the light look; screenshot gate accepted
-- [ ] 3.7 Sign-in, sign-up (new e-mail and an existing one) and confirm-email work end to end in Polish with the user bar
-- [ ] 3.8 Keyboard: Tab order e-mail → hasło → przełącznik → przycisk, visible focus ring everywhere; screen reader announces field errors
-- [ ] 3.9 360 px width: no horizontal scroll on the three pages and the 404
+- [x] 3.6 Kitchen sink `/dev/ui-kitchen-sink` shows every auth state on the light look; screenshot gate accepted
+- [x] 3.7 Sign-in, sign-up (new e-mail and an existing one) and confirm-email work end to end in Polish with the user bar
+- [x] 3.8 Keyboard: Tab order e-mail → hasło → przełącznik → przycisk, visible focus ring everywhere; screen reader announces field errors
+- [x] 3.9 360 px width: no horizontal scroll on the three pages and the 404

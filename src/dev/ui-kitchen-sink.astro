@@ -5,10 +5,12 @@ import KitchenSink from "@/components/error-resolution/KitchenSink";
 import StartPage from "@/components/start/StartPage.astro";
 import NotFound from "@/components/NotFound.astro";
 import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
+import AuthKitchenSink from "@/components/auth/AuthKitchenSink";
+import ConfirmEmailNotice from "@/components/auth/ConfirmEmailNotice.astro";
 import { Card } from "@/components/ui/card";
 import type { StaffCompanyOption, StaffQueueResult, StaffQueueTicket } from "@/types";
 
-// Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets, /admin/tickets, 404). Routed by the `devOnlyRoutes`
+// Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets, /admin/tickets, 404, /auth/*). Routed by the `devOnlyRoutes`
 // integration in astro.config.mjs under `astro dev` only, so production builds do not contain it.
 
 // Staff queue fixtures. Ids carry a per-cell prefix so the textarea ids stay unique on this page.
@@ -109,8 +111,9 @@ const queueCells: {
     <header class="space-y-2">
       <h1 class="text-2xl font-bold text-foreground">Kitchen sink UI</h1>
       <p class="text-sm text-muted-foreground">
-        Każdy stan widoków na kontrakcie UI (strona startowa, /report-error, /my-tickets, /admin/tickets, strona 404) na
-        statycznych danych, bez zapytań do API. Hover i focus-visible sprawdź myszą i klawiszem Tab na tej stronie.
+        Każdy stan widoków na kontrakcie UI (strona startowa, /report-error, /my-tickets, /admin/tickets, strona 404,
+        logowanie i zakładanie konta) na statycznych danych, bez zapytań do API. Hover i focus-visible sprawdź myszą i
+        klawiszem Tab na tej stronie.
       </p>
     </header>
 
@@ -176,6 +179,19 @@ const queueCells: {
           </Card>
         </>
       ))}
+    </section>
+
+    <AuthKitchenSink client:only="react" />
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-foreground">Potwierdzenie e-maila</h2>
+      <p class="text-sm text-muted-foreground">
+        Widok /auth/confirm-email: konto potwierdzone automatycznie (dev) i link aktywacyjny wysłany e-mailem.
+      </p>
+      <h3 class="text-base font-bold text-foreground">Konto założone (dev)</h3>
+      <ConfirmEmailNotice autoConfirmed />
+      <h3 class="text-base font-bold text-foreground">Sprawdź skrzynkę e-mail</h3>
+      <ConfirmEmailNotice autoConfirmed={false} />
     </section>
 
     <KitchenSink client:only="react" />
