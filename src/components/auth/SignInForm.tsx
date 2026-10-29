@@ -4,6 +4,7 @@ import { FormField } from "@/components/auth/FormField";
 import { PasswordToggle } from "@/components/auth/PasswordToggle";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 import { ServerError } from "@/components/auth/ServerError";
+import { useNativeSubmitting } from "@/hooks/useNativeSubmitting";
 
 interface FieldErrors {
   email?: string;
@@ -20,6 +21,8 @@ interface Props {
   initialErrors?: FieldErrors;
   initialShowPassword?: boolean;
   pending?: boolean;
+  /** Kitchen sink only: validate but never post. */
+  preventSubmit?: boolean;
 }
 
 export default function SignInForm({
@@ -30,7 +33,9 @@ export default function SignInForm({
   initialErrors = {},
   initialShowPassword = false,
   pending,
+  preventSubmit = false,
 }: Props) {
+  const [submitting, markSubmitting] = useNativeSubmitting();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState(initialPassword);
   const [showPassword, setShowPassword] = useState(initialShowPassword);
@@ -55,9 +60,12 @@ export default function SignInForm({
   }
 
   function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
-    if (!validate()) {
+    // A second press while the post is in flight is dropped, not sent twice.
+    if (!validate() || submitting || preventSubmit) {
       e.preventDefault();
+      return;
     }
+    markSubmitting();
   }
 
   return (
@@ -103,7 +111,7 @@ export default function SignInForm({
 
       <ServerError message={serverError} />
 
-      <SubmitButton pendingText="Logowanie…" icon={<LogIn className="size-4" />} pending={pending}>
+      <SubmitButton pendingText="Logowanie…" icon={<LogIn className="size-4" />} pending={pending ?? submitting}>
         Zaloguj się
       </SubmitButton>
     </form>

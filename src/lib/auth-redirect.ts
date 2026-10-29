@@ -14,7 +14,18 @@ const SINGLE_LEADING_SLASH = /^\/(?![/\\])/;
 const FORBIDDEN_PREFIX = /^\/(?:auth|api)(?:[/?#]|$)/i;
 
 function isSafePath(path: string): boolean {
-  return SINGLE_LEADING_SLASH.test(path) && !FORBIDDEN_PREFIX.test(path);
+  return SINGLE_LEADING_SLASH.test(path) && !FORBIDDEN_PREFIX.test(path) && !FORBIDDEN_PREFIX.test(decodedPath(path));
+}
+
+// Astro decodes the pathname of the next request and collapses duplicate slashes, so
+// `/%61pi/…` and `/%2fapi` must count as `/api/…`. A malformed escape cannot route
+// anywhere forbidden; the encoded check above still applies.
+function decodedPath(path: string): string {
+  try {
+    return decodeURIComponent(path).replace(/[/\\]+/g, "/");
+  } catch {
+    return path;
+  }
 }
 
 /**

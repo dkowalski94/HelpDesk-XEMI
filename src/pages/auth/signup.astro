@@ -7,8 +7,9 @@ import { authErrorMessage } from "@/lib/auth-messages";
 import { safeNextPath } from "@/lib/auth-redirect";
 
 // A signed-in user gets no sign-up form: send them where they were going. Set on
-// Astro.response rather than `return Astro.redirect()` (see signin.astro).
-if (Astro.locals.user) {
+// Astro.response rather than `return Astro.redirect()` (see signin.astro); the markup is skipped.
+const signedIn = Astro.locals.user !== null;
+if (signedIn) {
   Astro.response.status = 302;
   Astro.response.headers.set("Location", safeNextPath(Astro.url.searchParams.get("next")));
 }
@@ -20,20 +21,22 @@ const linkClass =
   "rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 ---
 
-<Layout title="Załóż konto">
-  <div class="min-h-screen bg-background p-4">
-    <div class="mx-auto w-full max-w-5xl">
-      <Topbar />
-      <Card className="mx-auto w-full max-w-md gap-0 p-6 sm:p-8">
-        <h1 class:list={headingClass}>Załóż konto</h1>
-        <SignUpForm serverError={errorMessage} client:load />
-        <p class="mt-4 text-center text-sm text-muted-foreground">
-          Masz już konto?{" "}
-          <a href="/auth/signin" class:list={linkClass}>
-            Zaloguj się
-          </a>
-        </p>
-      </Card>
+{!signedIn && (
+  <Layout title="Załóż konto">
+    <div class="min-h-screen bg-background p-4">
+      <div class="mx-auto w-full max-w-5xl">
+        <Topbar />
+        <Card className="mx-auto w-full max-w-md gap-0 p-6 sm:p-8">
+          <h1 class:list={headingClass}>Załóż konto</h1>
+          <SignUpForm serverError={errorMessage} client:load />
+          <p class="mt-4 text-center text-sm text-muted-foreground">
+            Masz już konto?{" "}
+            <a href="/auth/signin" class:list={linkClass}>
+              Zaloguj się
+            </a>
+          </p>
+        </Card>
+      </div>
     </div>
-  </div>
-</Layout>
+  </Layout>
+)}

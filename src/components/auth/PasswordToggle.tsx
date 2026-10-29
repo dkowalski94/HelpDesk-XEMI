@@ -11,12 +11,7 @@ interface PasswordToggleProps {
 
 export function PasswordToggle({ visible, onToggle }: PasswordToggleProps) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={toggleClass}
-      aria-label={visible ? "Ukryj hasło" : "Pokaż hasło"}
-    >
+    <button type="button" onClick={onToggle} className={toggleClass} aria-label="Pokaż hasło" aria-pressed={visible}>
       {visible ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
     </button>
   );

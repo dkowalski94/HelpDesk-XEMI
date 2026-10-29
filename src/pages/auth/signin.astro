@@ -10,7 +10,9 @@ const next = safeNextPath(Astro.url.searchParams.get("next"));
 // A signed-in user gets no sign-in form: send them where they were going. Set on
 // Astro.response rather than `return Astro.redirect()`: a frontmatter `return` crashes
 // typescript-eslint's no-misused-promises in astro-eslint-parser (see my-tickets.astro).
-if (Astro.locals.user) {
+// The markup below is skipped for them, so the 302 carries no body.
+const signedIn = Astro.locals.user !== null;
+if (signedIn) {
   Astro.response.status = 302;
   Astro.response.headers.set("Location", next);
 }
@@ -22,20 +24,22 @@ const linkClass =
   "rounded-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 ---
 
-<Layout title="Logowanie">
-  <div class="min-h-screen bg-background p-4">
-    <div class="mx-auto w-full max-w-5xl">
-      <Topbar />
-      <Card className="mx-auto w-full max-w-md gap-0 p-6 sm:p-8">
-        <h1 class:list={headingClass}>Zaloguj się</h1>
-        <SignInForm serverError={errorMessage} next={next} client:load />
-        <p class="mt-4 text-center text-sm text-muted-foreground">
-          Nie masz konta?{" "}
-          <a href="/auth/signup" class:list={linkClass}>
-            Załóż konto
-          </a>
-        </p>
-      </Card>
+{!signedIn && (
+  <Layout title="Logowanie">
+    <div class="min-h-screen bg-background p-4">
+      <div class="mx-auto w-full max-w-5xl">
+        <Topbar />
+        <Card className="mx-auto w-full max-w-md gap-0 p-6 sm:p-8">
+          <h1 class:list={headingClass}>Zaloguj się</h1>
+          <SignInForm serverError={errorMessage} next={next} client:load />
+          <p class="mt-4 text-center text-sm text-muted-foreground">
+            Nie masz konta?{" "}
+            <a href="/auth/signup" class:list={linkClass}>
+              Załóż konto
+            </a>
+          </p>
+        </Card>
+      </div>
     </div>
-  </div>
-</Layout>
+  </Layout>
+)}

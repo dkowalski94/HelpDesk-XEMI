@@ -5,7 +5,8 @@ import SignUpForm from "./SignUpForm";
 
 /*
  * Dev-only gallery (`/dev/ui-kitchen-sink`): the sign-in and sign-up forms with static initial
- * state, one cell per state. Each FormField generates its own ids, so the forms can share the page.
+ * state, one cell per state, with `preventSubmit` so no cell posts. Each FormField generates its own ids,
+ * so the forms can share the page.
  * The confirm-email card is an Astro component and is rendered by the kitchen-sink page itself.
  */
 
@@ -36,38 +37,40 @@ export default function AuthKitchenSink() {
     <div className="space-y-10">
       <Group title="Logowanie">
         <Cell state="default" note="Puste pola. Tab: e-mail → hasło → przełącznik → przycisk.">
-          <SignInForm />
+          <SignInForm preventSubmit />
         </Cell>
         <Cell state="error" note="Wysłanie pustego formularza: błędy pól z aria-invalid i aria-describedby.">
-          <SignInForm initialErrors={{ email: "Podaj adres e-mail", password: "Podaj hasło" }} />
+          <SignInForm preventSubmit initialErrors={{ email: "Podaj adres e-mail", password: "Podaj hasło" }} />
         </Cell>
         <Cell state="error" note="Błąd z serwera (?error=invalid-credentials).">
           <SignInForm
+            preventSubmit
             initialEmail={EMAIL}
             initialPassword={PASSWORD}
             serverError={authErrorMessage("invalid-credentials")}
           />
         </Cell>
         <Cell state="loading / disabled" note="Wysyłanie: przycisk zablokowany ze spinnerem.">
-          <SignInForm initialEmail={EMAIL} initialPassword={PASSWORD} pending />
+          <SignInForm preventSubmit initialEmail={EMAIL} initialPassword={PASSWORD} pending />
         </Cell>
-        <Cell state="hasło ukryte" note="Przełącznik „Pokaż hasło”.">
-          <SignInForm initialEmail={EMAIL} initialPassword={PASSWORD} />
+        <Cell state="hasło ukryte" note="Przełącznik „Pokaż hasło”, aria-pressed=false.">
+          <SignInForm preventSubmit initialEmail={EMAIL} initialPassword={PASSWORD} />
         </Cell>
-        <Cell state="hasło widoczne" note="Przełącznik „Ukryj hasło”.">
-          <SignInForm initialEmail={EMAIL} initialPassword={PASSWORD} initialShowPassword />
+        <Cell state="hasło widoczne" note="Przełącznik „Pokaż hasło”, aria-pressed=true.">
+          <SignInForm preventSubmit initialEmail={EMAIL} initialPassword={PASSWORD} initialShowPassword />
         </Cell>
       </Group>
 
       <Group title="Zakładanie konta">
         <Cell state="default" note="Puste pola.">
-          <SignUpForm />
+          <SignUpForm preventSubmit />
         </Cell>
         <Cell state="podpowiedź" note="Za krótkie hasło: podpowiedź z liczbą brakujących znaków.">
-          <SignUpForm initialEmail={EMAIL} initialPassword="abcd" />
+          <SignUpForm preventSubmit initialEmail={EMAIL} initialPassword="abcd" />
         </Cell>
         <Cell state="error" note="Hasła się różnią.">
           <SignUpForm
+            preventSubmit
             initialEmail={EMAIL}
             initialPassword={PASSWORD}
             initialConfirmPassword="inne-haslo"
@@ -76,6 +79,7 @@ export default function AuthKitchenSink() {
         </Cell>
         <Cell state="error" note="Błąd z serwera (?error=already-registered).">
           <SignUpForm
+            preventSubmit
             initialEmail={EMAIL}
             initialPassword={PASSWORD}
             initialConfirmPassword={PASSWORD}
@@ -83,7 +87,13 @@ export default function AuthKitchenSink() {
           />
         </Cell>
         <Cell state="loading / disabled" note="Wysyłanie: przycisk zablokowany ze spinnerem.">
-          <SignUpForm initialEmail={EMAIL} initialPassword={PASSWORD} initialConfirmPassword={PASSWORD} pending />
+          <SignUpForm
+            preventSubmit
+            initialEmail={EMAIL}
+            initialPassword={PASSWORD}
+            initialConfirmPassword={PASSWORD}
+            pending
+          />
         </Cell>
       </Group>
     </div>

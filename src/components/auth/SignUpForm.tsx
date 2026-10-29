@@ -4,6 +4,7 @@ import { FormField } from "@/components/auth/FormField";
 import { PasswordToggle } from "@/components/auth/PasswordToggle";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 import { ServerError } from "@/components/auth/ServerError";
+import { useNativeSubmitting } from "@/hooks/useNativeSubmitting";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -31,6 +32,8 @@ interface Props {
   initialErrors?: FieldErrors;
   initialShowPassword?: boolean;
   pending?: boolean;
+  /** Kitchen sink only: validate but never post. */
+  preventSubmit?: boolean;
 }
 
 export default function SignUpForm({
@@ -41,7 +44,9 @@ export default function SignUpForm({
   initialErrors = {},
   initialShowPassword = false,
   pending,
+  preventSubmit = false,
 }: Props) {
+  const [submitting, markSubmitting] = useNativeSubmitting();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState(initialPassword);
   const [confirmPassword, setConfirmPassword] = useState(initialConfirmPassword);
@@ -79,9 +84,12 @@ export default function SignUpForm({
   }
 
   function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
-    if (!validate()) {
+    // A second press while the post is in flight is dropped, not sent twice.
+    if (!validate() || submitting || preventSubmit) {
       e.preventDefault();
+      return;
     }
+    markSubmitting();
   }
 
   const passwordHint =
@@ -155,7 +163,11 @@ export default function SignUpForm({
 
       <ServerError message={serverError} />
 
-      <SubmitButton pendingText="Zakładanie konta…" icon={<UserPlus className="size-4" />} pending={pending}>
+      <SubmitButton
+        pendingText="Zakładanie konta…"
+        icon={<UserPlus className="size-4" />}
+        pending={pending ?? submitting}
+      >
         Załóż konto
       </SubmitButton>
     </form>
