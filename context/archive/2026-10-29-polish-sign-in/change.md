@@ -1,10 +1,10 @@
 ---
 change_id: polish-sign-in
 title: Polish sign in
-status: impl_reviewed
+status: archived
 created: 2026-10-29
 updated: 2026-10-29
-archived_at: null
+archived_at: 2026-10-29T13:14:11Z
 ---
 
 ## Notes

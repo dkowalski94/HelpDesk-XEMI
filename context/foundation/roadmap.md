@@ -49,7 +49,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-01 | remove-web-search           | use the app without the unused web-search page, its link and the "Exa not configured" banner             | —             | MS-05        | done        |
 | S-02 | my-tickets-page             | (client) open "Moje zgłoszenia" as its own page and see their tickets with status, cause and steps       | —             | MS-02        | done        |
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | done        |
-| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | in-progress |
+| S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | done        |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | done        |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | proposed    |
 | S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | proposed    |
@@ -131,7 +131,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Unknowns:**
   - Whether Supabase auth error messages (today shown in English from `error.message`) get Polish mappings. Owner: user. Block: no (decide in `/10x-plan`).
 - **Risk:** Touches `src/pages/auth/*`, `src/components/auth/*` and the sign-in redirect, which the smoke test covers; the return-to-page target must be validated as a same-origin path (no open redirect).
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Company filter for the staff queue
 
@@ -220,3 +220,4 @@ M-2 items (their IDs belong to M-2):
 - **S-03: a guest sees a styled Polish start page that explains what HelpDesk XEMI is; after signing in a client sees prominent "Zgłoś błąd" and "Moje zgłoszenia" entries and a staff member reaches ticket resolution; sign-in lands here and `/dashboard` no longer exists.** — Archived 2026-10-28 → `context/archive/2026-10-28-start-page/`. Lesson: —.
 - **S-01: user can use the app without the unused web-search page and the "Exa not configured" banner; the Exa integration and its key are gone from code, config and docs.** — Archived 2026-10-28 → `context/archive/2026-10-28-remove-web-search/`. Lesson: —.
 - **S-05: a service-staff member can filter the to-do ticket queue by client company, on an `/admin/tickets` moved onto the UI contract (light XEMI look, same width and user bar as the start page).** — Archived 2026-10-28 → `context/archive/2026-10-28-staff-ticket-company-filter/`. Lesson: —.
+- **S-04: user can sign in, sign up and read the confirm-email page in Polish on the light XEMI look with the user bar, and after signing in returns to the page they originally asked for. An unknown address (e.g. the removed `/dashboard`) shows a Polish, XEMI-styled 404 page (`src/pages/404.astro`) with the user bar and a link to the start page, instead of Astro's default. The shared shell `src/layouts/Layout.astro` declares `<html lang="pl">` and the default title "HelpDesk XEMI" instead of "10x Astro Starter" (the per-element `lang="pl"` wrappers on contract pages can then go).** — Archived 2026-10-29 → `context/archive/2026-10-29-polish-sign-in/`. Lesson: —.
