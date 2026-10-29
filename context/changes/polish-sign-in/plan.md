@@ -341,15 +341,15 @@ No database change. The smoke test expectations change in the same commit as the
 
 #### Automated
 
-- [x] 3.1 `npm run lint` passes (auth pages and components are inside `uiContractConfig`)
-- [x] 3.2 `npx astro check` passes
-- [x] 3.3 `npm run build` passes
-- [x] 3.4 `npm run smoke` passes
-- [x] 3.5 `grep -rn "bg-cosmic" src/pages/auth src/components/auth` returns nothing
+- [x] 3.1 `npm run lint` passes (auth pages and components are inside `uiContractConfig`) — 2680407
+- [x] 3.2 `npx astro check` passes — 2680407
+- [x] 3.3 `npm run build` passes — 2680407
+- [x] 3.4 `npm run smoke` passes — 2680407
+- [x] 3.5 `grep -rn "bg-cosmic" src/pages/auth src/components/auth` returns nothing — 2680407
 
 #### Manual
 
-- [x] 3.6 Kitchen sink `/dev/ui-kitchen-sink` shows every auth state on the light look; screenshot gate accepted
-- [x] 3.7 Sign-in, sign-up (new e-mail and an existing one) and confirm-email work end to end in Polish with the user bar
-- [x] 3.8 Keyboard: Tab order e-mail → hasło → przełącznik → przycisk, visible focus ring everywhere; screen reader announces field errors
-- [x] 3.9 360 px width: no horizontal scroll on the three pages and the 404
+- [x] 3.6 Kitchen sink `/dev/ui-kitchen-sink` shows every auth state on the light look; screenshot gate accepted — 2680407
+- [x] 3.7 Sign-in, sign-up (new e-mail and an existing one) and confirm-email work end to end in Polish with the user bar — 2680407
+- [x] 3.8 Keyboard: Tab order e-mail → hasło → przełącznik → przycisk, visible focus ring everywhere; screen reader announces field errors — 2680407
+- [x] 3.9 360 px width: no horizontal scroll on the three pages and the 404 — 2680407
