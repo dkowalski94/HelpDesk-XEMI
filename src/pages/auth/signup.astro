@@ -1,8 +1,16 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import SignUpForm from "@/components/auth/SignUpForm";
+import { authErrorMessage } from "@/lib/auth-messages";
+import { safeNextPath } from "@/lib/auth-redirect";
 
-const error = Astro.url.searchParams.get("error");
+// A signed-in user gets no sign-up form: send them where they were going. Set on
+// Astro.response rather than `return Astro.redirect()` (see signin.astro).
+if (Astro.locals.user) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", safeNextPath(Astro.url.searchParams.get("next")));
+}
+const errorMessage = authErrorMessage(Astro.url.searchParams.get("error"));
 ---
 
 <Layout title="Sign up">
@@ -11,7 +19,7 @@ const error = Astro.url.searchParams.get("error");
       <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
         Sign up
       </h1>
-      <SignUpForm serverError={error} client:load />
+      <SignUpForm serverError={errorMessage} client:load />
       <p class="mt-4 text-center text-sm text-blue-100/60">
         Already have an account?{" "}
         <a href="/auth/signin" class="text-purple-300 hover:underline">

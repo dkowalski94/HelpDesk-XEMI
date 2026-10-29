@@ -7,9 +7,11 @@ import { ServerError } from "@/components/auth/ServerError";
 
 interface Props {
   serverError?: string | null;
+  /** Already validated by the page with safeNextPath(); posted back only when it is not "/". */
+  next?: string;
 }
 
-export default function SignInForm({ serverError }: Props) {
+export default function SignInForm({ serverError, next: nextPath = "/" }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,6 +43,7 @@ export default function SignInForm({ serverError }: Props) {
 
   return (
     <form method="POST" action="/api/auth/signin" className="space-y-4" onSubmit={handleSubmit} noValidate>
+      {nextPath !== "/" && <input type="hidden" name="next" value={nextPath} />}
       <FormField
         id="email"
         type="email"

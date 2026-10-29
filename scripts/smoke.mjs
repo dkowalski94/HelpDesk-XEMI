@@ -101,11 +101,11 @@ async function request(path, { method = "GET", form, as = "smoke" } = {}) {
   };
 }
 
-function signIn(persona) {
+function signIn(persona, next) {
   const { email: personaEmail, password: personaPassword } = SEEDED[persona];
   return request("/api/auth/signin", {
     method: "POST",
-    form: { email: personaEmail, password: personaPassword },
+    form: { email: personaEmail, password: personaPassword, ...(next === undefined ? {} : { next }) },
     as: persona,
   });
 }
@@ -212,19 +212,23 @@ const stillWaiting = (actual) => smokeUserId !== null && waitingUserId(actual.te
 const steps = [
   ["home renders the guest start page", () => request("/"), { status: 200, check: guestStartPage }],
   ["dashboard is gone", () => request("/dashboard"), { status: 404 }],
-  ["admin page redirects anonymous user", () => request("/admin/users"), { status: 302, location: "/auth/signin" }],
+  [
+    "admin page redirects anonymous user",
+    () => request("/admin/users"),
+    { status: 302, location: "/auth/signin?next=%2Fadmin%2Fusers" },
+  ],
   // Asserts the middleware gate, not the endpoint's own role check: the 401 comes
   // from STAFF_ROUTES before the handler runs.
   ["admin api rejects anonymous user", () => request("/api/admin/assign-company", { method: "POST" }), { status: 401 }],
   [
     "report-error page redirects anonymous user",
     () => request("/report-error", { as: "anonymous" }),
-    { status: 302, location: "/auth/signin" },
+    { status: 302, location: "/auth/signin?next=%2Freport-error" },
   ],
   [
     "my-tickets page redirects anonymous user",
     () => request("/my-tickets", { as: "anonymous" }),
-    { status: 302, location: "/auth/signin" },
+    { status: 302, location: "/auth/signin?next=%2Fmy-tickets" },
   ],
   ["tickets api rejects anonymous user", () => request("/api/tickets", { as: "anonymous" }), { status: 401 }],
   [
@@ -247,6 +251,12 @@ const steps = [
     () => request("/api/auth/signin", { method: "POST", form: { email, password: "wrong" } }),
     { status: 302, location: "/auth/signin?error=" },
   ],
+  // error first, next kept: the form comes back with the code and still knows where to go.
+  [
+    "signin with next rejects wrong password and keeps next",
+    () => request("/api/auth/signin", { method: "POST", form: { email, password: "wrong", next: "/my-tickets" } }),
+    { status: 302, location: "/auth/signin?error=invalid-credentials&next=" },
+  ],
   [
     "signin accepts correct password",
     () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
@@ -263,6 +273,17 @@ const steps = [
   // --- Read isolation: GET /api/tickets returns exactly what RLS permits -------------
   ["Klient Alfa user signs in", () => signIn("alfa"), { status: 302, location: "/" }],
   [
+    "Klient Alfa user signs in with next",
+    () => signIn("alfa", "/my-tickets"),
+    { status: 302, location: "/my-tickets" },
+  ],
+  // A signed-in visitor gets no sign-in form; the request does not touch the session.
+  [
+    "signed-in user is sent away from the signin page",
+    () => request("/auth/signin", { as: "alfa" }),
+    { status: 302, location: "/" },
+  ],
+  [
     "Klient Alfa user sees only Alfa's tickets",
     () => request("/api/tickets", { as: "alfa" }),
     { status: 200, check: onlyTicketsOf(COMPANY.alfa, TICKET.alfa) },
@@ -276,6 +297,8 @@ const steps = [
     },
   ],
   ["Klient Beta user signs in", () => signIn("beta"), { status: 302, location: "/" }],
+  // Open-redirect guard: a protocol-relative next falls back to the start page.
+  ["signin ignores an off-site next", () => signIn("beta", "//evil.example"), { status: 302, location: "/" }],
   [
     "Klient Beta user sees only Beta's tickets",
     () => request("/api/tickets", { as: "beta" }),

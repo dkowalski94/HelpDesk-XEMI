@@ -1,8 +1,18 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import SignInForm from "@/components/auth/SignInForm";
+import { authErrorMessage } from "@/lib/auth-messages";
+import { safeNextPath } from "@/lib/auth-redirect";
 
-const error = Astro.url.searchParams.get("error");
+const next = safeNextPath(Astro.url.searchParams.get("next"));
+// A signed-in user gets no sign-in form: send them where they were going. Set on
+// Astro.response rather than `return Astro.redirect()`: a frontmatter `return` crashes
+// typescript-eslint's no-misused-promises in astro-eslint-parser (see my-tickets.astro).
+if (Astro.locals.user) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", next);
+}
+const errorMessage = authErrorMessage(Astro.url.searchParams.get("error"));
 ---
 
 <Layout title="Sign in">
@@ -11,7 +21,7 @@ const error = Astro.url.searchParams.get("error");
       <h1 class="mb-6 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
         Sign in
       </h1>
-      <SignInForm serverError={error} client:load />
+      <SignInForm serverError={errorMessage} next={next} client:load />
       <p class="mt-4 text-center text-sm text-blue-100/60">
         Don't have an account?{" "}
         <a href="/auth/signup" class="text-purple-300 hover:underline">

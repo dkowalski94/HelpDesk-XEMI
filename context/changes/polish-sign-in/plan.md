@@ -310,32 +310,32 @@ No database change. The smoke test expectations change in the same commit as the
 
 #### Automated
 
-- [x] 1.1 `npm run lint` passes
-- [x] 1.2 `npx astro check` passes
-- [x] 1.3 `npm run build` passes
-- [x] 1.4 `grep -rn 'lang="' src` matches only `src/layouts/Layout.astro`
-- [x] 1.5 `npm run smoke` passes (step "dashboard is gone" still 404)
+- [x] 1.1 `npm run lint` passes — 0036274
+- [x] 1.2 `npx astro check` passes — 0036274
+- [x] 1.3 `npm run build` passes — 0036274
+- [x] 1.4 `grep -rn 'lang="' src` matches only `src/layouts/Layout.astro` — 0036274
+- [x] 1.5 `npm run smoke` passes (step "dashboard is gone" still 404) — 0036274
 
 #### Manual
 
-- [x] 1.6 `/dashboard` shows the Polish 404 page with the user bar (as guest and as a signed-in client) and the link returns to `/`
-- [x] 1.7 Page source of `/` shows `<html lang="pl">`; tab title of a page without its own title is "HelpDesk XEMI"
+- [x] 1.6 `/dashboard` shows the Polish 404 page with the user bar (as guest and as a signed-in client) and the link returns to `/` — 0036274
+- [x] 1.7 Page source of `/` shows `<html lang="pl">`; tab title of a page without its own title is "HelpDesk XEMI" — 0036274
 
 ### Phase 2: Error codes and return to the requested page
 
 #### Automated
 
-- [ ] 2.1 `npm run lint` passes
-- [ ] 2.2 `npx astro check` passes
-- [ ] 2.3 `npm run build` passes
-- [ ] 2.4 `npm run smoke` passes, including the updated anonymous-redirect steps and the four new steps
+- [x] 2.1 `npm run lint` passes
+- [x] 2.2 `npx astro check` passes
+- [x] 2.3 `npm run build` passes
+- [x] 2.4 `npm run smoke` passes, including the updated anonymous-redirect steps and the four new steps
 
 #### Manual
 
-- [ ] 2.5 As a guest open `/my-tickets?offset=20`, sign in as Klient Alfa, land on `/my-tickets?offset=20`
-- [ ] 2.6 Wrong password shows a Polish message and a second, correct attempt still lands on the requested page
-- [ ] 2.7 `/auth/signin?error=<script>` shows the generic Polish message, not the parameter text
-- [ ] 2.8 `/auth/signin?next=//example.com` followed by a successful sign-in lands on `/`
+- [x] 2.5 As a guest open `/my-tickets?offset=20`, sign in as Klient Alfa, land on `/my-tickets?offset=20`
+- [x] 2.6 Wrong password shows a Polish message and a second, correct attempt still lands on the requested page
+- [x] 2.7 `/auth/signin?error=<script>` shows the generic Polish message, not the parameter text
+- [x] 2.8 `/auth/signin?next=//example.com` followed by a successful sign-in lands on `/`
 
 ### Phase 3: Auth pages on the XEMI contract
 

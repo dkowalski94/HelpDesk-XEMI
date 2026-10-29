@@ -1,6 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { createClient } from "@/lib/supabase";
 import { getSessionProfile } from "@/lib/services/profile";
+import { signinHref } from "@/lib/auth-redirect";
 
 const PROTECTED_ROUTES = ["/report-error", "/my-tickets"];
 
@@ -35,7 +36,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (isStaffRoute || PROTECTED_ROUTES.some((route) => context.url.pathname.startsWith(route))) {
     if (!context.locals.user) {
-      return isApiRoute ? new Response(null, { status: 401 }) : context.redirect("/auth/signin");
+      // Pages remember where the visitor was going; signinHref() keeps only a safe path.
+      return isApiRoute
+        ? new Response(null, { status: 401 })
+        : context.redirect(signinHref({ next: context.url.pathname + context.url.search }));
     }
   }
 
