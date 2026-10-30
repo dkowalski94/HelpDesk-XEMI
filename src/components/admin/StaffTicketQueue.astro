@@ -4,7 +4,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlert } from "@/components/error-resolution/ErrorAlert";
-import { FIXED_ROWS, FOCUS_RING, INNER_CARD } from "@/components/error-resolution/format";
+import { FIXED_ROWS, FOCUS_RING, INNER_CARD, formatDate } from "@/components/error-resolution/format";
 import { RESOLUTION_TEXT_MAX_LENGTH } from "@/lib/services/ticket-resolution";
 import { cn } from "@/lib/utils";
 import type { StaffCompanyOption, StaffQueueResult } from "@/types";
@@ -53,10 +53,6 @@ const selectedCompanyName = companies?.find((company) => company.id === selected
 
 const RESOLUTION_PREVIEW_HINT =
   "Dane firmy, nazwiska i numery zostaną zamaskowane. Zgłaszający zobaczy przyczynę i kroki bez zmian.";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" });
-}
 
 const headingClass = "mb-2 text-2xl font-bold text-foreground";
 const hint = "mb-6 text-sm text-muted-foreground";
