@@ -1,6 +1,5 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import Topbar from "@/components/Topbar.astro";
+import PageShell from "@/layouts/PageShell.astro";
 import ConfirmEmailNotice from "@/components/auth/ConfirmEmailNotice.astro";
 import { confirmEmailContent } from "@/components/auth/confirm-email";
 
@@ -9,11 +8,6 @@ const isAutoConfirmed = import.meta.env.DEV;
 const { heading } = confirmEmailContent(isAutoConfirmed);
 ---
 
-<Layout title={heading}>
-  <div class="min-h-screen bg-background p-4">
-    <div class="mx-auto w-full max-w-5xl">
-      <Topbar />
-      <ConfirmEmailNotice autoConfirmed={isAutoConfirmed} />
-    </div>
-  </div>
-</Layout>
+<PageShell title={heading} variant="narrow">
+  <ConfirmEmailNotice autoConfirmed={isAutoConfirmed} />
+</PageShell>

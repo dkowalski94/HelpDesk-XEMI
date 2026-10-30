@@ -9,6 +9,7 @@ import StaffUserAssignment from "@/components/admin/StaffUserAssignment.astro";
 import AuthKitchenSink from "@/components/auth/AuthKitchenSink";
 import ConfirmEmailNotice from "@/components/auth/ConfirmEmailNotice.astro";
 import { Card } from "@/components/ui/card";
+import { HERO_CARD_CLASS, NARROW_CARD_CLASS, PAGE_CARD_CLASS } from "@/lib/ui-classes";
 import type {
   PendingAssignmentsResult,
   PendingAssignmentUser,
@@ -182,21 +183,33 @@ const assignmentCells: {
       <h2 class="text-xl font-bold text-foreground">Strona startowa</h2>
       <p class="text-sm text-muted-foreground">Widok / dla każdej grupy odbiorców.</p>
       <h3 class="text-base font-bold text-foreground">Gość</h3>
-      <StartPage audience="guest" />
+      <Card className={HERO_CARD_CLASS}>
+        <StartPage audience="guest" />
+      </Card>
       <h3 class="text-base font-bold text-foreground">Klient</h3>
-      <StartPage audience="client" />
+      <Card className={HERO_CARD_CLASS}>
+        <StartPage audience="client" />
+      </Card>
       <h3 class="text-base font-bold text-foreground">Serwis</h3>
-      <StartPage audience="staff" />
+      <Card className={HERO_CARD_CLASS}>
+        <StartPage audience="staff" />
+      </Card>
       <h3 class="text-base font-bold text-foreground">Konto czeka na przypisanie</h3>
-      <StartPage audience="waiting" />
+      <Card className={HERO_CARD_CLASS}>
+        <StartPage audience="waiting" />
+      </Card>
       <h3 class="text-base font-bold text-foreground">Błąd wczytania konta</h3>
-      <StartPage audience="profile-error" />
+      <Card className={HERO_CARD_CLASS}>
+        <StartPage audience="profile-error" />
+      </Card>
     </section>
 
     <section class="space-y-4">
       <h2 class="text-xl font-bold text-foreground">Strona 404</h2>
       <p class="text-sm text-muted-foreground">Karta „Nie znaleziono strony” z linkiem powrotu na stronę startową.</p>
-      <NotFound />
+      <Card className={PAGE_CARD_CLASS}>
+        <NotFound />
+      </Card>
     </section>
 
     <section class="space-y-4">
@@ -208,7 +221,7 @@ const assignmentCells: {
       {queueCells.map((cell, index) => (
         <>
           <h3 class="text-base font-bold text-foreground">{cell.title}</h3>
-          <Card className="gap-0 p-6 sm:p-8">
+          <Card className={PAGE_CARD_CLASS}>
             <StaffTicketQueue
               queue={cell.queue}
               successMessage={cell.successMessage ?? null}
@@ -232,7 +245,7 @@ const assignmentCells: {
       {assignmentCells.map((cell) => (
         <>
           <h3 class="text-base font-bold text-foreground">{cell.title}</h3>
-          <Card className="gap-0 p-6 sm:p-8">
+          <Card className={PAGE_CARD_CLASS}>
             <StaffUserAssignment
               pending={cell.pending}
               successMessage={cell.successMessage ?? null}
@@ -251,9 +264,13 @@ const assignmentCells: {
         Widok /auth/confirm-email: konto potwierdzone automatycznie (dev) i link aktywacyjny wysłany e-mailem.
       </p>
       <h3 class="text-base font-bold text-foreground">Konto założone (dev)</h3>
-      <ConfirmEmailNotice autoConfirmed />
+      <Card className={NARROW_CARD_CLASS}>
+        <ConfirmEmailNotice autoConfirmed />
+      </Card>
       <h3 class="text-base font-bold text-foreground">Sprawdź skrzynkę e-mail</h3>
-      <ConfirmEmailNotice autoConfirmed={false} />
+      <Card className={NARROW_CARD_CLASS}>
+        <ConfirmEmailNotice autoConfirmed={false} />
+      </Card>
     </section>
 
     <KitchenSink client:only="react" />

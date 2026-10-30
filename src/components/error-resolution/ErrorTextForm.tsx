@@ -4,10 +4,9 @@ import { Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ERROR_TEXT_MAX_LENGTH } from "@/lib/error-text";
-import { cn } from "@/lib/utils";
+import { BLOCKED_CLASS, FIXED_ROWS } from "@/lib/ui-classes";
 import { ErrorAlert } from "./ErrorAlert";
 import { FieldCounter } from "./FieldCounter";
-import { BLOCKED_CLASS, FIXED_ROWS, FOCUS_RING } from "./format";
 
 interface ErrorTextFormProps {
   value: string;
@@ -53,7 +52,7 @@ export function ErrorTextForm({ value, length, pending, blocked, error, onChange
         onChange={(e) => {
           onChange(e.target.value);
         }}
-        className={cn(FIXED_ROWS, FOCUS_RING)}
+        className={FIXED_ROWS}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -69,12 +68,7 @@ export function ErrorTextForm({ value, length, pending, blocked, error, onChange
             </p>
           )}
         </div>
-        <Button
-          type="submit"
-          aria-disabled={blocked}
-          aria-describedby={blockedReasonId}
-          className={cn(FOCUS_RING, BLOCKED_CLASS)}
-        >
+        <Button type="submit" aria-disabled={blocked} aria-describedby={blockedReasonId} className={BLOCKED_CLASS}>
           {pending ? <Loader2 className="animate-spin" /> : <Send />}
           {pending ? "Szukam rozwiązania..." : "Wyślij"}
         </Button>

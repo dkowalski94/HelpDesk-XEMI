@@ -1,8 +1,6 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import Topbar from "@/components/Topbar.astro";
+import PageShell from "@/layouts/PageShell.astro";
 import StaffUserAssignment from "@/components/admin/StaffUserAssignment.astro";
-import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase";
 import { listPendingAssignments } from "@/lib/services/company-assignment";
 import type { PendingAssignmentsResult } from "@/types";
@@ -26,13 +24,6 @@ const supabase = createClient(Astro.request.headers, Astro.cookies);
 const pending: PendingAssignmentsResult = supabase ? await listPendingAssignments(supabase) : { status: "error" };
 ---
 
-<Layout title="Konta do przypisania">
-  <div class="min-h-screen bg-background p-4">
-    <div class="mx-auto w-full max-w-5xl">
-      <Topbar />
-      <Card className="gap-0 p-6 sm:p-8">
-        <StaffUserAssignment pending={pending} successMessage={successMessage} errorMessage={errorMessage} />
-      </Card>
-    </div>
-  </div>
-</Layout>
+<PageShell title="Konta do przypisania">
+  <StaffUserAssignment pending={pending} successMessage={successMessage} errorMessage={errorMessage} />
+</PageShell>

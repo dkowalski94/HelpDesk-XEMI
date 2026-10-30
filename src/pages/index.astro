@@ -1,6 +1,5 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import Topbar from "@/components/Topbar.astro";
+import PageShell from "@/layouts/PageShell.astro";
 import StartPage from "@/components/start/StartPage.astro";
 import { isClientUser } from "@/lib/services/profile";
 
@@ -22,11 +21,6 @@ if (!user) {
 }
 ---
 
-<Layout title="HelpDesk XEMI">
-  <div class="flex min-h-screen flex-col bg-background p-4">
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col">
-      <Topbar />
-      <StartPage audience={audience} />
-    </div>
-  </div>
-</Layout>
+<PageShell variant="hero">
+  <StartPage audience={audience} />
+</PageShell>

@@ -1,10 +1,11 @@
 import type React from "react";
 import { BookOpen, Loader2, Wrench } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { INNER_CARD, SECTION_HEADING_CLASS } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import type { ErrorResolutionSuccess, KnowledgeMatch } from "@/types";
 import { CauseSteps } from "./CauseSteps";
-import { INNER_CARD, formatDate } from "./format";
+import { formatDate } from "./format";
 
 function SourceLabel({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -52,7 +53,7 @@ export function ResolutionOutcome({ result, escalation }: ResolutionOutcomeProps
     return (
       <section className="space-y-3">
         <Card className={INNER_CARD}>
-          <h2 className="text-warning text-lg font-semibold">Nie znaleźliśmy rozwiązania</h2>
+          <h2 className={cn(SECTION_HEADING_CLASS, "text-warning")}>Nie znaleźliśmy rozwiązania</h2>
           <p className="text-foreground/80 mt-1 text-sm">
             W bazie wiedzy i dokumentacji nie ma wpisu pasującego do tego błędu. Możesz przekazać go do zespołu
             serwisowego XEMI.
@@ -66,7 +67,7 @@ export function ResolutionOutcome({ result, escalation }: ResolutionOutcomeProps
   if (result.outcome === "matched") {
     return (
       <section className="space-y-3">
-        <h2 className="text-success text-lg font-semibold">Znaleźliśmy możliwe rozwiązanie</h2>
+        <h2 className={cn(SECTION_HEADING_CLASS, "text-success")}>Znaleźliśmy możliwe rozwiązanie</h2>
         <p className="text-muted-foreground text-sm">Nie utworzyliśmy zgłoszenia.</p>
         <ul className="space-y-4">
           {result.matches.map((match) => (
@@ -82,7 +83,7 @@ export function ResolutionOutcome({ result, escalation }: ResolutionOutcomeProps
     return (
       <Card className={INNER_CARD}>
         <section>
-          <h2 className="text-warning text-lg font-semibold">Nie znaleźliśmy rozwiązania</h2>
+          <h2 className={cn(SECTION_HEADING_CLASS, "text-warning")}>Nie znaleźliśmy rozwiązania</h2>
           <p className="text-foreground/80 mt-1 text-sm">Przekazaliśmy błąd do zespołu serwisowego XEMI.</p>
           {result.searchUnavailable && (
             <p className="text-muted-foreground mt-2 text-sm">
@@ -97,7 +98,7 @@ export function ResolutionOutcome({ result, escalation }: ResolutionOutcomeProps
   return (
     <Card className={INNER_CARD}>
       <section>
-        <h2 className="text-warning text-lg font-semibold">Ten błąd został już zgłoszony</h2>
+        <h2 className={cn(SECTION_HEADING_CLASS, "text-warning")}>Ten błąd został już zgłoszony</h2>
         <p className="text-foreground/80 mt-1 text-sm">
           Zgłoszenie z {formatDate(result.ticket.createdAt)} czeka na zespół serwisowy.
         </p>

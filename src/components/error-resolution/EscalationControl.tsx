@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { COMMENT_MAX_LENGTH } from "@/lib/error-text";
+import { BLOCKED_CLASS, FIXED_ROWS, INNER_CARD } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import type { EscalationSuccess } from "@/types";
 import { ErrorAlert } from "./ErrorAlert";
 import { FieldCounter } from "./FieldCounter";
-import { BLOCKED_CLASS, FIXED_ROWS, FOCUS_RING, INNER_CARD, formatDate } from "./format";
+import { formatDate } from "./format";
 
 export interface EscalationResult {
   escalation: EscalationSuccess;
@@ -79,7 +80,7 @@ export function EscalationControl({
 
   if (!open) {
     return (
-      <Button type="button" variant="outline" onClick={onOpen} className={FOCUS_RING}>
+      <Button type="button" variant="outline" onClick={onOpen}>
         <ThumbsDown />
         Żadna z sugestii nie pomogła
       </Button>
@@ -105,7 +106,7 @@ export function EscalationControl({
           onChange={(e) => {
             onCommentChange(e.target.value);
           }}
-          className={cn(FIXED_ROWS, "bg-card", FOCUS_RING)}
+          className={cn(FIXED_ROWS, "bg-card")}
         />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <FieldCounter
@@ -119,7 +120,7 @@ export function EscalationControl({
             variant="outline"
             aria-disabled={blocked}
             aria-describedby={tooLong && !pending ? counterId : undefined}
-            className={cn(FOCUS_RING, BLOCKED_CLASS)}
+            className={BLOCKED_CLASS}
           >
             {pending ? <Loader2 className="animate-spin" /> : <Send />}
             {pending ? "Przekazuję..." : "Przekaż do serwisu"}

@@ -1,64 +1,66 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import Topbar from "@/components/Topbar.astro";
+import PageShell from "@/layouts/PageShell.astro";
 import AccountStatusNotice from "@/components/AccountStatusNotice.astro";
-import { Card } from "@/components/ui/card";
 import { isClientUser } from "@/lib/services/profile";
+import { HEADING_CLASS, LEAD_CLASS } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
 /**
- * Chrome and audience branches of a client-only page (`/report-error`, `/my-tickets`):
- * Topbar (which carries the XEMI logo) and `Card`, with the profile-error / staff / waiting messages in one
- * place so both pages show identical texts (profile-error and waiting come from the shared
- * `AccountStatusNotice`, also used by the start page). The default slot is rendered only for
- * the one audience the client endpoints accept (client users of a client company). A missing
- * profile reads as "waiting for assignment", as on the start page.
+ * Audience branches of a client-only page (`/report-error`, `/my-tickets`) inside `PageShell`,
+ * with the profile-error / staff / waiting messages in one place so both pages show identical
+ * texts (profile-error and waiting come from the shared `AccountStatusNotice`, also used by the
+ * start page). The tab title is the `h1` of the branch rendered. The default slot is rendered
+ * only for the one audience the client endpoints accept (client users of a client company). A
+ * missing profile reads as "waiting for assignment", as on the start page.
  */
 interface Props {
-  /** Document title. */
-  title: string;
-  /** The client branch's `h1`. */
+  /** The client branch's `h1`, also the tab title. */
   heading: string;
   /** Optional hint under the client heading. */
   intro?: string;
 }
 
-const { title, heading, intro } = Astro.props;
+const { heading, intro } = Astro.props;
 const { profile, profileLookupFailed } = Astro.locals;
 
 const isStaff = profile?.role === "service_staff";
 const isClient = isClientUser(profile);
 
-// Heading and hint style of the staff and client branches (same as AccountStatusNotice).
-const headingClass = "mb-2 text-2xl font-bold text-foreground";
-const hint = "text-sm text-muted-foreground";
+const STAFF_HEADING = "Strona dla klientów";
+// The `h1` texts of AccountStatusNotice's two statuses — keep in sync with that component.
+const PROFILE_ERROR_HEADING = "Nie udało się wczytać Twojego konta";
+const WAITING_HEADING = "Konto czeka na przypisanie";
+
+const title = profileLookupFailed
+  ? PROFILE_ERROR_HEADING
+  : isStaff
+    ? STAFF_HEADING
+    : isClient
+      ? heading
+      : WAITING_HEADING;
+
+// The staff message is the card's last paragraph: no lead margin under it.
+const staffLeadClass = cn(LEAD_CLASS, "mb-0");
 ---
 
-<Layout title={title}>
-  <div class="min-h-screen bg-background p-4">
-    <div class="mx-auto w-full max-w-5xl">
-      <Topbar />
-      <Card className="gap-0 p-6 sm:p-8">
-        {profileLookupFailed ? (
-          <AccountStatusNotice status="profile-error" headingLevel="h1" />
-        ) : isStaff ? (
-          <>
-            <h1 class:list={headingClass}>Strona dla klientów</h1>
-            <p class:list={hint}>
-              Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów i nie ma własnych
-              zgłoszeń.
-            </p>
-          </>
-        ) : isClient ? (
-          <>
-            <h1 class:list={headingClass}>{heading}</h1>
-            {intro && <p class:list={cn(hint, "mb-6")}>{intro}</p>}
-            <slot />
-          </>
-        ) : (
-          <AccountStatusNotice status="waiting" headingLevel="h1" />
-        )}
-      </Card>
-    </div>
-  </div>
-</Layout>
+<PageShell title={title}>
+  {profileLookupFailed ? (
+    <AccountStatusNotice status="profile-error" headingLevel="h1" />
+  ) : isStaff ? (
+    <>
+      <h1 class:list={HEADING_CLASS}>{STAFF_HEADING}</h1>
+      <p class:list={staffLeadClass}>
+        Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów i nie ma własnych
+        zgłoszeń.
+      </p>
+    </>
+  ) : isClient ? (
+    <>
+      <h1 class:list={HEADING_CLASS}>{heading}</h1>
+      {intro && <p class:list={LEAD_CLASS}>{intro}</p>}
+      <slot />
+    </>
+  ) : (
+    <AccountStatusNotice status="waiting" headingLevel="h1" />
+  )}
+</PageShell>

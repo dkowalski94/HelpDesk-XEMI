@@ -1,6 +1,6 @@
 ---
 import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { LINK_CLASS } from "@/lib/ui-classes";
 
 /**
  * The user bar's markup: who is signed in and the entries of their role. Reads no locals —
@@ -31,21 +31,18 @@ const entries =
         ]
       : [];
 
-// Full-strength focus ring: `--ring` at half alpha is below 3:1 on white (CLAUDE.md → UI contract).
-const FOCUS_RING = "focus-visible:border-ring focus-visible:ring-ring";
-const entryClass = cn(buttonVariants({ variant: "outline", size: "sm" }), FOCUS_RING);
-const primaryEntryClass = cn(buttonVariants({ variant: "default", size: "sm" }), FOCUS_RING);
+// `buttonVariants()` already draws the full-strength focus ring.
+const entryClass = buttonVariants({ variant: "outline", size: "sm" });
+const primaryEntryClass = buttonVariants({ variant: "default", size: "sm" });
 // The entry's page or a page below it; a bare prefix would also match `/my-tickets-old`.
 const isCurrent = (href: string) => currentPath === href || currentPath.startsWith(`${href}/`);
-const quietLinkClass =
-  "rounded-sm text-primary transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 ---
 
 <nav
   aria-label="Pasek użytkownika"
   class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-muted px-4 py-2 text-sm text-muted-foreground"
 >
-  <a href="/" aria-label="HelpDesk XEMI — strona startowa" class:list={quietLinkClass}>
+  <a href="/" aria-label="HelpDesk XEMI — strona startowa" class:list={LINK_CLASS}>
     <img src="/logo-xemi.svg" alt="" width="137" height="36" class="h-7 w-auto sm:h-8" />
   </a>
   {email ? (
@@ -68,7 +65,7 @@ const quietLinkClass =
           Zalogowany jako: <span class="font-bold text-foreground">{email}</span>
         </span>
         <form method="POST" action="/api/auth/signout">
-          <button type="submit" class:list={quietLinkClass}>
+          <button type="submit" class:list={LINK_CLASS}>
             Wyloguj
           </button>
         </form>

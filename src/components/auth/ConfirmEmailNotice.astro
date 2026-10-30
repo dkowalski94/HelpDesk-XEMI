@@ -1,11 +1,13 @@
 ---
 import { CircleCheck, MailCheck } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { confirmEmailContent } from "@/components/auth/confirm-email";
+import { HEADING_CLASS, LEAD_CLASS, LINK_CLASS } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 
 /**
- * The card of `/auth/confirm-email`. Reads no locals or env, so the kitchen sink renders both
- * variants with static props; the route decides `autoConfirmed` and adds the frame.
+ * The content of `/auth/confirm-email`, centred inside the narrow card. Reads no locals or env,
+ * so the kitchen sink renders both variants with static props; the route decides
+ * `autoConfirmed` and adds `PageShell` (frame, user bar and the narrow card).
  */
 export interface Props {
   /** Local dev auto-confirms new accounts: the user can sign in right away. */
@@ -17,17 +19,14 @@ const { autoConfirmed } = Astro.props;
 const content = confirmEmailContent(autoConfirmed);
 const Icon = autoConfirmed ? CircleCheck : MailCheck;
 
-const headingClass = "mb-3 text-2xl font-bold text-foreground";
-// Full-strength focus outline, as the quiet links of the user bar (CLAUDE.md → UI contract).
-const linkClass =
-  "rounded-sm text-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const signinLinkClass = cn(LINK_CLASS, "text-sm");
 ---
 
-<Card className="mx-auto w-full max-w-md items-center gap-0 p-6 text-center sm:p-8">
+<div class="flex flex-col items-center text-center">
   <Icon className="mb-4 size-12 text-primary" aria-hidden="true" />
-  <h1 class:list={headingClass}>{content.heading}</h1>
-  <p class="mb-6 text-muted-foreground">{content.description}</p>
-  <a href="/auth/signin" class:list={linkClass}>
+  <h1 class:list={HEADING_CLASS}>{content.heading}</h1>
+  <p class:list={LEAD_CLASS}>{content.description}</p>
+  <a href="/auth/signin" class:list={signinLinkClass}>
     Przejdź do logowania
   </a>
-</Card>
+</div>

@@ -1,25 +1,20 @@
 ---
 import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { HEADING_CLASS, LEAD_CLASS } from "@/lib/ui-classes";
 
 /**
- * The "page not found" card of `404.astro`. Reads no locals, so the kitchen sink renders the
- * same markup; the route adds the frame and the user bar.
+ * The "page not found" content of `404.astro`. Reads no locals, so the kitchen sink renders the
+ * same markup; the route adds `PageShell` (frame, user bar and the panel card).
  */
 
-const headingClass = "mb-2 text-3xl font-bold text-foreground sm:text-4xl";
-const hint = "max-w-2xl text-muted-foreground sm:text-lg";
-// Full-strength focus ring: `--ring` at half alpha is below 3:1 on white (CLAUDE.md → UI contract).
-const backLinkClass = cn(buttonVariants({ variant: "default" }), "focus-visible:border-ring focus-visible:ring-ring");
+// `buttonVariants()` already draws the full-strength focus ring.
+const backLinkClass = buttonVariants({ variant: "default" });
 ---
 
-<Card className="gap-0 p-6 sm:p-10">
-  <h1 class:list={headingClass}>Nie znaleziono strony</h1>
-  <p class:list={hint}>Ta strona nie istnieje albo została przeniesiona.</p>
-  <div class="mt-8">
-    <a href="/" class:list={backLinkClass}>
-      Wróć na stronę startową
-    </a>
-  </div>
-</Card>
+<h1 class:list={HEADING_CLASS}>Nie znaleziono strony</h1>
+<p class:list={LEAD_CLASS}>Ta strona nie istnieje albo została przeniesiona.</p>
+<div>
+  <a href="/" class:list={backLinkClass}>
+    Wróć na stronę startową
+  </a>
+</div>

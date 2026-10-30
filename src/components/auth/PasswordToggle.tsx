@@ -1,8 +1,9 @@
 import { Eye, EyeOff } from "lucide-react";
+import { LINK_CLASS } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 
-// Full-strength focus outline, as the quiet links of the user bar (CLAUDE.md → UI contract).
-const toggleClass =
-  "absolute top-1/2 right-2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+// The shared quiet-link focus outline and hover colour, in the muted icon colour.
+const toggleClass = cn(LINK_CLASS, "absolute top-1/2 right-2 -translate-y-1/2 p-1 text-muted-foreground");
 
 interface PasswordToggleProps {
   visible: boolean;

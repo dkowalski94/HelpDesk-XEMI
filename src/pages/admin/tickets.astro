@@ -1,9 +1,7 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import Topbar from "@/components/Topbar.astro";
+import PageShell from "@/layouts/PageShell.astro";
 import { createClient } from "@/lib/supabase";
 import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
-import { Card } from "@/components/ui/card";
 import {
   countMissingEmbeddings,
   listClientCompanies,
@@ -71,21 +69,14 @@ const nextHref =
     : null;
 ---
 
-<Layout title="Zgłoszenia do rozwiązania">
-  <div class="min-h-screen bg-background p-4">
-    <div class="mx-auto w-full max-w-5xl">
-      <Topbar />
-      <Card className="gap-0 p-6 sm:p-8">
-        <StaffTicketQueue
-          queue={queue}
-          successMessage={successMessage}
-          errorMessage={errorMessage}
-          missingEmbeddings={missingEmbeddings}
-          nextHref={nextHref}
-          companies={companies}
-          selectedCompanyId={selectedCompanyId}
-        />
-      </Card>
-    </div>
-  </div>
-</Layout>
+<PageShell title="Zgłoszenia do rozwiązania">
+  <StaffTicketQueue
+    queue={queue}
+    successMessage={successMessage}
+    errorMessage={errorMessage}
+    missingEmbeddings={missingEmbeddings}
+    nextHref={nextHref}
+    companies={companies}
+    selectedCompanyId={selectedCompanyId}
+  />
+</PageShell>

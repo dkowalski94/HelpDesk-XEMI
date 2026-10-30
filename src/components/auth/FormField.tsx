@@ -5,9 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-// Full-strength focus ring: `--ring` at half alpha is below 3:1 on white (CLAUDE.md → UI contract).
-const FOCUS_RING = "focus-visible:border-ring focus-visible:ring-ring";
-
 interface FormFieldProps {
   /** Form field name; the element id is generated, so several forms can share a page (kitchen sink). */
   name: string;
@@ -64,7 +61,7 @@ export function FormField({
           autoComplete={autoComplete}
           aria-invalid={error ? true : undefined}
           aria-describedby={message ? messageId : undefined}
-          className={cn("bg-card pl-10", endContent ? "pr-10" : undefined, FOCUS_RING)}
+          className={cn("bg-card pl-10", endContent ? "pr-10" : undefined)}
         />
         {endContent}
       </div>

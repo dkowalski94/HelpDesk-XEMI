@@ -1,0 +1,38 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Topbar from "@/components/Topbar.astro";
+import { Card } from "@/components/ui/card";
+import { HERO_CARD_CLASS, NARROW_CARD_CLASS, PAGE_CARD_CLASS } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
+
+/**
+ * The frame of every page: document title, background, the `max-w-5xl` app width, the user bar
+ * (`Topbar`, which carries the XEMI logo) and the page `Card` around the default slot.
+ * `panel` is a working page, `narrow` the centred auth card, `hero` the start page card that
+ * fills the viewport height. Pages never write this frame themselves.
+ */
+interface Props {
+  /** The page's `h1` text; the tab reads `<title> — HelpDesk XEMI`, or `HelpDesk XEMI` without it. */
+  title?: string;
+  variant?: "panel" | "narrow" | "hero";
+}
+
+const { title, variant = "panel" } = Astro.props;
+
+const documentTitle = title ? `${title} — HelpDesk XEMI` : "HelpDesk XEMI";
+const isHero = variant === "hero";
+const cardClass = variant === "hero" ? HERO_CARD_CLASS : variant === "narrow" ? NARROW_CARD_CLASS : PAGE_CARD_CLASS;
+const wrapperClass = cn("min-h-screen bg-background p-4", isHero && "flex flex-col");
+const frameClass = cn("mx-auto w-full max-w-5xl", isHero && "flex flex-1 flex-col");
+---
+
+<Layout title={documentTitle}>
+  <div class:list={wrapperClass}>
+    <div class:list={frameClass}>
+      <Topbar />
+      <Card className={cardClass}>
+        <slot />
+      </Card>
+    </div>
+  </div>
+</Layout>

@@ -369,39 +369,39 @@ No data or schema changes. Rollback is a plain Worker rollback. The primitives i
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint`
-- [x] 1.2 Astro type check passes: `npx astro sync && npx astro check`
-- [x] 1.3 Production build passes: `npm run build`
-- [x] 1.4 No cosmic leftovers in source: `grep -rnE "bg-cosmic|cosmic-|class=\"dark" src` returns nothing
-- [x] 1.5 The invalid-and-focused rule is emitted after the plain focus rule in the built CSS
+- [x] 1.1 Lint passes: `npm run lint` — 0ace13d
+- [x] 1.2 Astro type check passes: `npx astro sync && npx astro check` — 0ace13d
+- [x] 1.3 Production build passes: `npm run build` — 0ace13d
+- [x] 1.4 No cosmic leftovers in source: `grep -rnE "bg-cosmic|cosmic-|class=\"dark" src` returns nothing — 0ace13d
+- [x] 1.5 The invalid-and-focused rule is emitted after the plain focus rule in the built CSS — 0ace13d
 
 #### Manual
 
-- [x] 1.6 Baseline screenshots of all 9 pages (desktop + 375 px, with branches) are in `screenshots/before/`
-- [x] 1.7 Tabbing through `/report-error`, `/auth/signin` and `/admin/tickets` shows the same full-strength blue ring on every control
-- [x] 1.8 Tabbing back into an invalid sign-in field shows a clearly visible red focus ring
-- [x] 1.9 With `SUPABASE_URL` unset, the banner renders in the app's destructive red with a visible link focus
-- [x] 1.10 With the OS set to dark mode, no page changes appearance
+- [x] 1.6 Baseline screenshots of all 9 pages (desktop + 375 px, with branches) are in `screenshots/before/` — 0ace13d
+- [x] 1.7 Tabbing through `/report-error`, `/auth/signin` and `/admin/tickets` shows the same full-strength blue ring on every control — 0ace13d
+- [x] 1.8 Tabbing back into an invalid sign-in field shows a clearly visible red focus ring — 0ace13d
+- [x] 1.9 With `SUPABASE_URL` unset, the banner renders in the app's destructive red with a visible link focus — 0ace13d
+- [x] 1.10 With the OS set to dark mode, no page changes appearance — 0ace13d
 
 ### Phase 2: Shared class module and PageShell
 
 #### Automated
 
-- [ ] 2.1 Lint passes: `npm run lint`
-- [ ] 2.2 Astro type check passes: `npx astro sync && npx astro check`
-- [ ] 2.3 Production build passes: `npm run build`
-- [ ] 2.4 No local frame left: `max-w-5xl` only in `src/layouts/PageShell.astro`
-- [ ] 2.5 No local focus constant left: `grep -rn "FOCUS_RING" src` returns nothing
-- [ ] 2.6 No local heading/link/select constants remain
-- [ ] 2.7 Smoke test passes against the dev server after `npx supabase db reset`: `npm run smoke`
+- [x] 2.1 Lint passes: `npm run lint`
+- [x] 2.2 Astro type check passes: `npx astro sync && npx astro check`
+- [x] 2.3 Production build passes: `npm run build`
+- [x] 2.4 No local frame left: `max-w-5xl` only in `src/layouts/PageShell.astro`
+- [x] 2.5 No local focus constant left: `grep -rn "FOCUS_RING" src` returns nothing
+- [x] 2.6 No local heading/link/select constants remain
+- [x] 2.7 Smoke test passes against the dev server after `npx supabase db reset`: `npm run smoke`
 
 #### Manual
 
-- [ ] 2.8 Every page's tab reads `<h1> — HelpDesk XEMI` (start page: `HelpDesk XEMI`), including staff and waiting branches
-- [ ] 2.9 404 looks like an app panel; the start page keeps its large heading
-- [ ] 2.10 Heading size, heading-to-lead spacing and card padding are identical across the panel pages
-- [ ] 2.11 Staff ticket dates in `/admin/tickets` match Polish local time
-- [ ] 2.12 375 px: no horizontal scroll on any page; auth cards stay centred and narrow
+- [x] 2.8 Every page's tab reads `<h1> — HelpDesk XEMI` (start page: `HelpDesk XEMI`), including staff and waiting branches
+- [x] 2.9 404 looks like an app panel; the start page keeps its large heading
+- [x] 2.10 Heading size, heading-to-lead spacing and card padding are identical across the panel pages
+- [x] 2.11 Staff ticket dates in `/admin/tickets` match Polish local time
+- [x] 2.12 375 px: no horizontal scroll on any page; auth cards stay centred and narrow
 
 ### Phase 3: Control alignment and states
 

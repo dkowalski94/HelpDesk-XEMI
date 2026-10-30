@@ -12,12 +12,12 @@ const variantClass: Record<Variant, string> = {
   error: "border-b border-destructive/40 bg-destructive/10 text-destructive",
   warning: "border-b border-warning/40 bg-warning/10 text-warning",
 };
-const linkClass =
+const slotLinkClass =
   "[&_a]:rounded-sm [&_a]:font-semibold [&_a]:underline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-2 [&_a]:focus-visible:outline-ring";
 ---
 
 <div
-  class:list={["px-4 py-3 text-center text-sm", variantClass[variant], linkClass]}
+  class:list={["px-4 py-3 text-center text-sm", variantClass[variant], slotLinkClass]}
   role={variant === "error" ? "alert" : "status"}
 >
   <slot />

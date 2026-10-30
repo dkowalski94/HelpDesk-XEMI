@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { TicketStatus, TicketSummary } from "@/types";
 import { CauseSteps } from "./CauseSteps";
 import { ErrorAlert } from "./ErrorAlert";
-import { FOCUS_RING, formatDate } from "./format";
+import { formatDate } from "./format";
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   todo: "Do zrobienia",
@@ -65,12 +65,12 @@ export function MyTicketsList({ state, olderHref, newerHref }: MyTicketsListProp
       {(newerHref !== undefined || olderHref !== undefined) && (
         <nav aria-label="Strony zgłoszeń" className="flex flex-wrap gap-2 pt-2">
           {newerHref !== undefined && (
-            <Button asChild variant="outline" className={FOCUS_RING}>
+            <Button asChild variant="outline">
               <a href={newerHref}>Nowsze zgłoszenia</a>
             </Button>
           )}
           {olderHref !== undefined && (
-            <Button asChild variant="outline" className={cn("ml-auto", FOCUS_RING)}>
+            <Button asChild variant="outline" className="ml-auto">
               <a href={olderHref}>Starsze zgłoszenia</a>
             </Button>
           )}

@@ -4,7 +4,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlert } from "@/components/error-resolution/ErrorAlert";
-import { FIXED_ROWS, FOCUS_RING, INNER_CARD, formatDate } from "@/components/error-resolution/format";
+import { formatDate } from "@/components/error-resolution/format";
+import { FIXED_ROWS, HEADING_CLASS, INNER_CARD, LEAD_CLASS, SELECT_CLASS } from "@/lib/ui-classes";
 import { RESOLUTION_TEXT_MAX_LENGTH } from "@/lib/services/ticket-resolution";
 import { cn } from "@/lib/utils";
 import type { StaffCompanyOption, StaffQueueResult } from "@/types";
@@ -54,21 +55,15 @@ const selectedCompanyName = companies?.find((company) => company.id === selected
 const RESOLUTION_PREVIEW_HINT =
   "Dane firmy, nazwiska i numery zostaną zamaskowane. Zgłaszający zobaczy przyczynę i kroki bez zmian.";
 
-const headingClass = "mb-2 text-2xl font-bold text-foreground";
-const hint = "mb-6 text-sm text-muted-foreground";
 const labelClass = "block text-xs font-semibold text-foreground";
 const bodyTextClass = "text-sm break-words whitespace-pre-line text-foreground/80";
 const previewBoxClass = "rounded-lg border border-border bg-card p-3";
 const previewTextClass = "mt-1 text-sm break-words whitespace-pre-line text-muted-foreground";
-const textareaClass = cn("mt-1 bg-card", FIXED_ROWS, FOCUS_RING);
-const selectClass = cn(
-  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:ring-3 sm:w-auto",
-  FOCUS_RING,
-);
+const textareaClass = cn("mt-1 bg-card", FIXED_ROWS);
 ---
 
-<h1 class:list={headingClass}>Zgłoszenia do rozwiązania</h1>
-<p class:list={hint}>
+<h1 class:list={HEADING_CLASS}>Zgłoszenia do rozwiązania</h1>
+<p class:list={LEAD_CLASS}>
   Otwarte zgłoszenia wszystkich firm klienckich, od najstarszych. Zapisane rozwiązanie trafia do zgłaszającego i do bazy
   wiedzy.
 </p>
@@ -84,7 +79,7 @@ const selectClass = cn(
       <label for={filterId} class:list={labelClass}>
         Firma
       </label>
-      <select id={filterId} name="company" class:list={cn("mt-1", selectClass)}>
+      <select id={filterId} name="company" class:list={cn("mt-1", SELECT_CLASS)}>
         <option value="" selected={selectedCompanyId === null}>
           Wszystkie firmy
         </option>
@@ -95,7 +90,7 @@ const selectClass = cn(
         ))}
       </select>
     </div>
-    <Button type="submit" variant="outline" className={cn("self-start sm:self-auto", FOCUS_RING)}>
+    <Button type="submit" variant="outline" className="self-start sm:self-auto">
       Filtruj
     </Button>
   </form>
@@ -120,7 +115,7 @@ const selectClass = cn(
   >
     {selectedCompanyId && <input type="hidden" name="company" value={selectedCompanyId} />}
     <p class="flex-1 text-sm font-semibold text-warning">{missingEmbeddings} rozwiązań czeka na embedding</p>
-    <Button type="submit" variant="outline" className={FOCUS_RING}>
+    <Button type="submit" variant="outline">
       Przelicz
     </Button>
   </form>
@@ -136,7 +131,7 @@ const selectClass = cn(
           ? `Brak zgłoszeń do rozwiązania w firmie ${selectedCompanyName}.`
           : "Brak zgłoszeń do rozwiązania w wybranej firmie."}
       </p>
-      <a href="/admin/tickets" class:list={cn(buttonVariants({ variant: "outline" }), FOCUS_RING)}>
+      <a href="/admin/tickets" class:list={buttonVariants({ variant: "outline" })}>
         Pokaż wszystkie firmy
       </a>
     </div>
@@ -202,9 +197,7 @@ const selectClass = cn(
                 {RESOLUTION_PREVIEW_HINT}
               </p>
             </div>
-            <Button type="submit" className={FOCUS_RING}>
-              Zapisz rozwiązanie
-            </Button>
+            <Button type="submit">Zapisz rozwiązanie</Button>
           </form>
         </Card>
       </li>
@@ -213,7 +206,7 @@ const selectClass = cn(
 )}
 
 {nextHref !== null && (
-  <a href={nextHref} class:list={cn("mt-6 self-start", buttonVariants({ variant: "outline" }), FOCUS_RING)}>
+  <a href={nextHref} class:list={cn("mt-6 self-start", buttonVariants({ variant: "outline" }))}>
     Dalej
   </a>
 )}
@@ -238,13 +231,13 @@ const selectClass = cn(
     const steps = form.elements.namedItem("steps");
     if (!preview || !(cause instanceof HTMLTextAreaElement) || !(steps instanceof HTMLTextAreaElement)) continue;
 
-    const hint = (preview.textContent ?? "").trim();
+    const previewHint = (preview.textContent ?? "").trim();
     const companyName = form.dataset.companyName || null;
     form.addEventListener("input", () => {
       const maskedCause = sanitizeResolutionText(cause.value, companyName);
       const maskedSteps = sanitizeResolutionText(steps.value, companyName);
       const parts = [maskedCause && `Przyczyna: ${maskedCause}`, maskedSteps && `Kroki:\n${maskedSteps}`];
-      preview.textContent = parts.filter(Boolean).join("\n\n") || hint;
+      preview.textContent = parts.filter(Boolean).join("\n\n") || previewHint;
     });
   }
 </script>
