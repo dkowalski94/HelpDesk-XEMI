@@ -52,7 +52,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | done        |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | done        |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | done        |
-| S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | proposed    |
+| S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | in-progress |
 
 ## Streams
 
@@ -168,7 +168,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Unknowns:**
   - Whether the `.dark` variant and `--cosmic-*` tokens are dropped entirely or kept for a future dark mode. Owner: user. Block: no (decide in `/10x-plan`).
 - **Risk:** An audit slice can grow without bound — scope it to inconsistencies found by a `/10x-ui` audit across all pages with screenshots as the gate; anything that is a new feature rather than a fix goes to the backlog. The CLAUDE.md UI contract then covers every view, so `uiContractConfig` lists all pages.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Backlog Handoff
 

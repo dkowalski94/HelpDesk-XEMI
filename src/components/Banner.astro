@@ -1,42 +1,24 @@
 ---
-type Variant = "info" | "warning" | "error";
+type Variant = "warning" | "error";
 
 interface Props {
   variant?: Variant;
 }
 
-const { variant = "info" } = Astro.props;
+const { variant = "error" } = Astro.props;
+
+// Token classes only (UI contract roles). Links inside the slot get the full-strength outline focus.
+const variantClass: Record<Variant, string> = {
+  error: "border-b border-destructive/40 bg-destructive/10 text-destructive",
+  warning: "border-b border-warning/40 bg-warning/10 text-warning",
+};
+const linkClass =
+  "[&_a]:rounded-sm [&_a]:font-semibold [&_a]:underline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-2 [&_a]:focus-visible:outline-ring";
 ---
 
-<div class:list={["banner", `banner--${variant}`]} role={variant === "error" ? "alert" : "status"}>
+<div
+  class:list={["px-4 py-3 text-center text-sm", variantClass[variant], linkClass]}
+  role={variant === "error" ? "alert" : "status"}
+>
   <slot />
 </div>
-
-<style>
-  .banner {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    text-align: center;
-    border-bottom: 1px solid;
-  }
-  .banner :global(a) {
-    color: inherit;
-    text-decoration: underline;
-    font-weight: 600;
-  }
-  .banner--info {
-    background: #dbeafe;
-    color: #1e3a8a;
-    border-color: #3b82f6;
-  }
-  .banner--warning {
-    background: #fef3c7;
-    color: #78350f;
-    border-color: #f59e0b;
-  }
-  .banner--error {
-    background: #fee2e2;
-    color: #7f1d1d;
-    border-color: #dc2626;
-  }
-</style>

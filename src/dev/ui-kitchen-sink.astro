@@ -167,8 +167,7 @@ const assignmentCells: {
       <h2 class="text-xl font-bold text-foreground">Pasek użytkownika</h2>
       <p class="text-sm text-muted-foreground">
         Gość, klient (aktywne „Zgłoś błąd”, potem „Moje zgłoszenia”), serwis (bez aktywnego, potem aktywne „Zgłoszenia
-        do rozwiązania”, aktywne „Użytkownicy”), konto bez roli; motyw jasny (XEMI) i wariant ciemny w opakowaniu
-        class="dark".
+        do rozwiązania”, aktywne „Użytkownicy”), konto bez roli.
       </p>
       <UserBar email={null} access="none" currentPath="/" />
       <UserBar email="alfa@klient-alfa.local" access="client" currentPath="/report-error" />
@@ -177,10 +176,6 @@ const assignmentCells: {
       <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/tickets" />
       <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/users" />
       <UserBar email="oczekujacy@xemi.local" access="none" currentPath="/" />
-      <div class="dark space-y-4 rounded-xl bg-background p-4">
-        <UserBar email={null} access="none" currentPath="/" />
-        <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/tickets" />
-      </div>
     </section>
 
     <section class="space-y-4">
