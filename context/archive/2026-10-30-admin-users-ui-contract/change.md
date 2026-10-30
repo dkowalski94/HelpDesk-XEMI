@@ -1,10 +1,10 @@
 ---
 change_id: admin-users-ui-contract
 title: Admin users ui contract
-status: implemented
+status: archived
 created: 2026-10-30
 updated: 2026-10-30
-archived_at: null
+archived_at: 2026-10-30T09:35:11Z
 ---
 
 ## Notes

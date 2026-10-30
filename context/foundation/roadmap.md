@@ -51,7 +51,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-03 | start-page                  | (guest) learn what the site is; (client) reach "Zgłoś błąd" / "Moje zgłoszenia"; (staff) reach the queue | S-02          | MS-01, MS-03 | done        |
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | done        |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | done        |
-| S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | in-progress |
+| S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | done        |
 | S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | proposed    |
 
 ## Streams
@@ -155,7 +155,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The smoke test reads the waiting list from this page's HTML (`waitingUserId`), so its markup change must keep that parser working.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-07: Cross-page UI consistency pass
 
@@ -221,3 +221,4 @@ M-2 items (their IDs belong to M-2):
 - **S-01: user can use the app without the unused web-search page and the "Exa not configured" banner; the Exa integration and its key are gone from code, config and docs.** — Archived 2026-10-28 → `context/archive/2026-10-28-remove-web-search/`. Lesson: —.
 - **S-05: a service-staff member can filter the to-do ticket queue by client company, on an `/admin/tickets` moved onto the UI contract (light XEMI look, same width and user bar as the start page).** — Archived 2026-10-28 → `context/archive/2026-10-28-staff-ticket-company-filter/`. Lesson: —.
 - **S-04: user can sign in, sign up and read the confirm-email page in Polish on the light XEMI look with the user bar, and after signing in returns to the page they originally asked for. An unknown address (e.g. the removed `/dashboard`) shows a Polish, XEMI-styled 404 page (`src/pages/404.astro`) with the user bar and a link to the start page, instead of Astro's default. The shared shell `src/layouts/Layout.astro` declares `<html lang="pl">` and the default title "HelpDesk XEMI" instead of "10x Astro Starter" (the per-element `lang="pl"` wrappers on contract pages can then go).** — Archived 2026-10-29 → `context/archive/2026-10-29-polish-sign-in/`. Lesson: —.
+- **S-06: a service-staff member assigns new accounts to companies on a Polish, XEMI-styled `/admin/users` (light look, start-page width, user bar).** — Archived 2026-10-30 → `context/archive/2026-10-30-admin-users-ui-contract/`. Lesson: —.
