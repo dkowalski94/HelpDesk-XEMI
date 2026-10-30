@@ -140,14 +140,14 @@ None.
 
 #### Automated
 
-- [x] 1.1 Lint passes with the page in the contract
-- [x] 1.2 Type check passes
-- [x] 1.3 Production build succeeds
-- [x] 1.4 Smoke passes unchanged against the preview on a freshly reset local Supabase
-- [x] 1.5 No palette/arbitrary/hex classes remain
+- [x] 1.1 Lint passes with the page in the contract — 436fb15
+- [x] 1.2 Type check passes — 436fb15
+- [x] 1.3 Production build succeeds — 436fb15
+- [x] 1.4 Smoke passes unchanged against the preview on a freshly reset local Supabase — 436fb15
+- [x] 1.5 No palette/arbitrary/hex classes remain — 436fb15
 
 #### Manual
 
-- [x] 1.6 Kitchen-sink screenshot of every „Konta do przypisania” cell and the „Użytkownicy”-active UserBar looks like `/admin/tickets`
-- [x] 1.7 As staff on `/admin/users`: Topbar active entry, account with „Założone: …”, assignment message and removal
-- [x] 1.8 Keyboard focus ring on select and „Przypisz”; narrow viewport stacks without horizontal scroll
+- [x] 1.6 Kitchen-sink screenshot of every „Konta do przypisania” cell and the „Użytkownicy”-active UserBar looks like `/admin/tickets` — 436fb15
+- [x] 1.7 As staff on `/admin/users`: Topbar active entry, account with „Założone: …”, assignment message and removal — 436fb15
+- [x] 1.8 Keyboard focus ring on select and „Przypisz”; narrow viewport stacks without horizontal scroll — 436fb15
