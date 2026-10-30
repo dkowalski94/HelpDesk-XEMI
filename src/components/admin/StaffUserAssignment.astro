@@ -1,0 +1,87 @@
+---
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ErrorAlert } from "@/components/error-resolution/ErrorAlert";
+import { FOCUS_RING, formatDate, INNER_CARD } from "@/components/error-resolution/format";
+import { cn } from "@/lib/utils";
+import type { PendingAssignmentsResult } from "@/types";
+
+/**
+ * The staff waiting list on `/admin/users`: accounts in the `unassigned` company with a company
+ * select each. Reads no locals and runs no query, so the kitchen sink can render every state with
+ * static props; the route maps the query string to the messages and loads the list.
+ *
+ * The smoke test reads `name="userId" value="<id>"` and then `>email<` from the HTML: the hidden
+ * input comes first in each form, and the e-mail is the only text of its element.
+ */
+interface Props {
+  pending: PendingAssignmentsResult;
+  /** Fixed success text chosen by the route from `status`, or `null`. */
+  successMessage: string | null;
+  /** Fixed error text chosen by the route from `error`, or `null`. */
+  errorMessage: string | null;
+}
+
+const { pending, successMessage, errorMessage } = Astro.props;
+
+const headingClass = "mb-2 text-2xl font-bold text-foreground";
+const hint = "mb-6 text-sm text-muted-foreground";
+const detailClass = "truncate text-sm text-muted-foreground";
+const selectClass = cn(
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:ring-3 sm:w-auto",
+  FOCUS_RING,
+);
+---
+
+<h1 class:list={headingClass}>Konta do przypisania</h1>
+<p class:list={hint}>Nowe konta czekają na firmę. Przypisz każde do jego firmy klienckiej.</p>
+
+{successMessage && (
+  <Alert className="mb-4 border-success/40 bg-success/10">
+    <AlertDescription className="font-semibold text-success">{successMessage}</AlertDescription>
+  </Alert>
+)}
+{errorMessage && (
+  <div class="mb-4">
+    <ErrorAlert message={errorMessage} />
+  </div>
+)}
+
+{pending.status === "error" ? (
+  <ErrorAlert message="Nie udało się wczytać listy kont. Odśwież stronę za chwilę." />
+) : pending.users.length === 0 ? (
+  <p class="text-sm text-muted-foreground">Żadne konto nie czeka na przypisanie.</p>
+) : pending.companies.length === 0 ? (
+  <p class="text-sm font-semibold text-warning">Nie ma jeszcze firm klienckich, do których można przypisać konta.</p>
+) : (
+  <ul class="space-y-4">
+    {pending.users.map((pendingUser) => (
+      <li>
+        <Card className={INNER_CARD}>
+          <form
+            method="POST"
+            action="/api/admin/assign-company"
+            class="flex flex-col gap-3 sm:flex-row sm:items-center"
+          >
+            <input type="hidden" name="userId" value={pendingUser.id} />
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-semibold text-foreground">{pendingUser.email}</p>
+              {pendingUser.fullName && <p class:list={detailClass}>{pendingUser.fullName}</p>}
+              <p class:list={detailClass}>Założone: {formatDate(pendingUser.createdAt)}</p>
+            </div>
+            <select name="companyId" required aria-label={`Firma dla ${pendingUser.email}`} class:list={selectClass}>
+              <option value="">Wybierz firmę</option>
+              {pending.companies.map((company) => (
+                <option value={company.id}>{company.name}</option>
+              ))}
+            </select>
+            <Button type="submit" className={cn("self-start sm:self-auto", FOCUS_RING)}>
+              Przypisz
+            </Button>
+          </form>
+        </Card>
+      </li>
+    ))}
+  </ul>
+)}

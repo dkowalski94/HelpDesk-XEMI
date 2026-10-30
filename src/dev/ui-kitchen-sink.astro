@@ -5,12 +5,19 @@ import KitchenSink from "@/components/error-resolution/KitchenSink";
 import StartPage from "@/components/start/StartPage.astro";
 import NotFound from "@/components/NotFound.astro";
 import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
+import StaffUserAssignment from "@/components/admin/StaffUserAssignment.astro";
 import AuthKitchenSink from "@/components/auth/AuthKitchenSink";
 import ConfirmEmailNotice from "@/components/auth/ConfirmEmailNotice.astro";
 import { Card } from "@/components/ui/card";
-import type { StaffCompanyOption, StaffQueueResult, StaffQueueTicket } from "@/types";
+import type {
+  PendingAssignmentsResult,
+  PendingAssignmentUser,
+  StaffCompanyOption,
+  StaffQueueResult,
+  StaffQueueTicket,
+} from "@/types";
 
-// Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets, /admin/tickets, 404, /auth/*). Routed by the `devOnlyRoutes`
+// Dev-only visual gate for the views on the UI contract (/, /report-error, /my-tickets, /admin/tickets, /admin/users, 404, /auth/*). Routed by the `devOnlyRoutes`
 // integration in astro.config.mjs under `astro dev` only, so production builds do not contain it.
 
 // Staff queue fixtures. Ids carry a per-cell prefix so the textarea ids stay unique on this page.
@@ -104,6 +111,45 @@ const queueCells: {
     companies: null,
   },
 ];
+
+// Waiting-list fixtures for /admin/users: one account with a full name, one without.
+const pendingUsers: PendingAssignmentUser[] = [
+  {
+    id: "00000000-0000-4000-8000-0000000000a1",
+    email: "jan.kowalski@klient-alfa.local",
+    fullName: "Jan Kowalski",
+    createdAt: "2026-10-27T09:30:00.000Z",
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000a2",
+    email: "nowe.konto@klient-beta.local",
+    fullName: null,
+    createdAt: "2026-10-29T16:05:00.000Z",
+  },
+];
+const assignmentCompanies = [
+  { id: "company-alfa", name: "Klient Alfa" },
+  { id: "company-beta", name: "Klient Beta" },
+];
+const pendingList: PendingAssignmentsResult = { status: "ok", users: pendingUsers, companies: assignmentCompanies };
+const pendingEmpty: PendingAssignmentsResult = { status: "ok", users: [], companies: assignmentCompanies };
+const assignmentCells: {
+  title: string;
+  pending: PendingAssignmentsResult;
+  successMessage?: string;
+  errorMessage?: string;
+}[] = [
+  { title: "Lista: dwa konta (z imieniem i nazwiskiem i bez)", pending: pendingList },
+  { title: "Pusta lista", pending: pendingEmpty },
+  { title: "Brak firm klienckich", pending: { status: "ok", users: pendingUsers, companies: [] } },
+  { title: "Błąd wczytania", pending: { status: "error" } },
+  { title: "Komunikat sukcesu", pending: pendingEmpty, successMessage: "Konto przypisane do firmy." },
+  {
+    title: "Komunikat błędu",
+    pending: pendingList,
+    errorMessage: "Nic nie zmieniono — konto już nie istnieje albo ma już firmę.",
+  },
+];
 ---
 
 <Layout title="Kitchen sink UI">
@@ -111,9 +157,9 @@ const queueCells: {
     <header class="space-y-2">
       <h1 class="text-2xl font-bold text-foreground">Kitchen sink UI</h1>
       <p class="text-sm text-muted-foreground">
-        Każdy stan widoków na kontrakcie UI (strona startowa, /report-error, /my-tickets, /admin/tickets, strona 404,
-        logowanie i zakładanie konta) na statycznych danych, bez zapytań do API. Hover i focus-visible sprawdź myszą i
-        klawiszem Tab na tej stronie.
+        Każdy stan widoków na kontrakcie UI (strona startowa, /report-error, /my-tickets, /admin/tickets, /admin/users,
+        strona 404, logowanie i zakładanie konta) na statycznych danych, bez zapytań do API. Hover i focus-visible
+        sprawdź myszą i klawiszem Tab na tej stronie.
       </p>
     </header>
 
@@ -121,13 +167,15 @@ const queueCells: {
       <h2 class="text-xl font-bold text-foreground">Pasek użytkownika</h2>
       <p class="text-sm text-muted-foreground">
         Gość, klient (aktywne „Zgłoś błąd”, potem „Moje zgłoszenia”), serwis (bez aktywnego, potem aktywne „Zgłoszenia
-        do rozwiązania”), konto bez roli; motyw jasny (XEMI) i wariant ciemny w opakowaniu class="dark".
+        do rozwiązania”, aktywne „Użytkownicy”), konto bez roli; motyw jasny (XEMI) i wariant ciemny w opakowaniu
+        class="dark".
       </p>
       <UserBar email={null} access="none" currentPath="/" />
       <UserBar email="alfa@klient-alfa.local" access="client" currentPath="/report-error" />
       <UserBar email="alfa@klient-alfa.local" access="client" currentPath="/my-tickets" />
       <UserBar email="serwis@xemi.local" access="staff" currentPath="/" />
       <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/tickets" />
+      <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/users" />
       <UserBar email="oczekujacy@xemi.local" access="none" currentPath="/" />
       <div class="dark space-y-4 rounded-xl bg-background p-4">
         <UserBar email={null} access="none" currentPath="/" />
@@ -175,6 +223,25 @@ const queueCells: {
               companies={cell.companies ?? null}
               selectedCompanyId={cell.selectedCompanyId ?? null}
               filterId={`company-filter-${String(index)}`}
+            />
+          </Card>
+        </>
+      ))}
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-foreground">Konta do przypisania</h2>
+      <p class="text-sm text-muted-foreground">
+        Widok /admin/users: lista kont z datą założenia, pusta lista, brak firm klienckich, błąd wczytania i komunikaty.
+      </p>
+      {assignmentCells.map((cell) => (
+        <>
+          <h3 class="text-base font-bold text-foreground">{cell.title}</h3>
+          <Card className="gap-0 p-6 sm:p-8">
+            <StaffUserAssignment
+              pending={cell.pending}
+              successMessage={cell.successMessage ?? null}
+              errorMessage={cell.errorMessage ?? null}
             />
           </Card>
         </>
