@@ -272,29 +272,29 @@ Brak migracji i zmian danych.
 
 #### Automated
 
-- [x] 1.1 `npm ci` instaluje `vitest`, a `npm test` przechodzi na lokalnym Supabase po `npx supabase db reset`
-- [x] 1.2 Wszystkie 7 przypadków z `error-resolution.test.ts` przechodzą
-- [x] 1.3 `npm test` bez `SUPABASE_URL` kończy się błędem (nie pominięciem) z instrukcją uruchomienia Supabase
-- [x] 1.4 `npm run lint` i `npx astro check` przechodzą (z nowymi plikami `.ts`)
-- [x] 1.5 `npm run build` przechodzi, a w `dist/` nie ma śladu `vitest` ani `src/test/`
+- [x] 1.1 `npm ci` instaluje `vitest`, a `npm test` przechodzi na lokalnym Supabase po `npx supabase db reset` — 858a011
+- [x] 1.2 Wszystkie 7 przypadków z `error-resolution.test.ts` przechodzą — 858a011
+- [x] 1.3 `npm test` bez `SUPABASE_URL` kończy się błędem (nie pominięciem) z instrukcją uruchomienia Supabase — 858a011
+- [x] 1.4 `npm run lint` i `npx astro check` przechodzą (z nowymi plikami `.ts`) — 858a011
+- [x] 1.5 `npm run build` przechodzi, a w `dist/` nie ma śladu `vitest` ani `src/test/` — 858a011
 
 #### Manual
 
-- [x] 1.6 Celowe zepsucie `fileTicket` (np. INSERT do `caller.companyId` zastąpiony stałą firmą Beta) powoduje porażkę testów kolejki — zmiana cofnięta
-- [x] 1.7 Wynik spiku `getViteConfig` zapisany w nagłówku `vitest.config.ts`
+- [x] 1.6 Celowe zepsucie `fileTicket` (np. INSERT do `caller.companyId` zastąpiony stałą firmą Beta) powoduje porażkę testów kolejki — zmiana cofnięta — 858a011
+- [x] 1.7 Wynik spiku `getViteConfig` zapisany w nagłówku `vitest.config.ts` — 858a011
 
 ### Phase 2: Smoke — kolejka serwisu po id
 
 #### Automated
 
-- [ ] 2.1 `npm run smoke` przechodzi po `npx supabase db reset` na `npm run build && npm run preview`
-- [ ] 2.2 `npm run lint` przechodzi (`scripts/**/*.mjs`)
-- [ ] 2.3 `grep -n "first, oldest-first page" scripts/smoke.mjs` nic nie zwraca
+- [x] 2.1 `npm run smoke` przechodzi po `npx supabase db reset` na `npm run build && npm run preview`
+- [x] 2.2 `npm run lint` przechodzi (`scripts/**/*.mjs`)
+- [x] 2.3 `grep -n "first, oldest-first page" scripts/smoke.mjs` nic nie zwraca
 
 #### Manual
 
-- [ ] 2.4 Lokalnie, przy kolejce Alfa dłuższej niż 50 `todo` (np. po kilku przebiegach `npm test` + smoke bez resetu), kroki kolejki nadal przechodzą, a raport pokazuje znalezienie na stronie > 1
-- [ ] 2.5 Celowe podanie złego id (np. tymczasowo `smokeTicketId = crypto.randomUUID()`) daje FAIL w krokach kolejki — zmiana cofnięta
+- [x] 2.4 Lokalnie, przy kolejce Alfa dłuższej niż 50 `todo` (np. po kilku przebiegach `npm test` + smoke bez resetu), kroki kolejki nadal przechodzą, a raport pokazuje znalezienie na stronie > 1
+- [x] 2.5 Celowe podanie złego id (np. tymczasowo `smokeTicketId = crypto.randomUUID()`) daje FAIL w krokach kolejki — zmiana cofnięta
 
 ### Phase 3: CI i cookbook
 

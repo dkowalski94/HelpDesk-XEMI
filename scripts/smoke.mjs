@@ -6,12 +6,14 @@
 // Each run files two Klient Alfa tickets as the throwaway account — one through
 // POST /api/resolve-error, which staff then resolves (adding one ticket knowledge base
 // entry), and one through POST /api/escalate-error, which stays open; nothing deletes
-// any of them — tickets have no DELETE policy. After ~24 runs against the
-// same database the seeded ticket e101 falls off the first page of GET /api/tickets, and the
-// staff check and the three onlyTicketsOf(COMPANY.alfa, TICKET.alfa) steps fail (the open
-// escalation tickets also fill the oldest-first staff queue, after ~49 runs, and its Klient
-// Alfa filter, which the filtered /admin/tickets steps read, at the same point): run
-// `npx supabase db reset` every couple of dozen local runs.
+// any of them — tickets have no DELETE policy. The staff queue steps look a ticket up by
+// id across every page of /admin/tickets, so the open tickets piling up there set no run
+// limit. The first page of GET /api/tickets (newest first, 50 per page) still does: once
+// ~49 newer Klient Alfa tickets exist, the seeded ticket e101 falls off it and the staff
+// check (which also expects a single page) and the three onlyTicketsOf(COMPANY.alfa,
+// TICKET.alfa) steps fail. `npm test` files Klient Alfa tickets too (~4 per run), so an
+// `npm test` + `npm run smoke` pair uses up ~6 of those 49: run `npx supabase db reset`
+// every few such pairs (or every couple of dozen smoke-only runs).
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
 const runId = Date.now();
@@ -196,6 +198,60 @@ const myTicketsList = (text) =>
 
 /** True when the staff queue page renders a resolve form for the ticket. */
 const inQueue = (html, id) => id !== null && html.includes(`name="ticketId" value="${id}"`);
+
+// Mirrors STAFF_QUEUE_PAGE_SIZE in src/lib/services/ticket-resolution.ts: the queue's next
+// page starts this many tickets further on. Change both or neither.
+const STAFF_QUEUE_PAGE_SIZE = 50;
+// Safety stop for the page walk, far above any queue a local or CI database reaches.
+const STAFF_QUEUE_MAX_PAGES = 200;
+// Rendered instead of the list when the queue lookup failed; a not-found walk must not pass on it.
+const STAFF_QUEUE_ERROR = "Nie udało się wczytać zgłoszeń.";
+
+/**
+ * Walks /admin/tickets as staff, page by page (optionally with ?company=), until a page
+ * renders the resolve form for ticket `id` or has no "Dalej" link to the next offset.
+ * Returns the step-loop shape (`status`, `location`, `text` of the page it was found on,
+ * else of the last page read) plus `found`, `pages` (pages read), `complete` (the walk
+ * reached the last page) and `detail` for the report. The first non-200 page stops the
+ * walk and is returned. `id === null` reads nothing and is not found.
+ */
+async function findInStaffQueuePages(id, { company } = {}) {
+  if (id === null) {
+    return { status: 0, location: "", text: "", found: false, pages: 0, complete: false, detail: "no ticket id" };
+  }
+  let pages = 0;
+  for (let offset = 0; pages < STAFF_QUEUE_MAX_PAGES; offset += STAFF_QUEUE_PAGE_SIZE) {
+    const params = new URLSearchParams();
+    if (company !== undefined) params.set("company", company);
+    if (offset > 0) params.set("offset", String(offset));
+    const query = params.toString();
+    const actual = await request(query ? `/admin/tickets?${query}` : "/admin/tickets", { as: "staff" });
+    pages++;
+    if (actual.status !== 200) {
+      return { ...actual, found: false, pages, complete: false, detail: `page ${pages} answered ${actual.status}` };
+    }
+    if (inQueue(actual.text, id)) {
+      return { ...actual, found: true, pages, complete: false, detail: `found on page ${pages}` };
+    }
+    // The "Dalej" href may be HTML-escaped (&amp;); offset is matched as a whole number.
+    const next = offset + STAFF_QUEUE_PAGE_SIZE;
+    if (!new RegExp(`offset=${next}(?!\\d)`).test(actual.text)) {
+      return { ...actual, found: false, pages, complete: true, detail: `not found in ${pages} page(s)` };
+    }
+  }
+  return {
+    status: 0,
+    location: "",
+    text: "",
+    found: false,
+    pages,
+    complete: false,
+    detail: `stopped after ${pages} pages without reaching the end`,
+  };
+}
+
+/** True when the walk read every page of a rendered queue and the ticket was on none of them. */
+const walkedWithout = ({ found, complete, text }) => !found && complete && !text.includes(STAFF_QUEUE_ERROR);
 const hasTicket = (json, id) => id !== null && json.tickets.some((ticket) => ticket.id === id);
 const ticketOf = (json, id) =>
   json?.ok === true && id !== null ? json.tickets.find((ticket) => ticket.id === id) : undefined;
@@ -510,6 +566,11 @@ const steps = [
     },
   ],
   [
+    "...and the ticket is in the staff queue under the Klient Alfa filter",
+    () => findInStaffQueuePages(smokeTicketId, { company: COMPANY.alfa }),
+    { status: 200, check: ({ found }) => found },
+  ],
+  [
     "...and ?mine=1 lists exactly that ticket for the new account",
     () => request("/api/tickets?mine=1"),
     {
@@ -609,30 +670,31 @@ const steps = [
         json.ticket.id === escalationTicketId,
     },
   ],
-  // Assumes the escalation ticket is on the queue's first, oldest-first page; see the header.
+  // Staff queue steps look the ticket up by id across pages; the comments are checked on
+  // the page it is found on.
   [
     "...and staff sees the first comment on /admin/tickets, not the second",
-    () => request("/admin/tickets", { as: "staff" }),
+    () => findInStaffQueuePages(escalationTicketId, { company: COMPANY.alfa }),
     {
       status: 200,
-      check: ({ text }) => text.includes(escalationComment) && !text.includes(escalationSecondComment),
+      check: ({ found, text }) => found && text.includes(escalationComment) && !text.includes(escalationSecondComment),
     },
   ],
-  // The company filter narrows the queue (a view filter inside RLS); same first-page assumption.
+  // The company filter narrows the queue (a view filter inside RLS).
   [
     "...and the Klient Alfa filter on /admin/tickets keeps the escalation ticket",
-    () => request(`/admin/tickets?company=${COMPANY.alfa}`, { as: "staff" }),
-    { status: 200, check: ({ text }) => text.includes(escalationComment) },
+    () => findInStaffQueuePages(escalationTicketId, { company: COMPANY.alfa }),
+    { status: 200, check: ({ found }) => found },
   ],
   [
     "...and the Klient Beta filter leaves it out",
-    () => request(`/admin/tickets?company=${COMPANY.beta}`, { as: "staff" }),
-    { status: 200, check: ({ text }) => !text.includes(escalationComment) },
+    () => findInStaffQueuePages(escalationTicketId, { company: COMPANY.beta }),
+    { status: 200, check: walkedWithout },
   ],
   [
     "...and a company that is not a UUID is ignored (all companies)",
-    () => request("/admin/tickets?company=not-a-uuid", { as: "staff" }),
-    { status: 200, check: ({ text }) => text.includes(escalationComment) },
+    () => findInStaffQueuePages(escalationTicketId, { company: "not-a-uuid" }),
+    { status: 200, check: ({ found }) => found },
   ],
 
   // --- Ticket resolution (S-02): staff resolves the ticket filed above ---------------
@@ -674,11 +736,10 @@ const steps = [
     () => request("/admin/tickets", { as: "alfa" }),
     { status: 302, location: "/" },
   ],
-  // Assumes the smoke ticket is on the queue's first, oldest-first page; see the header.
   [
     "staff queue at /admin/tickets lists the ticket",
-    () => request("/admin/tickets", { as: "staff" }),
-    { status: 200, check: ({ text }) => inQueue(text, smokeTicketId) },
+    () => findInStaffQueuePages(smokeTicketId, { company: COMPANY.alfa }),
+    { status: 200, check: ({ found }) => found },
   ],
   [
     "staff cannot resolve with blank steps",
@@ -708,8 +769,8 @@ const steps = [
   ],
   [
     "...and it has left the staff queue",
-    () => request("/admin/tickets", { as: "staff" }),
-    { status: 200, check: ({ text }) => smokeTicketId !== null && !inQueue(text, smokeTicketId) },
+    () => findInStaffQueuePages(smokeTicketId, { company: COMPANY.alfa }),
+    { status: 200, check: walkedWithout },
   ],
   [
     "...and the filing account sees it resolved, with the cause and steps",
@@ -743,7 +804,8 @@ for (const [name, run, expected] of steps) {
     actual.status === expected.status &&
     (expected.location === undefined || locationMatches(actual.location, expected.location)) &&
     (expected.check === undefined || expected.check(actual));
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
+  const detail = actual.detail ? ` (${actual.detail})` : "";
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}${detail}`);
   if (!ok) {
     failed++;
     console.log(
