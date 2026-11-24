@@ -287,23 +287,23 @@ Brak migracji i zmian danych.
 
 #### Automated
 
-- [x] 2.1 `npm run smoke` przechodzi po `npx supabase db reset` na `npm run build && npm run preview`
-- [x] 2.2 `npm run lint` przechodzi (`scripts/**/*.mjs`)
-- [x] 2.3 `grep -n "first, oldest-first page" scripts/smoke.mjs` nic nie zwraca
+- [x] 2.1 `npm run smoke` przechodzi po `npx supabase db reset` na `npm run build && npm run preview` — 78ebb46
+- [x] 2.2 `npm run lint` przechodzi (`scripts/**/*.mjs`) — 78ebb46
+- [x] 2.3 `grep -n "first, oldest-first page" scripts/smoke.mjs` nic nie zwraca — 78ebb46
 
 #### Manual
 
-- [x] 2.4 Lokalnie, przy kolejce Alfa dłuższej niż 50 `todo` (np. po kilku przebiegach `npm test` + smoke bez resetu), kroki kolejki nadal przechodzą, a raport pokazuje znalezienie na stronie > 1
-- [x] 2.5 Celowe podanie złego id (np. tymczasowo `smokeTicketId = crypto.randomUUID()`) daje FAIL w krokach kolejki — zmiana cofnięta
+- [x] 2.4 Lokalnie, przy kolejce Alfa dłuższej niż 50 `todo` (np. po kilku przebiegach `npm test` + smoke bez resetu), kroki kolejki nadal przechodzą, a raport pokazuje znalezienie na stronie > 1 — 78ebb46
+- [x] 2.5 Celowe podanie złego id (np. tymczasowo `smokeTicketId = crypto.randomUUID()`) daje FAIL w krokach kolejki — zmiana cofnięta — 78ebb46
 
 ### Phase 3: CI i cookbook
 
 #### Automated
 
 - [ ] 3.1 CI na PR: joby `ci` i `smoke` zielone, log joba `smoke` pokazuje przebieg `npm test` przed buildem
-- [ ] 3.2 `npx prettier --check CLAUDE.md context/foundation/test-plan.md` przechodzi
+- [x] 3.2 `npx prettier --check CLAUDE.md context/foundation/test-plan.md` przechodzi
 
 #### Manual
 
-- [ ] 3.3 §6.1 i §6.2 test-planu pozwalają dodać nowy test bez czytania tego planu
-- [ ] 3.4 Opis `npm test` w CLAUDE.md zgadza się z faktycznym zachowaniem (błąd bez Supabase, odmowa zdalnego URL)
+- [x] 3.3 §6.1 i §6.2 test-planu pozwalają dodać nowy test bez czytania tego planu
+- [x] 3.4 Opis `npm test` w CLAUDE.md zgadza się z faktycznym zachowaniem (błąd bez Supabase, odmowa zdalnego URL)

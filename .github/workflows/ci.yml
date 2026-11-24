@@ -49,6 +49,8 @@ jobs:
           source supabase.env
           printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\n' "$API_URL" "$ANON_KEY" > .env
           cp .env .dev.vars
+      # Vitest reads SUPABASE_URL/SUPABASE_KEY from .env; runs after rls.sql, whose row counts assume a seed-only database.
+      - run: npm test
       - run: npm run build
       - name: Run smoke test against production preview
         run: |
