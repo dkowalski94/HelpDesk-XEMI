@@ -300,7 +300,7 @@ Brak migracji i zmian danych.
 
 #### Automated
 
-- [ ] 3.1 CI na PR: joby `ci` i `smoke` zielone, log joba `smoke` pokazuje przebieg `npm test` przed buildem
+- [x] 3.1 CI na PR: joby `ci` i `smoke` zielone, log joba `smoke` pokazuje przebieg `npm test` przed buildem — run 45968002290
 - [x] 3.2 `npx prettier --check CLAUDE.md context/foundation/test-plan.md` przechodzi — 34dfc91
 
 #### Manual
