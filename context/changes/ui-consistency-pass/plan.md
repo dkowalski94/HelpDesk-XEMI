@@ -407,18 +407,18 @@ No data or schema changes. Rollback is a plain Worker rollback. The primitives i
 
 #### Automated
 
-- [x] 3.1 Lint passes: `npm run lint`
-- [x] 3.2 Astro type check passes: `npx astro sync && npx astro check`
-- [x] 3.3 Production build passes: `npm run build`
-- [x] 3.4 `aria-hidden` present on every `Loader2`
+- [x] 3.1 Lint passes: `npm run lint` — 5d2f60e
+- [x] 3.2 Astro type check passes: `npx astro sync && npx astro check` — 5d2f60e
+- [x] 3.3 Production build passes: `npm run build` — 5d2f60e
+- [x] 3.4 `aria-hidden` present on every `Loader2` — 5d2f60e
 
 #### Manual
 
-- [ ] 3.5 `/dev/ui-kitchen-sink` shows the new section with every listed state, desktop and 375 px
-- [ ] 3.6 Invalid fields show the full red focus ring, valid fields and the select the full blue ring
-- [ ] 3.7 Links on signin, signup, confirm-email, report-error and the UserBar behave the same on hover
-- [ ] 3.8 Confirm-email's "Przejdź do logowania" is a button matching the 404's
-- [ ] 3.9 Staff UserBar shows „Konta do przypisania” active on `/admin/users`, wrapping cleanly at 375 px
+- [x] 3.5 `/dev/ui-kitchen-sink` shows the new section with every listed state, desktop and 375 px — 5d2f60e
+- [x] 3.6 Invalid fields show the full red focus ring, valid fields and the select the full blue ring — 5d2f60e
+- [x] 3.7 Links on signin, signup, confirm-email, report-error and the UserBar behave the same on hover — 5d2f60e
+- [x] 3.8 Confirm-email's "Przejdź do logowania" is a button matching the 404's — 5d2f60e
+- [x] 3.9 Staff UserBar shows „Konta do przypisania” active on `/admin/users`, wrapping cleanly at 375 px — 5d2f60e
 
 ### Phase 4: Lock it in
 
