@@ -1,10 +1,10 @@
 ---
 change_id: testing-ticket-reaches-staff
 title: Testy — zgłoszenie klienta zawsze trafia do kolejki serwisu (Phase 1)
-status: implementing
+status: archived
 created: 2026-11-17
-updated: 2026-11-24
-archived_at: null
+updated: 2026-11-27
+archived_at: 2026-11-27T08:58:18Z
 ---
 
 ## Notes
