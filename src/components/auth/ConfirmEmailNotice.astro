@@ -1,8 +1,8 @@
 ---
 import { CircleCheck, MailCheck } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { confirmEmailContent } from "@/components/auth/confirm-email";
-import { HEADING_CLASS, LEAD_CLASS, LINK_CLASS } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
+import { HEADING_CLASS, LEAD_CLASS } from "@/lib/ui-classes";
 
 /**
  * The content of `/auth/confirm-email`, centred inside the narrow card. Reads no locals or env,
@@ -19,7 +19,8 @@ const { autoConfirmed } = Astro.props;
 const content = confirmEmailContent(autoConfirmed);
 const Icon = autoConfirmed ? CircleCheck : MailCheck;
 
-const signinLinkClass = cn(LINK_CLASS, "text-sm");
+// The next step as a primary button, like the 404's; `buttonVariants()` already draws the focus ring.
+const signinLinkClass = buttonVariants({ variant: "default" });
 ---
 
 <div class="flex flex-col items-center text-center">

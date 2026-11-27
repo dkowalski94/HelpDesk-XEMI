@@ -387,30 +387,30 @@ No data or schema changes. Rollback is a plain Worker rollback. The primitives i
 
 #### Automated
 
-- [x] 2.1 Lint passes: `npm run lint`
-- [x] 2.2 Astro type check passes: `npx astro sync && npx astro check`
-- [x] 2.3 Production build passes: `npm run build`
-- [x] 2.4 No local frame left: `max-w-5xl` only in `src/layouts/PageShell.astro`
-- [x] 2.5 No local focus constant left: `grep -rn "FOCUS_RING" src` returns nothing
-- [x] 2.6 No local heading/link/select constants remain
-- [x] 2.7 Smoke test passes against the dev server after `npx supabase db reset`: `npm run smoke`
+- [x] 2.1 Lint passes: `npm run lint` — 956e1fc
+- [x] 2.2 Astro type check passes: `npx astro sync && npx astro check` — 956e1fc
+- [x] 2.3 Production build passes: `npm run build` — 956e1fc
+- [x] 2.4 No local frame left: `max-w-5xl` only in `src/layouts/PageShell.astro` — 956e1fc
+- [x] 2.5 No local focus constant left: `grep -rn "FOCUS_RING" src` returns nothing — 956e1fc
+- [x] 2.6 No local heading/link/select constants remain — 956e1fc
+- [x] 2.7 Smoke test passes against the dev server after `npx supabase db reset`: `npm run smoke` — 956e1fc
 
 #### Manual
 
-- [x] 2.8 Every page's tab reads `<h1> — HelpDesk XEMI` (start page: `HelpDesk XEMI`), including staff and waiting branches
-- [x] 2.9 404 looks like an app panel; the start page keeps its large heading
-- [x] 2.10 Heading size, heading-to-lead spacing and card padding are identical across the panel pages
-- [x] 2.11 Staff ticket dates in `/admin/tickets` match Polish local time
-- [x] 2.12 375 px: no horizontal scroll on any page; auth cards stay centred and narrow
+- [x] 2.8 Every page's tab reads `<h1> — HelpDesk XEMI` (start page: `HelpDesk XEMI`), including staff and waiting branches — 956e1fc
+- [x] 2.9 404 looks like an app panel; the start page keeps its large heading — 956e1fc
+- [x] 2.10 Heading size, heading-to-lead spacing and card padding are identical across the panel pages — 956e1fc
+- [x] 2.11 Staff ticket dates in `/admin/tickets` match Polish local time — 956e1fc
+- [x] 2.12 375 px: no horizontal scroll on any page; auth cards stay centred and narrow — 956e1fc
 
 ### Phase 3: Control alignment and states
 
 #### Automated
 
-- [ ] 3.1 Lint passes: `npm run lint`
-- [ ] 3.2 Astro type check passes: `npx astro sync && npx astro check`
-- [ ] 3.3 Production build passes: `npm run build`
-- [ ] 3.4 `aria-hidden` present on every `Loader2`
+- [x] 3.1 Lint passes: `npm run lint`
+- [x] 3.2 Astro type check passes: `npx astro sync && npx astro check`
+- [x] 3.3 Production build passes: `npm run build`
+- [x] 3.4 `aria-hidden` present on every `Loader2`
 
 #### Manual
 

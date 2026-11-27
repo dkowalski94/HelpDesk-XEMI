@@ -122,7 +122,7 @@ export function EscalationControl({
             aria-describedby={tooLong && !pending ? counterId : undefined}
             className={BLOCKED_CLASS}
           >
-            {pending ? <Loader2 className="animate-spin" /> : <Send />}
+            {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send />}
             {pending ? "Przekazuję..." : "Przekaż do serwisu"}
           </Button>
         </div>

@@ -8,8 +8,25 @@ import StaffTicketQueue from "@/components/admin/StaffTicketQueue.astro";
 import StaffUserAssignment from "@/components/admin/StaffUserAssignment.astro";
 import AuthKitchenSink from "@/components/auth/AuthKitchenSink";
 import ConfirmEmailNotice from "@/components/auth/ConfirmEmailNotice.astro";
+import Banner from "@/components/Banner.astro";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { HERO_CARD_CLASS, NARROW_CARD_CLASS, PAGE_CARD_CLASS } from "@/lib/ui-classes";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  BLOCKED_CLASS,
+  FIXED_ROWS,
+  HEADING_CLASS,
+  HERO_CARD_CLASS,
+  HERO_HEADING_CLASS,
+  HERO_LEAD_CLASS,
+  LEAD_CLASS,
+  LINK_CLASS,
+  NARROW_CARD_CLASS,
+  PAGE_CARD_CLASS,
+  SELECT_CLASS,
+} from "@/lib/ui-classes";
 import type {
   PendingAssignmentsResult,
   PendingAssignmentUser,
@@ -168,7 +185,7 @@ const assignmentCells: {
       <h2 class="text-xl font-bold text-foreground">Pasek użytkownika</h2>
       <p class="text-sm text-muted-foreground">
         Gość, klient (aktywne „Zgłoś błąd”, potem „Moje zgłoszenia”), serwis (bez aktywnego, potem aktywne „Zgłoszenia
-        do rozwiązania”, aktywne „Użytkownicy”), konto bez roli.
+        do rozwiązania”, aktywne „Konta do przypisania”), konto bez roli.
       </p>
       <UserBar email={null} access="none" currentPath="/" />
       <UserBar email="alfa@klient-alfa.local" access="client" currentPath="/report-error" />
@@ -177,6 +194,120 @@ const assignmentCells: {
       <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/tickets" />
       <UserBar email="serwis@xemi.local" access="staff" currentPath="/admin/users" />
       <UserBar email="oczekujacy@xemi.local" access="none" currentPath="/" />
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-foreground">Wspólna powłoka i kontrolki</h2>
+      <p class="text-sm text-muted-foreground">
+        Elementy wspólne dla wszystkich widoków na kontrakcie. Siedem stanów: domyślny — każda komórka poniżej; hover —
+        najedź myszą na link, przyciski i pola (Banner: N/A — nie jest interaktywny); focus-visible — przejdź klawiszem
+        Tab, nie da się go pokazać statycznie (Banner: N/A — tylko linki w jego treści); wyłączony — komórki „wyłączone”
+        (karty i Banner: N/A — nie są kontrolkami); błąd — pola „nieprawidłowe” i Banner „error”; pusty i ładowanie —
+        N/A tutaj, zostają w komórkach widoków (kolejka, listy, formularze z przyciskiem w toku).
+      </p>
+
+      <h3 class="text-base font-bold text-foreground">Karty PageShell: panel / narrow / hero</h3>
+      <Card className={PAGE_CARD_CLASS}>
+        <h1 class:list={HEADING_CLASS}>Karta „panel”</h1>
+        <p class:list={LEAD_CLASS}>Strony robocze: zgłaszanie błędu, zgłoszenia, kolejka serwisu, 404.</p>
+      </Card>
+      <Card className={NARROW_CARD_CLASS}>
+        <h1 class:list={HEADING_CLASS}>Karta „narrow”</h1>
+        <p class:list={LEAD_CLASS}>Logowanie, zakładanie konta i potwierdzenie e-maila.</p>
+      </Card>
+      <Card className={HERO_CARD_CLASS}>
+        <h1 class:list={HERO_HEADING_CLASS}>Karta „hero”</h1>
+        <p class:list={HERO_LEAD_CLASS}>Strona startowa: większy nagłówek i wstęp.</p>
+      </Card>
+
+      <h3 class="text-base font-bold text-foreground">Banner: error / warning</h3>
+      <Banner>
+        Błąd konfiguracji: <a href="/dev/ui-kitchen-sink">link w banerze</a> (focus-visible klawiszem Tab).
+      </Banner>
+      <Banner variant="warning">
+        Ostrzeżenie: <a href="/dev/ui-kitchen-sink">link w banerze</a> (focus-visible klawiszem Tab).
+      </Banner>
+
+      <h3 class="text-base font-bold text-foreground">Link (LINK_CLASS)</h3>
+      <p class="text-sm text-muted-foreground">
+        Tekst z{" "}
+        <a href="/dev/ui-kitchen-sink" class:list={LINK_CLASS}>
+          linkiem
+        </a>{" "}
+        — hover zmienia kolor i podkreśla, Tab pokazuje obrys.
+      </p>
+
+      <h3 class="text-base font-bold text-foreground">Lista wyboru (SELECT_CLASS): domyślna / wyłączona</h3>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-select">Firma</Label>
+          <select id="ks-shared-select" class:list={SELECT_CLASS}>
+            <option>Wybierz firmę</option>
+            <option>Klient Alfa</option>
+          </select>
+        </div>
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-select-disabled">Firma (wyłączona)</Label>
+          <select id="ks-shared-select-disabled" class:list={SELECT_CLASS} disabled>
+            <option>Wybierz firmę</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 class="text-base font-bold text-foreground">Input i Textarea: domyślne / nieprawidłowe / wyłączone</h3>
+      <p class="text-sm text-muted-foreground">
+        Focus nie da się pokazać statycznie: przejdź klawiszem Tab do pól — nieprawidłowe mają pełny czerwony pierścień,
+        pozostałe (i lista wyboru) niebieski.
+      </p>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-input">E-mail</Label>
+          <Input id="ks-shared-input" type="email" placeholder="jan@firma.pl" />
+        </div>
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-input-invalid">E-mail (nieprawidłowy)</Label>
+          <Input id="ks-shared-input-invalid" type="email" defaultValue="jan@" aria-invalid="true" />
+        </div>
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-input-disabled">E-mail (wyłączony)</Label>
+          <Input id="ks-shared-input-disabled" type="email" defaultValue="jan@firma.pl" disabled />
+        </div>
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-textarea">Komunikat błędu</Label>
+          <Textarea id="ks-shared-textarea" rows={3} className={FIXED_ROWS} placeholder="Wklej komunikat błędu" />
+        </div>
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-textarea-invalid">Komunikat błędu (nieprawidłowy)</Label>
+          <Textarea id="ks-shared-textarea-invalid" rows={3} className={FIXED_ROWS} aria-invalid="true" />
+        </div>
+        <div class="space-y-2">
+          <Label htmlFor="ks-shared-textarea-disabled">Komunikat błędu (wyłączony)</Label>
+          <Textarea
+            id="ks-shared-textarea-disabled"
+            rows={3}
+            className={FIXED_ROWS}
+            disabled
+            defaultValue="Błąd 4012"
+          />
+        </div>
+      </div>
+
+      <h3 class="text-base font-bold text-foreground">Przyciski: default / outline / disabled / aria-disabled</h3>
+      <p class="text-sm text-muted-foreground">
+        „Zablokowany” używa aria-disabled z BLOCKED_CLASS: wygląda na wyłączony, ale zostaje w kolejności Tab.
+      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        <Button type="button">Domyślny</Button>
+        <Button type="button" variant="outline">
+          Outline
+        </Button>
+        <Button type="button" disabled>
+          Wyłączony
+        </Button>
+        <Button type="button" aria-disabled="true" className={BLOCKED_CLASS}>
+          Zablokowany
+        </Button>
+      </div>
     </section>
 
     <section class="space-y-4">
@@ -261,7 +392,8 @@ const assignmentCells: {
     <section class="space-y-4">
       <h2 class="text-xl font-bold text-foreground">Potwierdzenie e-maila</h2>
       <p class="text-sm text-muted-foreground">
-        Widok /auth/confirm-email: konto potwierdzone automatycznie (dev) i link aktywacyjny wysłany e-mailem.
+        Widok /auth/confirm-email: konto potwierdzone automatycznie (dev) i link aktywacyjny wysłany e-mailem, oba z
+        przyciskiem „Przejdź do logowania”.
       </p>
       <h3 class="text-base font-bold text-foreground">Konto założone (dev)</h3>
       <Card className={NARROW_CARD_CLASS}>

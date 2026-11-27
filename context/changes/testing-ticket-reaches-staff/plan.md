@@ -301,9 +301,9 @@ Brak migracji i zmian danych.
 #### Automated
 
 - [ ] 3.1 CI na PR: joby `ci` i `smoke` zielone, log joba `smoke` pokazuje przebieg `npm test` przed buildem
-- [x] 3.2 `npx prettier --check CLAUDE.md context/foundation/test-plan.md` przechodzi
+- [x] 3.2 `npx prettier --check CLAUDE.md context/foundation/test-plan.md` przechodzi — 34dfc91
 
 #### Manual
 
-- [x] 3.3 §6.1 i §6.2 test-planu pozwalają dodać nowy test bez czytania tego planu
-- [x] 3.4 Opis `npm test` w CLAUDE.md zgadza się z faktycznym zachowaniem (błąd bez Supabase, odmowa zdalnego URL)
+- [x] 3.3 §6.1 i §6.2 test-planu pozwalają dodać nowy test bez czytania tego planu — 34dfc91
+- [x] 3.4 Opis `npm test` w CLAUDE.md zgadza się z faktycznym zachowaniem (błąd bez Supabase, odmowa zdalnego URL) — 34dfc91

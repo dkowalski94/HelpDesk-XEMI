@@ -69,7 +69,7 @@ export function ErrorTextForm({ value, length, pending, blocked, error, onChange
           )}
         </div>
         <Button type="submit" aria-disabled={blocked} aria-describedby={blockedReasonId} className={BLOCKED_CLASS}>
-          {pending ? <Loader2 className="animate-spin" /> : <Send />}
+          {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send />}
           {pending ? "Szukam rozwiązania..." : "Wyślij"}
         </Button>
       </div>
