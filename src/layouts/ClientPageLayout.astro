@@ -1,9 +1,9 @@
 ---
 import PageShell from "@/layouts/PageShell.astro";
 import AccountStatusNotice from "@/components/AccountStatusNotice.astro";
+import { PROFILE_ERROR_HEADING, WAITING_HEADING } from "@/components/account-status";
 import { isClientUser } from "@/lib/services/profile";
-import { HEADING_CLASS, LEAD_CLASS } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
+import { HEADING_CLASS, LEAD_CLASS, STATUS_LEAD_CLASS } from "@/lib/ui-classes";
 
 /**
  * Audience branches of a client-only page (`/report-error`, `/my-tickets`) inside `PageShell`,
@@ -27,9 +27,6 @@ const isStaff = profile?.role === "service_staff";
 const isClient = isClientUser(profile);
 
 const STAFF_HEADING = "Strona dla klientów";
-// The `h1` texts of AccountStatusNotice's two statuses — keep in sync with that component.
-const PROFILE_ERROR_HEADING = "Nie udało się wczytać Twojego konta";
-const WAITING_HEADING = "Konto czeka na przypisanie";
 
 const title = profileLookupFailed
   ? PROFILE_ERROR_HEADING
@@ -38,9 +35,6 @@ const title = profileLookupFailed
     : isClient
       ? heading
       : WAITING_HEADING;
-
-// The staff message is the card's last paragraph: no lead margin under it.
-const staffLeadClass = cn(LEAD_CLASS, "mb-0");
 ---
 
 <PageShell title={title}>
@@ -49,7 +43,7 @@ const staffLeadClass = cn(LEAD_CLASS, "mb-0");
   ) : isStaff ? (
     <>
       <h1 class:list={HEADING_CLASS}>{STAFF_HEADING}</h1>
-      <p class:list={staffLeadClass}>
+      <p class:list={STATUS_LEAD_CLASS}>
         Ta strona jest przeznaczona dla użytkowników klienta. Konto serwisowe nie zgłasza błędów i nie ma własnych
         zgłoszeń.
       </p>

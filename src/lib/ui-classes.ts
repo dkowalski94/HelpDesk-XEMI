@@ -28,6 +28,12 @@ export const SECTION_HEADING_CLASS = "text-lg font-bold text-foreground";
 /** The intro paragraph under `HEADING_CLASS`. */
 export const LEAD_CLASS = "mb-6 text-sm text-muted-foreground";
 
+/** A status message under `HEADING_CLASS` that ends its card or section: lead text, no margin under it. */
+export const STATUS_LEAD_CLASS = "mb-0 text-sm text-muted-foreground";
+
+/** The "no account? / have an account?" line under an auth form. */
+export const AUTH_FOOTER_CLASS = "mt-4 text-center text-sm text-muted-foreground";
+
 /** The intro paragraph under `HERO_HEADING_CLASS`. */
 export const HERO_LEAD_CLASS = "max-w-2xl text-muted-foreground sm:text-lg";
 

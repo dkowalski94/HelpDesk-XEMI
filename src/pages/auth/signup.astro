@@ -3,7 +3,7 @@ import PageShell from "@/layouts/PageShell.astro";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { authErrorMessage } from "@/lib/auth-messages";
 import { safeNextPath } from "@/lib/auth-redirect";
-import { HEADING_CLASS, LINK_CLASS } from "@/lib/ui-classes";
+import { AUTH_FOOTER_CLASS, HEADING_CLASS, LINK_CLASS } from "@/lib/ui-classes";
 
 // A signed-in user gets no sign-up form: send them where they were going. Set on
 // Astro.response rather than `return Astro.redirect()` (see signin.astro); the markup is skipped.
@@ -21,7 +21,7 @@ const errorMessage = authErrorMessage(Astro.url.searchParams.get("error"));
     <div class="mt-4">
       <SignUpForm serverError={errorMessage} client:load />
     </div>
-    <p class="mt-4 text-center text-sm text-muted-foreground">
+    <p class:list={AUTH_FOOTER_CLASS}>
       Masz już konto?{" "}
       <a href="/auth/signin" class:list={LINK_CLASS}>
         Zaloguj się

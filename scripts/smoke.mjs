@@ -181,8 +181,9 @@ const clientEntries = (text) =>
   text.includes('href="/my-tickets"') &&
   !text.includes('href="/admin/tickets"');
 
-// Distinctive substrings of /my-tickets. "Moje zgłoszenia" is also the document title of
-// every branch, so the list's own label marks the client branch.
+// Distinctive substrings of /my-tickets. The document title follows the rendered branch, and
+// "Moje zgłoszenia" also appears in the user bar's navigation, so the list's own label is what
+// marks the client branch.
 const MY_TICKETS_PAGE = {
   heading: "Moje zgłoszenia",
   list: 'aria-label="Lista zgłoszeń"',

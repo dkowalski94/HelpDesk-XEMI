@@ -1,12 +1,13 @@
 ---
-import { HEADING_CLASS, LEAD_CLASS } from "@/lib/ui-classes";
+import { PROFILE_ERROR_HEADING, WAITING_HEADING } from "@/components/account-status";
+import { HEADING_CLASS, STATUS_LEAD_CLASS } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
 /**
  * The profile-error and waiting-for-assignment messages, in one place so the start page
  * and the client pages (`/report-error`, `/my-tickets`) say the same thing. The client pages
  * render it as their `h1`; the start page renders it as an `h2` under its own heading.
- * `ClientPageLayout` repeats both heading texts as the tab title — change them together.
+ * The heading texts live in `account-status.ts`, which `ClientPageLayout` reuses as the tab title.
  */
 interface Props {
   status: "profile-error" | "waiting";
@@ -15,22 +16,19 @@ interface Props {
 
 const { status, headingLevel } = Astro.props;
 const Heading = headingLevel;
-
-// The message is the last paragraph of its card or section: no lead margin under it.
-const statusLeadClass = cn(LEAD_CLASS, "mb-0");
 ---
 
 {status === "profile-error" ? (
   <>
-    <Heading class:list={cn(HEADING_CLASS, "text-destructive")}>Nie udało się wczytać Twojego konta</Heading>
-    <p class:list={statusLeadClass}>
+    <Heading class:list={cn(HEADING_CLASS, "text-destructive")}>{PROFILE_ERROR_HEADING}</Heading>
+    <p class:list={STATUS_LEAD_CLASS}>
       Wystąpił błąd podczas odczytu Twojej firmy i roli. To problem po naszej stronie — odśwież stronę za chwilę.
     </p>
   </>
 ) : (
   <>
-    <Heading class:list={HEADING_CLASS}>Konto czeka na przypisanie</Heading>
-    <p class:list={statusLeadClass}>
+    <Heading class:list={HEADING_CLASS}>{WAITING_HEADING}</Heading>
+    <p class:list={STATUS_LEAD_CLASS}>
       Twoje konto czeka na przypisanie do firmy. Zespół serwisowy XEMI przypisuje nowe konta — po przypisaniu zgłaszanie
       błędów będzie dostępne.
     </p>

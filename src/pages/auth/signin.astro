@@ -3,7 +3,7 @@ import PageShell from "@/layouts/PageShell.astro";
 import SignInForm from "@/components/auth/SignInForm";
 import { authErrorMessage } from "@/lib/auth-messages";
 import { safeNextPath } from "@/lib/auth-redirect";
-import { HEADING_CLASS, LINK_CLASS } from "@/lib/ui-classes";
+import { AUTH_FOOTER_CLASS, HEADING_CLASS, LINK_CLASS } from "@/lib/ui-classes";
 
 const next = safeNextPath(Astro.url.searchParams.get("next"));
 // A signed-in user gets no sign-in form: send them where they were going. Set on
@@ -24,7 +24,7 @@ const errorMessage = authErrorMessage(Astro.url.searchParams.get("error"));
     <div class="mt-4">
       <SignInForm serverError={errorMessage} next={next} client:load />
     </div>
-    <p class="mt-4 text-center text-sm text-muted-foreground">
+    <p class:list={AUTH_FOOTER_CLASS}>
       Nie masz konta?{" "}
       <a href="/auth/signup" class:list={LINK_CLASS}>
         Załóż konto
