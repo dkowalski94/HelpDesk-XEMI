@@ -87,8 +87,11 @@ const HARD_CODED_UI_MESSAGE =
   "Hard-coded colour or arbitrary value in a view on the UI contract — use a token role (bg-card, text-muted-foreground, text-destructive…) or a component from src/components/ui. See CLAUDE.md → UI contract.";
 // `class` / `className` / `class:list` / `style` attributes (JSX in .tsx, astro-eslint-parser in .astro), `cn(...)`
 // arguments outside those attributes (inside them they are already covered — no double report), and class strings
-// kept in constants, matched by name (`linkClass` in Topbar and report-error, `headingClass`/`hint` in ClientPageLayout, `FOCUS_RING`,
-// `INNER_CARD`, `FIXED_ROWS` in format.ts) so copy and fixture text such as "kod #4012" is not checked.
+// kept in constants, matched by name so copy and fixture text such as "kod #4012" is not checked. Shared constants
+// live in src/lib/ui-classes.ts (`HEADING_CLASS`, `LINK_CLASS`, `INNER_CARD`, `FIXED_ROWS`…); a local one in a view
+// is named `…Class` (`cardClass` in PageShell, `variantClass` in Banner).
+// `<style>` blocks are invisible to this rule — none may be added in views (Layout.astro keeps only its colour-free
+// html/body sizing reset).
 const UI_CLASS_CONTEXTS = [
   "JSXAttribute[name.name=/^(class|className|style)$/]",
   "JSXAttribute[name.namespace.name='class']",
@@ -97,25 +100,16 @@ const UI_CLASS_CONTEXTS = [
 ];
 
 const uiContractConfig = defineConfig({
+  // Every view-level file. The shadcn primitives in src/components/ui are library code (stock `ring-[3px]` etc.)
+  // and stay outside; API routes under src/pages/api render no markup.
   files: [
-    "src/pages/report-error.astro",
-    "src/pages/my-tickets.astro",
-    "src/layouts/ClientPageLayout.astro",
-    "src/components/error-resolution/**",
-    "src/components/Topbar.astro",
-    "src/components/UserBar.astro",
+    "src/pages/**/*.astro",
+    "src/layouts/**",
+    "src/components/**",
     "src/dev/ui-kitchen-sink.astro",
-    "src/pages/index.astro",
-    "src/components/start/**",
-    "src/components/AccountStatusNotice.astro",
-    "src/pages/admin/tickets.astro",
-    "src/pages/admin/users.astro",
-    "src/components/admin/**",
-    "src/pages/404.astro",
-    "src/components/NotFound.astro",
-    "src/pages/auth/**",
-    "src/components/auth/**",
+    "src/lib/ui-classes.ts",
   ],
+  ignores: ["src/components/ui/**"],
   rules: {
     "no-restricted-syntax": [
       "error",

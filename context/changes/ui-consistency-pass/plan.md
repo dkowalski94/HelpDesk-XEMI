@@ -424,16 +424,16 @@ No data or schema changes. Rollback is a plain Worker rollback. The primitives i
 
 #### Automated
 
-- [ ] 4.1 Lint passes: `npm run lint`
-- [ ] 4.2 Astro type check passes: `npx astro sync && npx astro check`
-- [ ] 4.3 Production build passes: `npm run build`
-- [ ] 4.4 Hard-coded-value scan finds nothing outside `src/components/ui/`
-- [ ] 4.5 Lint catches a regression in `src/layouts/PageShell.astro`
-- [ ] 4.6 Smoke test passes against the production preview after `npx supabase db reset`
-- [ ] 4.7 No stale `cosmic`/`LibBadge` references in CLAUDE.md and design-tokens.md
+- [x] 4.1 Lint passes: `npm run lint`
+- [x] 4.2 Astro type check passes: `npx astro sync && npx astro check`
+- [x] 4.3 Production build passes: `npm run build`
+- [x] 4.4 Hard-coded-value scan finds nothing outside `src/components/ui/`
+- [x] 4.5 Lint catches a regression in `src/layouts/PageShell.astro`
+- [x] 4.6 Smoke test passes against the production preview after `npx supabase db reset`
+- [x] 4.7 No stale `cosmic`/`LibBadge` references in CLAUDE.md and design-tokens.md
 
 #### Manual
 
-- [ ] 4.8 After-screenshots of all 9 pages and the kitchen sink are in `screenshots/after/`, every delta intended
-- [ ] 4.9 Walking all roles and an unknown URL shows one consistent look
-- [ ] 4.10 CLAUDE.md UI contract reads correctly to someone adding a new page
+- [x] 4.8 After-screenshots of all 9 pages and the kitchen sink are in `screenshots/after/`, every delta intended
+- [x] 4.9 Walking all roles and an unknown URL shows one consistent look
+- [x] 4.10 CLAUDE.md UI contract reads correctly to someone adding a new page
