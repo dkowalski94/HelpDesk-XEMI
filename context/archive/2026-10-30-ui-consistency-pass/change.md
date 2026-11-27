@@ -1,10 +1,10 @@
 ---
 change_id: ui-consistency-pass
 title: Ui consistency pass
-status: impl_reviewed
+status: archived
 created: 2026-10-30
 updated: 2026-11-27
-archived_at: null
+archived_at: 2026-11-27T10:08:37Z
 ---
 
 ## Notes

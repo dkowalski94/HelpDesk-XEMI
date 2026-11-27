@@ -3,7 +3,7 @@ project: "HelpDesk XEMI"
 version: 2
 status: draft
 created: 2026-09-22
-updated: 2026-10-30
+updated: 2026-11-27
 prd_version: —
 main_goal: low-complexity
 top_blocker: none
@@ -52,7 +52,7 @@ An ERP (XEMI) end user hits an error message mid-task and has no way to resolve 
 | S-04 | polish-sign-in              | sign in / sign up on Polish, XEMI-styled pages, see a Polish 404, and return to the page they asked for  | S-03          | MS-04, MS-07 | done        |
 | S-05 | staff-ticket-company-filter | (staff) filter the to-do ticket queue by client company on a light, XEMI-styled `/admin/tickets`         | S-03          | MS-06, MS-07 | done        |
 | S-06 | admin-users-ui-contract     | (staff) assign new accounts on a Polish, XEMI-styled `/admin/users`                                      | S-03          | MS-07        | done        |
-| S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | in-progress |
+| S-07 | ui-consistency-pass         | move between every page (guest, client, staff, sign-in, 404) and see one consistent light XEMI look      | S-04, S-05, S-06 | MS-07     | done        |
 
 ## Streams
 
@@ -168,7 +168,7 @@ None in M-2 — every layer the slices touch is present in the Baseline, and the
 - **Unknowns:**
   - Whether the `.dark` variant and `--cosmic-*` tokens are dropped entirely or kept for a future dark mode. Owner: user. Block: no (decide in `/10x-plan`).
 - **Risk:** An audit slice can grow without bound — scope it to inconsistencies found by a `/10x-ui` audit across all pages with screenshots as the gate; anything that is a new feature rather than a fix goes to the backlog. The CLAUDE.md UI contract then covers every view, so `uiContractConfig` lists all pages.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -222,3 +222,4 @@ M-2 items (their IDs belong to M-2):
 - **S-05: a service-staff member can filter the to-do ticket queue by client company, on an `/admin/tickets` moved onto the UI contract (light XEMI look, same width and user bar as the start page).** — Archived 2026-10-28 → `context/archive/2026-10-28-staff-ticket-company-filter/`. Lesson: —.
 - **S-04: user can sign in, sign up and read the confirm-email page in Polish on the light XEMI look with the user bar, and after signing in returns to the page they originally asked for. An unknown address (e.g. the removed `/dashboard`) shows a Polish, XEMI-styled 404 page (`src/pages/404.astro`) with the user bar and a link to the start page, instead of Astro's default. The shared shell `src/layouts/Layout.astro` declares `<html lang="pl">` and the default title "HelpDesk XEMI" instead of "10x Astro Starter" (the per-element `lang="pl"` wrappers on contract pages can then go).** — Archived 2026-10-29 → `context/archive/2026-10-29-polish-sign-in/`. Lesson: —.
 - **S-06: a service-staff member assigns new accounts to companies on a Polish, XEMI-styled `/admin/users` (light look, start-page width, user bar).** — Archived 2026-10-30 → `context/archive/2026-10-30-admin-users-ui-contract/`. Lesson: —.
+- **S-07: a guest, a client and a staff member moving between every page — start page, `/report-error`, `/my-tickets`, sign-in/sign-up/confirm-email, 404, `/admin/tickets`, `/admin/users` — see one consistent light XEMI look (same width, headings, spacing, buttons, focus rings and user bar); no page keeps the starter's dark look, and the leftover cosmic theme (`bg-cosmic`, `--cosmic-*`, the `.dark` variant) is removed if nothing uses it any more.** — Archived 2026-11-27 → `context/archive/2026-10-30-ui-consistency-pass/`. Lesson: —.
